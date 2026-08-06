@@ -26,7 +26,7 @@ let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
 const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
 const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
@@ -58,16 +58,10 @@ onAuthStateChanged(auth, async (user) => {
         btnProfile.onclick = abrirProfileMenu;
         
         document.getElementById('config-btn-apikey').style.display = 'flex';
-        btnNotif.style.display = 'block';
+        btnNotif.style.display = 'flex';
 
-        if (isCreatingAccount) {
-            isCreatingAccount = false;
-        }
-        
         iniciarEscutaProjetosNuvem(userEmail);
         iniciarEscutaConvites(userEmail);
-        mostrarToast("Login efetuado com sucesso!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
-
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
         if (unsubscribeConvites) unsubscribeConvites();
@@ -84,7 +78,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// ================= SINCRONIZAÇÃO EM TEMPO REAL E CONVITES =================
+// ================= SINCRONIZAÇÃO EM TEMPO REAL =================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
     unsubscribeProjetos = onSnapshot(q, (snapshot) => {
@@ -143,8 +137,8 @@ window.abrirMenuNotificacoes = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('profile-menu').style.display = 'none';
         menu.style.display = 'block';
-        menu.style.left = (btn.left - 200) + 'px';
-        menu.style.top = (btn.top + 30) + 'px';
+        menu.style.left = (btn.left - 240) + 'px';
+        menu.style.top = (btn.top + 35) + 'px';
     }
 }
 
@@ -256,7 +250,7 @@ document.getElementById('toggle-ask-save').checked = configAskToSave;
 window.abrirConfigMenu = function(e) { e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); if (menu.style.display === 'block') menu.style.display = 'none'; else { document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none'; menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; } }
 window.salvarPreferenciasConfig = function() { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
-// ================= RENDERIZAÇÃO E PRESENÇA (AVATARES NAS CONVERSAS) =================
+// ================= RENDERIZAÇÃO E PRESENÇA OTIMIZADA =================
 function renderizarSidebar() {
     const container = document.getElementById('lista-projetos');
     container.innerHTML = ''; 
@@ -288,15 +282,27 @@ function renderizarSidebar() {
             const estaProcessando = statusConversas[chave] && statusConversas[chave].ativa;
             const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
             
-            // Rastreia quem está nesta conversa através do objeto de presença do projeto
-            let avataresPresencaHTML = '';
+            // Agrupa avatares na conversa (máximo 1 visível + pill badge com contagem e tooltip de nomes)
+            let emailsNaConversa = [];
             if (proj.presenca) {
                 Object.entries(proj.presenca).forEach(([emailUser, cIdx]) => {
                     if (cIdx === indexConv && (!usuarioAtual || emailUser !== usuarioAtual.email)) {
-                        const avatarUrl = `https://ui-avatars.com/api/?name=${emailUser}&background=21262d&color=c9d1d9&rounded=true`;
-                        avataresPresencaHTML += `<img src="${avatarUrl}" title="${emailUser}" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #F58220; margin-left: 4px; object-fit: cover;">`;
+                        emailsNaConversa.push(emailUser);
                     }
                 });
+            }
+
+            let avataresPresencaHTML = '';
+            if (emailsNaConversa.length > 0) {
+                const primeiroEmail = emailsNaConversa[0];
+                const primeiroAvatar = `https://ui-avatars.com/api/?name=${primeiroEmail}&background=21262d&color=c9d1d9&rounded=true`;
+                avataresPresencaHTML += `<img src="${primeiroAvatar}" title="${primeiroEmail}" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #F58220; object-fit: cover; vertical-align: middle; margin-left: 4px;">`;
+                
+                if (emailsNaConversa.length > 1) {
+                    const todosNomes = emailsNaConversa.join(', ');
+                    const extrasCount = emailsNaConversa.length - 1;
+                    avataresPresencaHTML += `<span title="${todosNomes}" style="font-size: 0.7rem; background: rgba(245,130,32,0.2); color: #F58220; padding: 1px 4px; border-radius: 4px; margin-left: 3px; vertical-align: middle; cursor: help;">+${extrasCount}</span>`;
+                }
             }
 
             const convDiv = document.createElement('div');
@@ -304,10 +310,8 @@ function renderizarSidebar() {
             convDiv.className = `conversa-item ${estaAtiva ? 'ativa' : ''} ${estaProcessando ? 'processando' : ''}`;
             
             convDiv.innerHTML = `
-                <span style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 40px);">${conv.nome}</span>
-                    <span style="display:flex; align-items:center;">${avataresPresencaHTML} <span class="status-icon" style="position:static; margin-left:6px;">${SVG_SPINNER}</span></span>
-                </span>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 40px);">${conv.nome}</span>
+                <span style="display:flex; align-items:center; flex-shrink:0;">${avataresPresencaHTML} <span class="status-icon">${SVG_SPINNER}</span></span>
             `;
             
             convDiv.onclick = () => selecionarConversa(indexProj, indexConv);
@@ -325,13 +329,21 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); alvoMenu = { tipo, indexProj, indexConv };
     const menu = document.getElementById('context-menu');
     let menuHTML = '';
+    
     if (tipo === 'projeto') {
         if (usuarioAtual && window.projetos[indexProj].id) {
             menuHTML += `<div class="context-item" style="color:#F58220" onclick="abrirModalCompartilhar()">${SVG_SHARE} Compartilhar</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
         }
         menuHTML += `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Projeto</div><div class="context-item" onclick="exportarProjetoZip()">${SVG_ARCHIVE} Baixar (.zip)</div><div class="context-item danger" onclick="deletarProjeto()">${SVG_TRASH} Apagar</div>`;
     } else {
-        menuHTML = `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Conversa</div><div class="context-item" onclick="exportarConversaMD()">${SVG_FILE} Baixar (.md)</div><div class="context-item danger" onclick="deletarConversa()">${SVG_TRASH} Apagar</div>`;
+        // Regra: Só pode apagar conversa se foi criada por ele (ou se for visitante / dono local)
+        const conv = window.projetos[indexProj].conversas[indexConv];
+        const podeApagar = !usuarioAtual || !conv.criador || conv.criador === usuarioAtual.email;
+        
+        menuHTML = `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Conversa</div><div class="context-item" onclick="exportarConversaMD()">${SVG_FILE} Baixar (.md)</div>`;
+        if (podeApagar) {
+            menuHTML += `<div class="context-item danger" onclick="deletarConversa()">${SVG_TRASH} Apagar</div>`;
+        }
     }
     menu.innerHTML = menuHTML;
     menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
@@ -353,6 +365,7 @@ window.confirmarProjeto = async function() {
     const descricao = document.getElementById('input-desc-projeto').value.trim();
 
     if (nome) { 
+        window.fecharModal(); // Fecha imediatamente por UX fluida
         if (usuarioAtual) {
             await addDoc(collection(db, "projetos"), {
                 nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {}
@@ -364,15 +377,19 @@ window.confirmarProjeto = async function() {
             renderizarSidebar(); 
             mostrarToast('Projeto criado!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
         }
-        window.fecharModal(); // Fecha o modal perfeitamente
     }
 }
 
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     const generoStr = window.projetos[indexProj].genero ? ` de ${window.projetos[indexProj].genero}` : "";
+    
+    // Associa a autoria (criador) da conversa para controle de exclusão
+    const emailCriador = usuarioAtual ? usuarioAtual.email : 'visitante';
+    
     window.projetos[indexProj].conversas.push({ 
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, 
+        criador: emailCriador,
         mensagens: [{ papel: 'bot', texto: `Olá! Sou seu professor especialista em Unity. Como posso te ajudar neste projeto${generoStr}?` }] 
     });
     window.projetos[indexProj].aberto = true; 
@@ -409,7 +426,7 @@ window.confirmarRenomear = function() {
     const novo = document.getElementById('input-nome-renomear').value.trim(); if (!novo) return;
     if (alvoMenu.tipo === 'projeto') window.projetos[alvoMenu.indexProj].nome = novo;
     else window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome = novo;
-    salvarDadosAtuais(alvoMenu.indexProj); renderizarSidebar(); if (idProjetoAtivo !== null) document.getElementById('chat-header').innerText = `${window.projetos[idProjetoAtivo].nome} / ${window.projetos[idProjetoAtivo].conversas[idConversaAtiva].nome}`; window.fecharModalRenomear();
+    salvarDadosAtuais(alvoMenu.indexProj); renderizarSidebar(); if (idProjetoAtivo !== null) document.getElementById('header-title').innerText = `${window.projetos[idProjetoAtivo].nome} / ${window.projetos[idProjetoAtivo].conversas[idConversaAtiva].nome}`; window.fecharModalRenomear();
 }
 
 window.deletarConversa = function() {
@@ -437,24 +454,27 @@ window.deletarProjeto = async function() {
 
 // ================= LÓGICA DO CHAT E PRESENÇA =================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
-function resetarVisualizacaoChat() { idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); document.getElementById('chat-header').innerText = 'ComboBoy Researcher'; document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; }
+function resetarVisualizacaoChat() { idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; }
 
 async function selecionarConversa(indexProj, indexConv) {
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
     
-    // Atualiza a presença na nuvem para os colegas verem em qual conversa o usuário está
+    // Atualização instantânea local de presença antes do Firestore para máxima velocidade
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj];
         proj.presenca = proj.presenca || {};
         proj.presenca[usuarioAtual.email] = indexConv;
-        await updateDoc(doc(db, "projetos", proj.id), { presenca: proj.presenca });
+        renderizarSidebar(); // Atualiza instantaneamente a UI local
+        
+        // Sincroniza em segundo plano com a nuvem
+        updateDoc(doc(db, "projetos", proj.id), { presenca: proj.presenca });
     }
 
     document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
     const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`);
     if (itemAtivo) itemAtivo.classList.add('ativa');
     document.getElementById('input-container').classList.add('ativo');
-    document.getElementById('chat-header').innerText = `${window.projetos[indexProj].nome} / ${window.projetos[indexProj].conversas[indexConv].nome}`;
+    document.getElementById('header-title').innerText = `${window.projetos[indexProj].nome} / ${window.projetos[indexProj].conversas[indexConv].nome}`;
     renderizarChat(); atualizarEstadoBotaoEnvio(); validarInput();
 }
 

@@ -48,7 +48,6 @@ body {
 
 .btn-novo-projeto {
     width: 100%; padding: 12px 16px; 
-    /* LARANJA ESCURO PARA CONTRASTE */
     background: linear-gradient(135deg, #e06c00 0%, #b35600 100%);
     color: white; border: none; border-radius: 8px; cursor: pointer;
     font-weight: 600; font-size: 0.95rem; font-family: 'Space Grotesk', sans-serif;
@@ -88,16 +87,15 @@ body {
 .lista-conversas.aberta { display: block; }
 .conversa-item {
     padding: 8px 12px; margin-bottom: 2px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; color: #8b949e;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.2s; position: relative;
+    display: flex; align-items: center; justify-content: space-between; position: relative;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.2s;
 }
 .conversa-item:hover { background: rgba(255, 255, 255, 0.05); color: #c9d1d9; }
 .conversa-item.ativa { background: rgba(245, 130, 32, 0.15) !important; color: #F58220 !important; font-weight: 600; border-left: 3px solid #F58220;}
 
 .conversa-item .status-icon {
-    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-    display: none; color: #F58220;
+    display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; color: #F58220;
 }
-.conversa-item.processando .status-icon { display: block; }
 .status-icon svg { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -151,7 +149,6 @@ header {
 .balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; }
 .aluno { 
     align-self: flex-end; 
-    /* LARANJA ESCURO PARA CONTRASTE NA FONTE */
     background: linear-gradient(135deg, #e06c00 0%, #b35600 100%); 
     color: #ffffff; border-radius: 20px 20px 4px 20px; 
     border: 1px solid rgba(255,255,255,0.1);
