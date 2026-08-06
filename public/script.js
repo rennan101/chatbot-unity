@@ -24,6 +24,7 @@ let alvoMenu = { tipo: null, indexProj: null, indexConv: null };
 let statusConversas = {};
 let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
+let unsubscribeNotificacoes = null;
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -42,7 +43,7 @@ const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 
 let isCreatingAccount = false; 
 
-// Formatação limpa do nome do usuário a partir do e-mail ou display name
+// Formatação limpa do nome do usuário a partir do e-mail
 function formatarNomeUsuario(emailOrName) {
     if (!emailOrName) return 'Visitante';
     const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
@@ -69,9 +70,11 @@ onAuthStateChanged(auth, async (user) => {
 
         iniciarEscutaProjetosNuvem(userEmail);
         iniciarEscutaConvites(userEmail);
+        iniciarEscutaNotificacoes(userEmail);
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
         if (unsubscribeConvites) unsubscribeConvites();
+        if (unsubscribeNotificacoes) unsubscribeNotificacoes();
         usuarioAtual = null;
         
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
@@ -111,23 +114,58 @@ function iniciarEscutaConvites(email) {
         const badge = document.getElementById('badge-notificacao');
         listaConvites.innerHTML = '';
 
-        if (snapshot.empty) {
-            listaConvites.innerHTML = `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhum convite pendente.</div>`;
+        if (snapshot.empty && document.getElementById('lista-notificacoes-popup').innerHTML.includes('Nenhuma')) {
             badge.style.display = 'none';
+        } else {
+            badge.style.display = 'block';
+        }
+
+        if (snapshot.empty) {
+            listaConvites.innerHTML = `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 6px;">Nenhum convite pendente.</div>`;
             return;
         }
 
-        badge.style.display = 'block';
         snapshot.forEach((docSnap) => {
             const convite = docSnap.data();
             const id = docSnap.id;
             listaConvites.innerHTML += `
                 <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
-                    <div style="color: #e6edf3; margin-bottom: 4px;"><b>${formatarNomeUsuario(convite.remetente)}</b> convidou você para o projeto <b>${convite.projetoNome}</b></div>
+                    <div style="color: #e6edf3; margin-bottom: 4px;"><b>${formatarNomeUsuario(convite.remetente)}</b> convidou você para <b>${convite.projetoNome}</b></div>
                     <div style="display: flex; gap: 6px;">
-                        <button onclick="responderConvite('${id}', '${convite.projetoId}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
-                        <button onclick="responderConvite('${id}', null, false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
+                        <button onclick="responderConvite('${id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
+                        <button onclick="responderConvite('${id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
                     </div>
+                </div>
+            `;
+        });
+    });
+}
+
+function iniciarEscutaNotificacoes(email) {
+    const q = query(collection(db, "notificacoes"), where("destinatario", "==", email));
+    unsubscribeNotificacoes = onSnapshot(q, (snapshot) => {
+        const listaNotif = document.getElementById('lista-notificacoes-popup');
+        const badge = document.getElementById('badge-notificacao');
+        listaNotif.innerHTML = '';
+
+        if (snapshot.empty && document.getElementById('lista-convites-popup').innerHTML.includes('Nenhum')) {
+            badge.style.display = 'none';
+        } else {
+            badge.style.display = 'block';
+        }
+
+        if (snapshot.empty) {
+            listaNotif.innerHTML = `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 6px;">Nenhuma notificação.</div>`;
+            return;
+        }
+
+        snapshot.forEach((docSnap) => {
+            const notif = docSnap.data();
+            const id = docSnap.id;
+            listaNotif.innerHTML += `
+                <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
+                    <button onclick="apagarNotificacao('${id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold;" title="Apagar notificação">✕</button>
                 </div>
             `;
         });
@@ -147,7 +185,7 @@ window.abrirMenuNotificacoes = function(event) {
     }
 }
 
-window.responderConvite = async function(conviteId, projetoId, aceitar) {
+window.responderConvite = async function(conviteId, projetoId, remetente, projetoNome, aceitar) {
     try {
         if (aceitar && projetoId) {
             const projRef = doc(db, "projetos", projetoId);
@@ -156,11 +194,30 @@ window.responderConvite = async function(conviteId, projetoId, aceitar) {
         } else {
             mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
         }
-        await updateDoc(doc(db, "convites", conviteId), { status: aceitar ? "aceito" : "recusado" });
+
+        // Apaga a solicitação para sempre
+        await deleteDoc(doc(db, "convites", conviteId));
+
+        // Envia notificação para o dono (remetente)
+        const meuNome = formatarNomeUsuario(usuarioAtual.email);
+        const statusMsg = aceitar ? "aceitou" : "recusou";
+        await addDoc(collection(db, "notificacoes"), {
+            destinatario: remetente,
+            mensagem: `<b>${meuNome}</b> ${statusMsg} seu convite para <b>${projetoNome}</b>.`
+        });
+
         document.getElementById('notifications-menu').style.display = 'none';
     } catch(e) {
         console.error(e);
         mostrarToast("Erro ao responder convite.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+    }
+}
+
+window.apagarNotificacao = async function(notifId) {
+    try {
+        await deleteDoc(doc(db, "notificacoes", notifId));
+    } catch(e) {
+        console.error(e);
     }
 }
 
@@ -555,7 +612,6 @@ function renderizarChat() {
         else chatBox.innerHTML += `<div class="balao ${msg.papel}">${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
     });
     
-    // Verifica se a conversa atual está pensando na nuvem
     const estaProcessando = conversa.processando === true;
     if (estaProcessando) {
         chatBox.innerHTML += `<div class="balao bot"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
@@ -622,7 +678,6 @@ async function enviarMensagem() {
     conversaAtual.mensagens.push({ papel: 'aluno', texto: texto });
     if (conversaAtual.mensagens.length === 2) conversaAtual.nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
     
-    // ATIVA O ESTADO DE PENSANDO COMPARTILHADO NA NUVEM PARA ESSA CONVERSA
     conversaAtual.processando = true;
     salvarDadosAtuais(pIdx); 
     
@@ -653,7 +708,6 @@ async function enviarMensagem() {
     } catch (e) {
         conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_WARN} Erro de comunicação: ${e.message}` });
     } finally {
-        // DESATIVA O ESTADO DE PENSANDO COMPARTILHADO
         conversaAtual.processando = false;
         salvarDadosAtuais(pIdx);
         renderizarSidebar(); 
