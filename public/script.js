@@ -28,6 +28,85 @@ let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
 let imagemAtualBase64 = null;
 let imagemAtualMimeType = null;
+// VARIÁVEIS GLOBAIS DE ANEXOS
+let anexoImagemBase64 = null;
+let anexoImagemMimeType = null;
+let anexoTextoConteudo = null;
+let anexoTextoNome = null;
+
+// ================= GESTÃO DE ANEXOS (IMAGEM E CÓDIGO) =================
+function redimensionarEComprimirImagem(file, maxSize, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            let width = img.width; let height = img.height;
+            if (width > maxSize || height > maxSize) {
+                if (width > height) { height = Math.round((height * maxSize) / width); width = maxSize; } 
+                else { width = Math.round((width * maxSize) / height); height = maxSize; }
+            }
+            const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL('image/jpeg', 0.8), 'image/jpeg');
+        }
+        img.src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+}
+
+window.lidarComAnexo = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    document.getElementById('btn-anexo').style.opacity = '0.5';
+    
+    // Se for imagem (Print do Unity, erros, etc)
+    if (file.type.startsWith('image/')) {
+        anexoTextoConteudo = null; // Limpa se tinha código antes
+        redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
+            anexoImagemBase64 = base64Data;
+            anexoImagemMimeType = mimeType;
+            
+            document.getElementById('file-preview').style.display = 'none';
+            document.getElementById('image-preview').src = anexoImagemBase64;
+            document.getElementById('image-preview').style.display = 'block';
+            mostrarPreviewContainer();
+        });
+    } 
+    // Se for um arquivo de texto/código (.cs, .txt)
+    else {
+        anexoImagemBase64 = null; // Limpa se tinha imagem antes
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            anexoTextoConteudo = e.target.result;
+            anexoTextoNome = file.name;
+            
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('file-name').innerText = anexoTextoNome;
+            document.getElementById('file-preview').style.display = 'flex';
+            mostrarPreviewContainer();
+        };
+        reader.readAsText(file);
+    }
+}
+
+function mostrarPreviewContainer() {
+    document.getElementById('anexo-preview-container').style.display = 'flex';
+    document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
+    document.getElementById('btn-anexo').style.opacity = '1';
+    window.validarInput();
+}
+
+window.removerAnexo = function() {
+    anexoImagemBase64 = null;
+    anexoImagemMimeType = null;
+    anexoTextoConteudo = null;
+    anexoTextoNome = null;
+    document.getElementById('input-anexo').value = '';
+    document.getElementById('anexo-preview-container').style.display = 'none';
+    document.getElementById('main-input-wrapper').style.borderRadius = '16px';
+    window.validarInput();
+}
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -652,15 +731,14 @@ function renderizarChat() {
 }
 
 window.validarInput = function() {
-    const input = document.getElementById('mensagem'); 
-    const btn = document.getElementById('btn-acao');
+    const input = document.getElementById('mensagem'); const btn = document.getElementById('btn-acao');
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
     const estaProcessando = conv?.processando === true;
     
     if (!estaProcessando) {
-        // Agora o botão ativa se tiver texto OU se tiver imagem
-        btn.disabled = input.value.trim().length === 0 && !imagemAtualBase64;
+        // Habilita se houver texto, imagem ou código anexado
+        btn.disabled = input.value.trim().length === 0 && !anexoImagemBase64 && !anexoTextoConteudo;
     } else {
         btn.disabled = true;
     }
@@ -706,25 +784,36 @@ async function enviarMensagem() {
     if (conversaAtual.processando) return;
 
     const input = document.getElementById('mensagem'); 
-    const texto = input.value.trim(); 
-    const imgBase64 = imagemAtualBase64;
-    const imgMime = imagemAtualMimeType;
+    let textoDigitado = input.value.trim(); 
     
-    if(!texto && !imgBase64) return;
+    // MÁGICA DO ARQUIVO .CS: Junta o texto digitado com o código do arquivo
+    let textoFinal = textoDigitado;
+    if (anexoTextoConteudo) {
+        const ext = anexoTextoNome.split('.').pop().toLowerCase();
+        const linguagemMarkdown = (ext === 'cs') ? 'csharp' : ext; // Avisa a IA que é C#
+        const quebraLinha = textoDigitado ? '\n\n' : '';
+        textoFinal += `${quebraLinha}📄 **Arquivo Anexado (${anexoTextoNome}):**\n\`\`\`${linguagemMarkdown}\n${anexoTextoConteudo}\n\`\`\``;
+    }
+    
+    // Preparo de Imagem
+    const imgBase64 = anexoImagemBase64;
+    const imgMime = anexoImagemMimeType;
+    
+    if(!textoFinal && !imgBase64) return;
 
-    // Constrói o objeto de mensagem
-    const novaMsg = { papel: 'aluno', texto: texto };
-    if (imgBase64) novaMsg.imagem_url = imgBase64; // Salva para renderizar
+    // Registra a mensagem na interface
+    const novaMsg = { papel: 'aluno', texto: textoFinal };
+    if (imgBase64) novaMsg.imagem_url = imgBase64; 
 
     conversaAtual.mensagens.push(novaMsg);
     
-    // Gera nome da conversa baseado no texto (ou avisa que enviou imagem)
     if (conversaAtual.mensagens.length === 2) {
-        if (texto) conversaAtual.nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
+        if (textoDigitado) conversaAtual.nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
+        else if (anexoTextoNome) conversaAtual.nome = `Análise: ${anexoTextoNome}`;
         else conversaAtual.nome = "Análise de Imagem";
     }
     
-    window.removerImagem(); // Limpa o anexo visual
+    window.removerAnexo(); // Limpa anexos e esconde o preview
     conversaAtual.processando = true;
     salvarDadosAtuais(pIdx); 
     
@@ -744,7 +833,7 @@ async function enviarMensagem() {
             if (userApiKey) headers['x-google-api-key'] = userApiKey;
         }
 
-        const payload = { texto: texto };
+        const payload = { texto: textoFinal };
         if (imgBase64) {
             payload.imagem_base64 = imgBase64;
             payload.mime_type = imgMime;
@@ -772,7 +861,6 @@ async function enviarMensagem() {
         }
     }
 }
-
 // Fechar popups e menus ao clicar fora
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
