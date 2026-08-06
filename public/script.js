@@ -22,7 +22,8 @@ let idConversaAtiva = null;
 let idProjetoAtivo = null;
 let alvoMenu = { tipo: null, indexProj: null, indexConv: null };
 let statusConversas = {};
-let unsubscribeProjetos = null; // Guarda o ouvinte em tempo real
+let unsubscribeProjetos = null;
+let unsubscribeConvites = null;
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -41,10 +42,11 @@ const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 
 let isCreatingAccount = false; 
 
-// ================= GESTÃO DE AUTH E MIGRAÇÃO V2.0 =================
+// ================= GESTÃO DE AUTH E CONVITES =================
 onAuthStateChanged(auth, async (user) => {
     fecharModalAuth();
     const btnProfile = document.getElementById('btn-profile');
+    const btnNotif = document.getElementById('btn-notificacoes');
 
     if (user) {
         usuarioAtual = user;
@@ -56,45 +58,42 @@ onAuthStateChanged(auth, async (user) => {
         btnProfile.onclick = abrirProfileMenu;
         
         document.getElementById('config-btn-apikey').style.display = 'flex';
+        btnNotif.style.display = 'block';
 
         if (isCreatingAccount) {
-            await migrarProjetosLocaisParaNuvem(userEmail);
             isCreatingAccount = false;
-            mostrarToast("Conta criada! Projetos sincronizados.", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
         }
         
-        // Inicia o ouvinte em TEMPO REAL para projetos compartilhados
         iniciarEscutaProjetosNuvem(userEmail);
-        mostrarToast("Login efetuado! Conectado à nuvem.", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+        iniciarEscutaConvites(userEmail);
+        mostrarToast("Login efetuado com sucesso!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
 
     } else {
-        if (unsubscribeProjetos) unsubscribeProjetos(); // Para de escutar a nuvem
+        if (unsubscribeProjetos) unsubscribeProjetos();
+        if (unsubscribeConvites) unsubscribeConvites();
         usuarioAtual = null;
+        
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
         btnProfile.onclick = () => abrirModalAuth();
         
         document.getElementById('config-btn-apikey').style.display = 'none';
+        btnNotif.style.display = 'none';
 
         carregarProjetosLocais();
         resetarVisualizacaoChat();
     }
 });
 
-// ================= SINCRONIZAÇÃO EM TEMPO REAL =================
+// ================= SINCRONIZAÇÃO EM TEMPO REAL E CONVITES =================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
-    
     unsubscribeProjetos = onSnapshot(q, (snapshot) => {
         window.projetos = [];
         snapshot.forEach((doc) => {
             window.projetos.push({ id: doc.id, ...doc.data() });
         });
-        
         renderizarSidebar();
-        
-        // Mantém a visualização do chat atualizada se o projeto estiver aberto
         if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
-            // Re-valida o index da conversa (pode ter mudado se alguém apagou)
             if(window.projetos[idProjetoAtivo].conversas[idConversaAtiva]){
                 renderizarChat();
             } else {
@@ -104,31 +103,78 @@ function iniciarEscutaProjetosNuvem(email) {
     });
 }
 
+function iniciarEscutaConvites(email) {
+    const q = query(collection(db, "convites"), where("destinatario", "==", email), where("status", "==", "pendente"));
+    unsubscribeConvites = onSnapshot(q, (snapshot) => {
+        const listaConvites = document.getElementById('lista-convites-popup');
+        const badge = document.getElementById('badge-notificacao');
+        listaConvites.innerHTML = '';
+
+        if (snapshot.empty) {
+            listaConvites.innerHTML = `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhum convite pendente.</div>`;
+            badge.style.display = 'none';
+            return;
+        }
+
+        badge.style.display = 'block';
+        snapshot.forEach((docSnap) => {
+            const convite = docSnap.data();
+            const id = docSnap.id;
+            listaConvites.innerHTML += `
+                <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
+                    <div style="color: #e6edf3; margin-bottom: 4px;"><b>${convite.remetente}</b> convidou você para o projeto <b>${convite.projetoNome}</b></div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="responderConvite('${id}', '${convite.projetoId}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
+                        <button onclick="responderConvite('${id}', null, false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+
+window.abrirMenuNotificacoes = function(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('notifications-menu');
+    const btn = document.getElementById('btn-notificacoes').getBoundingClientRect();
+    if (menu.style.display === 'block') {
+        menu.style.display = 'none';
+    } else {
+        document.getElementById('config-menu').style.display = 'none';
+        document.getElementById('profile-menu').style.display = 'none';
+        menu.style.display = 'block';
+        menu.style.left = (btn.left - 200) + 'px';
+        menu.style.top = (btn.top + 30) + 'px';
+    }
+}
+
+window.responderConvite = async function(conviteId, projetoId, aceitar) {
+    try {
+        if (aceitar && projetoId) {
+            const projRef = doc(db, "projetos", projetoId);
+            await updateDoc(projRef, { membros: arrayUnion(usuarioAtual.email) });
+            mostrarToast("Convite aceito! Projeto adicionado.", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+        } else {
+            mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+        }
+        await updateDoc(doc(db, "convites", conviteId), { status: aceitar ? "aceito" : "recusado" });
+        document.getElementById('notifications-menu').style.display = 'none';
+    } catch(e) {
+        console.error(e);
+        mostrarToast("Erro ao responder convite.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+    }
+}
+
 async function sincronizarProjetoNaNuvem(indexProj) {
     if (!usuarioAtual || !window.projetos[indexProj].id) return;
     const proj = window.projetos[indexProj];
     const ref = doc(db, "projetos", proj.id);
-    // Atualiza apenas os dados modificáveis
     await updateDoc(ref, { 
         nome: proj.nome, 
         aberto: proj.aberto, 
-        conversas: proj.conversas 
+        conversas: proj.conversas,
+        presenca: proj.presenca || {} 
     });
-}
-
-async function migrarProjetosLocaisParaNuvem(email) {
-    for (let proj of window.projetos) {
-        // Envia projeto local antigo para a nova coleção do Firebase
-        await addDoc(collection(db, "projetos"), {
-            nome: proj.nome,
-            genero: proj.genero || "",
-            descricao: proj.descricao || "",
-            aberto: false,
-            conversas: proj.conversas,
-            membros: [email] // Torna o criador o dono oficial
-        });
-    }
-    localStorage.removeItem('unity_projetos_locais');
 }
 
 function salvarDadosAtuais(indexProj = null) {
@@ -150,10 +196,10 @@ window.abrirProfileMenu = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('profile-menu');
     const btn = document.getElementById('btn-profile').getBoundingClientRect();
-    
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else {
-        document.getElementById('config-menu').style.display = 'none'; 
+        document.getElementById('config-menu').style.display = 'none';
+        document.getElementById('notifications-menu').style.display = 'none';
         menu.style.display = 'block';
         menu.style.left = (btn.left + 10) + 'px';
         menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
@@ -207,10 +253,10 @@ window.salvarApiKey = () => { userApiKey = document.getElementById('input-api-ke
 
 let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false';
 document.getElementById('toggle-ask-save').checked = configAskToSave;
-window.abrirConfigMenu = function(e) { e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); if (menu.style.display === 'block') menu.style.display = 'none'; else { document.getElementById('profile-menu').style.display = 'none'; menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; } }
+window.abrirConfigMenu = function(e) { e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); if (menu.style.display === 'block') menu.style.display = 'none'; else { document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none'; menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; } }
 window.salvarPreferenciasConfig = function() { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
-// ================= RENDERIZAÇÃO E MENUS =================
+// ================= RENDERIZAÇÃO E PRESENÇA (AVATARES NAS CONVERSAS) =================
 function renderizarSidebar() {
     const container = document.getElementById('lista-projetos');
     container.innerHTML = ''; 
@@ -242,13 +288,26 @@ function renderizarSidebar() {
             const estaProcessando = statusConversas[chave] && statusConversas[chave].ativa;
             const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
             
+            // Rastreia quem está nesta conversa através do objeto de presença do projeto
+            let avataresPresencaHTML = '';
+            if (proj.presenca) {
+                Object.entries(proj.presenca).forEach(([emailUser, cIdx]) => {
+                    if (cIdx === indexConv && (!usuarioAtual || emailUser !== usuarioAtual.email)) {
+                        const avatarUrl = `https://ui-avatars.com/api/?name=${emailUser}&background=21262d&color=c9d1d9&rounded=true`;
+                        avataresPresencaHTML += `<img src="${avatarUrl}" title="${emailUser}" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #F58220; margin-left: 4px; object-fit: cover;">`;
+                    }
+                });
+            }
+
             const convDiv = document.createElement('div');
             convDiv.id = `conv-${indexProj}-${indexConv}`;
             convDiv.className = `conversa-item ${estaAtiva ? 'ativa' : ''} ${estaProcessando ? 'processando' : ''}`;
             
             convDiv.innerHTML = `
-                <span style="display:block; width:calc(100% - 20px); overflow:hidden; text-overflow:ellipsis;">${conv.nome}</span>
-                <span class="status-icon">${SVG_SPINNER}</span>
+                <span style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 40px);">${conv.nome}</span>
+                    <span style="display:flex; align-items:center;">${avataresPresencaHTML} <span class="status-icon" style="position:static; margin-left:6px;">${SVG_SPINNER}</span></span>
+                </span>
             `;
             
             convDiv.onclick = () => selecionarConversa(indexProj, indexConv);
@@ -265,8 +324,6 @@ window.alternarPasta = (indexProj) => { window.projetos[indexProj].aberto = !win
 window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); alvoMenu = { tipo, indexProj, indexConv };
     const menu = document.getElementById('context-menu');
-    
-    // Adiciona o botão de compartilhar se for projeto e estiver logado
     let menuHTML = '';
     if (tipo === 'projeto') {
         if (usuarioAtual && window.projetos[indexProj].id) {
@@ -276,7 +333,6 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     } else {
         menuHTML = `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Conversa</div><div class="context-item" onclick="exportarConversaMD()">${SVG_FILE} Baixar (.md)</div><div class="context-item danger" onclick="deletarConversa()">${SVG_TRASH} Apagar</div>`;
     }
-    
     menu.innerHTML = menuHTML;
     menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
 }
@@ -298,19 +354,17 @@ window.confirmarProjeto = async function() {
 
     if (nome) { 
         if (usuarioAtual) {
-            // Cria direto na nuvem
             await addDoc(collection(db, "projetos"), {
-                nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email]
+                nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {}
             });
             mostrarToast('Projeto salvo na nuvem!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
         } else {
-            // Cria localmente
             window.projetos.push({ nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [] }); 
             salvarDadosAtuais(); 
             renderizarSidebar(); 
             mostrarToast('Projeto criado!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
         }
-        window.fecharModal(); 
+        window.fecharModal(); // Fecha o modal perfeitamente
     }
 }
 
@@ -327,7 +381,7 @@ window.novaConversa = function(indexProj, event) {
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
-// ==== COLABORAÇÃO ====
+// ==== COLABORAÇÃO E CONVITES ====
 window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
@@ -337,14 +391,18 @@ window.confirmarCompartilhamento = async () => {
     const email = document.getElementById('input-email-convite').value.trim();
     if (email && usuarioAtual && alvoMenu.indexProj !== null) {
         const proj = window.projetos[alvoMenu.indexProj];
-        const ref = doc(db, "projetos", proj.id);
-        await updateDoc(ref, { membros: arrayUnion(email) });
+        await addDoc(collection(db, "convites"), {
+            projetoId: proj.id,
+            projetoNome: proj.nome,
+            remetente: usuarioAtual.email,
+            destinatario: email,
+            status: "pendente"
+        });
         document.getElementById('modal-compartilhar').style.display = 'none';
-        mostrarToast('Convite enviado! O colega já tem acesso.', 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
+        mostrarToast('Convite enviado com sucesso!', 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
     }
 }
 
-// (As funções de renomear, deletar e renderizarChat seguem o mesmo fluxo do salvarDadosAtuais(indexProj))
 window.abrirModalRenomear = () => { document.getElementById('context-menu').style.display='none'; const modal = document.getElementById('modal-renomear'); const input = document.getElementById('input-nome-renomear'); const titulo = document.getElementById('titulo-modal-renomear'); if (alvoMenu.tipo === 'projeto') { titulo.innerText = 'Renomear Projeto'; input.value = window.projetos[alvoMenu.indexProj].nome; } else { titulo.innerText = 'Renomear Conversa'; input.value = window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome; } modal.style.display = 'flex'; input.focus(); }
 window.fecharModalRenomear = () => document.getElementById('modal-renomear').style.display = 'none';
 window.confirmarRenomear = function() {
@@ -367,9 +425,9 @@ window.deletarProjeto = async function() {
     if (confirm('Apagar a pasta e todas as conversas permanentemente?')) {
         const pIdx = alvoMenu.indexProj;
         if (usuarioAtual && window.projetos[pIdx].id) {
-            await deleteDoc(doc(db, "projetos", window.projetos[pIdx].id)); // Apaga na nuvem
+            await deleteDoc(doc(db, "projetos", window.projetos[pIdx].id));
         } else {
-            window.projetos.splice(pIdx, 1); // Apaga local
+            window.projetos.splice(pIdx, 1);
             salvarDadosAtuais();
         }
         if (idProjetoAtivo === pIdx) { idProjetoAtivo=null; idConversaAtiva=null; } else if (idProjetoAtivo > pIdx) idProjetoAtivo--;
@@ -377,12 +435,21 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ================= LÓGICA DO CHAT E IA =================
+// ================= LÓGICA DO CHAT E PRESENÇA =================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 function resetarVisualizacaoChat() { idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); document.getElementById('chat-header').innerText = 'ComboBoy Researcher'; document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; }
 
-function selecionarConversa(indexProj, indexConv) {
+async function selecionarConversa(indexProj, indexConv) {
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
+    
+    // Atualiza a presença na nuvem para os colegas verem em qual conversa o usuário está
+    if (usuarioAtual && window.projetos[indexProj].id) {
+        const proj = window.projetos[indexProj];
+        proj.presenca = proj.presenca || {};
+        proj.presenca[usuarioAtual.email] = indexConv;
+        await updateDoc(doc(db, "projetos", proj.id), { presenca: proj.presenca });
+    }
+
     document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
     const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`);
     if (itemAtivo) itemAtivo.classList.add('ativa');
@@ -435,7 +502,7 @@ async function enviarMensagem() {
     window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'aluno', texto: texto });
     if (window.projetos[pIdx].conversas[cIdx].mensagens.length === 2) window.projetos[pIdx].conversas[cIdx].nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
     
-    salvarDadosAtuais(pIdx); // Sincroniza envio do usuário instantaneamente
+    salvarDadosAtuais(pIdx); 
     
     input.value = ''; input.style.height = 'auto';
     const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
@@ -451,39 +518,34 @@ async function enviarMensagem() {
 
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify({ texto: texto }), signal: controller.signal });
         
-        let respostaFinal = "";        
         if (res.status === 429) { 
-            respostaFinal = "Limite da IA atingido. O Gemini está processando muitos pedidos agora. Por favor, tente novamente em alguns instantes.";
-            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} ${respostaFinal}` });
+            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
         } else if (!res.ok) {
             let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro);
         } else {
             const dados = await res.json();
-            if (dados.error && (String(dados.error).includes('429') || String(dados.error).toLowerCase().includes('quota'))) {
-                window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite de Quota atingido. Tente novamente mais tarde.` });
-            } else {
-                window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta });
-            }
+            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta });
         }
     } catch (e) {
         window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado pelo usuário.' : 'Erro de comunicação: ' + e.message}` });
     } finally {
         statusConversas[chave].ativa = false;
-        salvarDadosAtuais(pIdx); // Sincroniza a resposta da IA com os colegas
+        salvarDadosAtuais(pIdx);
         renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); atualizarEstadoBotaoEnvio(); }
     }
 }
 
-// Fechar modais ao clicar fora
+// Fechar popups e menus ao clicar fora
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
+    if (!e.target.closest('#notifications-menu') && !e.target.closest('#btn-notificacoes')) document.getElementById('notifications-menu').style.display = 'none'; 
     if (!e.target.closest('#context-menu') && !e.target.closest('.projeto-header') && !e.target.closest('.conversa-item')) document.getElementById('context-menu').style.display = 'none'; 
 });
-window.ajustarAltura = (elemento) => { elemento.style.height = 'auto'; elemento.style.height = (elemento.scrollHeight) + 'px'; }
-window.lidarComTecla = (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); const btn = document.getElementById('btn-acao'); if (btn.classList.contains('enviar') && !btn.disabled) window.lidarComAcao(); } }
 
-// Highlight e Exports...
+window.ajustarAltura = (e) => { e.style.height = 'auto'; e.style.height = (e.scrollHeight) + 'px'; }
+window.lidarComTecla = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const btn = document.getElementById('btn-acao'); if (btn.classList.contains('enviar') && !btn.disabled) window.lidarComAcao(); } }
+
 marked.setOptions({ highlight: function(code, lang) { return hljs.highlight(code, { language: hljs.getLanguage(lang) ? lang : 'plaintext' }).value; }, langPrefix: 'hljs language-' });
 function formatarBlocosDeCodigo() {
     document.querySelectorAll('.bot pre').forEach(pre => {

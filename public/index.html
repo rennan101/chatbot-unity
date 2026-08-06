@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ComboBoy Researcher</title>
-    <!-- Favicon com a Logo Combogó (SVG) -->
     <link rel="icon" type="image/svg+xml" href="assets/icons/combogo_icon.svg?v=2">    
-    <!-- FONTES CIBERNÉTICAS (Space Grotesk para UI, Fira Code para Código) -->
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="style.css">
@@ -21,7 +19,7 @@
         </button>
         <img src="assets/icons/combogo_icon.svg" alt="Logo Combogó" style="width: 70px; height: 70px; margin-bottom: 15px; border-radius: 12px; object-fit: cover;">
         <h2 style="margin-bottom: 5px; font-size: 1.3rem;">Sincronize seus Projetos</h2>
-        <p style="color: #8b949e; margin-bottom: 20px; font-size: 0.9rem;">Crie uma conta para salvar na nuvem e configurar sua IA.</p>
+        <p style="color: #8b949e; margin-bottom: 20px; font-size: 0.9rem;">Crie uma conta para colaborar em tempo real.</p>
         
         <div id="auth-error-msg" style="color: #ff7b72; font-size: 0.85rem; margin-bottom: 15px; min-height: 15px; font-weight: 500;"></div>
 
@@ -50,9 +48,17 @@
                 <img src="assets/icons/combogo_icon.svg" alt="Logo" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover;">
                 <span style="font-weight: 700; font-size: 1rem; color: #F58220;" class="texto-btn">ComboBoy</span>
             </div>
-            <button id="btn-toggle-sidebar" onclick="alternarSidebar()" title="Recolher/Expandir menu">
-                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
+            
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <!-- BOTÃO SINO DE NOTIFICAÇÕES -->
+                <button id="btn-notificacoes" onclick="abrirMenuNotificacoes(event)" title="Convites pendentes" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; border-radius: 6px; position: relative; display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span id="badge-notificacao" style="position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background: #F58220; border-radius: 50%; display: none;"></span>
+                </button>
+                <button id="btn-toggle-sidebar" onclick="alternarSidebar()" title="Recolher/Expandir menu">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+            </div>
         </div>
 
         <div class="sidebar-header">
@@ -69,9 +75,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span class="texto-btn">Configurações</span>
             </button>
-            <button id="btn-profile" class="btn-config">
-                <!-- O Ícone/Foto muda via JS dependendo se está logado -->
-            </button>
+            <button id="btn-profile" class="btn-config"></button>
         </div>
     </aside>
 
@@ -90,8 +94,6 @@
     </main>
     
     <div id="context-menu"></div>
-
-    <!-- Submenu Profile (Sair) -->
     <div id="profile-menu">
         <div class="context-item danger" onclick="confirmarLogout()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -99,7 +101,14 @@
         </div>
     </div>
 
-    <!-- Submenu Config -->
+    <!-- MENU DE NOTIFICAÇÕES (CONVITES) -->
+    <div id="notifications-menu" style="position: absolute; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 12px; display: none; z-index: 1000; width: 280px;">
+        <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; color: #F58220; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">Convites de Projeto</div>
+        <div id="lista-convites-popup" style="max-height: 200px; overflow-y: auto;">
+            <div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhum convite pendente.</div>
+        </div>
+    </div>
+
     <div id="config-menu">
         <div class="config-item">
             <span>Perguntar onde salvar arquivos</span>
@@ -114,20 +123,16 @@
         </div>
     </div>
     
-    <!-- MODAL CRIAÇÃO DE PROJETO ATUALIZADO -->
+    <!-- MODAL NOVO PROJETO -->
     <div class="modal-overlay" id="modal-projeto">
         <div class="modal-content" style="width: 400px;">
             <h3>Novo Projeto Unity</h3>
-            
             <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div>
-            <input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" onkeypress="if(event.key === 'Enter') document.getElementById('input-genero-projeto').focus()" style="margin-bottom: 15px;">
-            
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo (A IA te guiará melhor):</div>
-            <input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS, Puzzle..." onkeypress="if(event.key === 'Enter') document.getElementById('input-desc-projeto').focus()" style="margin-bottom: 15px;">
-            
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição / Ideia (Opcional):</div>
-            <textarea id="input-desc-projeto" placeholder="Breve descrição da sua ideia principal..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; transition: border-color 0.2s; resize: none;"></textarea>
-            
+            <input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;">
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div>
+            <input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;">
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div>
+            <textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea>
             <div class="modal-acoes">
                 <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
                 <button class="btn-confirmar" onclick="confirmarProjeto()">Criar Projeto</button>
@@ -135,29 +140,23 @@
         </div>
     </div>
 
-    <!-- MODAL RENOMEAR -->
-    <div class="modal-overlay" id="modal-renomear"><div class="modal-content"><h3 id="titulo-modal-renomear">Renomear</h3><input type="text" id="input-nome-renomear" onkeypress="if(event.key === 'Enter') confirmarRenomear()"><div class="modal-acoes"><button class="btn-cancelar" onclick="fecharModalRenomear()">Cancelar</button><button class="btn-confirmar" onclick="confirmarRenomear()">Salvar</button></div></div></div>
-    
-    <!-- MODAL COMPARTILHAR PROJETO -->
+    <!-- MODAL COMPARTILHAR -->
     <div class="modal-overlay" id="modal-compartilhar">
         <div class="modal-content">
             <button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <h3 style="display:flex; align-items:center; gap:10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                Convidar Membro
-            </h3>
-            <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
-                Digite o e-mail do seu colega. Ele terá acesso em tempo real a este projeto e a todas as conversas com a IA.
-            </p>
-            <input type="email" id="input-email-convite" placeholder="amigo@email.com" onkeypress="if(event.key === 'Enter') confirmarCompartilhamento()" style="width: 100%;">
+            <h3 style="display:flex; align-items:center; gap:10px;">Convidar Membro</h3>
+            <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">Digite o e-mail para enviar um convite de colaboração.</p>
+            <input type="email" id="input-email-convite" placeholder="amigo@email.com" style="width: 100%;">
             <div class="modal-acoes">
                 <button class="btn-cancelar" onclick="document.getElementById('modal-compartilhar').style.display='none'">Cancelar</button>
                 <button class="btn-confirmar" onclick="confirmarCompartilhamento()">Enviar Convite</button>
             </div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="modal-renomear"><div class="modal-content"><h3 id="titulo-modal-renomear">Renomear</h3><input type="text" id="input-nome-renomear"><div class="modal-acoes"><button class="btn-cancelar" onclick="fecharModalRenomear()">Cancelar</button><button class="btn-confirmar" onclick="confirmarRenomear()">Salvar</button></div></div></div>
     
     <!-- MODAL API KEY -->
     <div class="modal-overlay" id="modal-apikey">
@@ -165,18 +164,7 @@
             <button onclick="document.getElementById('modal-apikey').style.display='none'" class="btn-fechar-modal">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <h3 style="display:flex; align-items:center; gap:10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                Google API Key (Opcional)
-            </h3>
-            <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
-                Por padrão você utiliza o servidor global do <b>ComboBoy</b>, mas caso queira ter <b>respostas mais rápidas</b>, <b>evitar a fila</b> e ter limites exclusivos, conecte sua própria chave (Totalmente gratuito).
-            </p>
-            <ol style="color: #8b949e; font-size: 0.85rem; padding-left: 20px; margin-bottom: 25px; line-height: 1.6;">
-                <li>Acesse o <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Google AI Studio</a>.</li>
-                <li>Clique no botão azul "Create API key".</li>
-                <li>Copie o código gerado e cole no campo abaixo:</li>
-            </ol>
+            <h3 style="display:flex; align-items:center; gap:10px;">Google API Key (Opcional)</h3>
             <input type="password" id="input-api-key" placeholder="AIzaSy..." style="width: 100%; font-family: 'Fira Code', monospace; letter-spacing: 2px;">
             <div class="modal-acoes">
                 <button class="btn-cancelar" onclick="document.getElementById('modal-apikey').style.display='none'">Cancelar</button>
