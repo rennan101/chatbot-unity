@@ -4,7 +4,7 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
 
 // ================= 1. COLE SEU FIREBASE CONFIG AQUI =================
 const firebaseConfig = {
-  apiKey: "AIzaSyB9PBfyHyFygm8_GLrjIfuRJDcMG9eKMw8",
+  apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
   projectId: "comboboy-researcher",
   storageBucket: "comboboy-researcher.firebasestorage.app",
