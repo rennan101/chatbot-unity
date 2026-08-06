@@ -27,7 +27,7 @@ let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
 const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
 const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
@@ -39,7 +39,7 @@ const SVG_WARN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
 const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
 const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>`;
 
 let isCreatingAccount = false; 
 
@@ -47,6 +47,17 @@ function formatarNomeUsuario(emailOrName) {
     if (!emailOrName) return 'Visitante';
     const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
     return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+// FORMATADOR DE TEMPO DISCRETO
+function formatarDataHora(timestamp) {
+    if (!timestamp) return "";
+    const data = new Date(timestamp);
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const hora = String(data.getHours()).padStart(2, '0');
+    const min = String(data.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes} às ${hora}:${min}`;
 }
 
 // ================= GESTÃO DE AUTH E CONVITES =================
@@ -106,49 +117,49 @@ function iniciarEscutaProjetosNuvem(email) {
     });
 }
 
-function atualizarBadgeGeral(temConvites, temNotifs) {
-    const badge = document.getElementById('badge-notificacao');
-    if (temConvites || temNotifs) {
-        badge.style.display = 'block';
-    } else {
-        badge.style.display = 'none';
-    }
-}
-
+// ================= SISTEMA UNIFICADO DE NOTIFICAÇÕES (UI OTIMISTA) =================
 let cacheConvites = [];
 let cacheNotifs = [];
+
+function atualizarBadgeGeral(temItens) {
+    const badge = document.getElementById('badge-notificacao');
+    badge.style.display = temItens ? 'block' : 'none';
+}
 
 function atualizarPainelNotificacoesUnificado() {
     const listaNotif = document.getElementById('lista-notificacoes-popup');
     listaNotif.innerHTML = '';
 
     const totalItens = cacheConvites.length + cacheNotifs.length;
-    atualizarBadgeGeral(cacheConvites.length > 0, cacheNotifs.length > 0);
+    atualizarBadgeGeral(totalItens > 0);
 
     if (totalItens === 0) {
         listaNotif.innerHTML = `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma notificação.</div>`;
         return;
     }
 
-    // Renderiza Convites Pendentes
-    cacheConvites.forEach((convite) => {
+    // Ordena as listas pelos timestamps (mais novo pro mais antigo)
+    cacheConvites.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach((convite) => {
         listaNotif.innerHTML += `
-            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
+            <div id="convite-${convite.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; border: 1px solid rgba(245, 130, 32, 0.2);">
                 <div style="color: #e6edf3; margin-bottom: 6px;"><b>${formatarNomeUsuario(convite.remetente)}</b> convidou você para <b>${convite.projetoNome}</b></div>
                 <div style="display: flex; gap: 6px;">
                     <button onclick="responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
                     <button onclick="responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
                 </div>
+                <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 6px;">${formatarDataHora(convite.timestamp)}</div>
             </div>
         `;
     });
 
-    // Renderiza Notificações Gerais (Aceito/Recusado)
-    cacheNotifs.forEach((notif) => {
+    cacheNotifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach((notif) => {
         listaNotif.innerHTML += `
-            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
-                <button onclick="apagarNotificacao('${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold;" title="Apagar notificação">✕</button>
+            <div id="notif-${notif.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+                    <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
+                    <button onclick="apagarNotificacao('${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;" title="Apagar notificação">✕</button>
+                </div>
+                <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 4px;">${formatarDataHora(notif.timestamp)}</div>
             </div>
         `;
     });
@@ -158,9 +169,7 @@ function iniciarEscutaConvites(email) {
     const q = query(collection(db, "convites"), where("destinatario", "==", email), where("status", "==", "pendente"));
     unsubscribeConvites = onSnapshot(q, (snapshot) => {
         cacheConvites = [];
-        snapshot.forEach((docSnap) => {
-            cacheConvites.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        snapshot.forEach((docSnap) => { cacheConvites.push({ id: docSnap.id, ...docSnap.data() }); });
         atualizarPainelNotificacoesUnificado();
     });
 }
@@ -169,9 +178,7 @@ function iniciarEscutaNotificacoes(email) {
     const q = query(collection(db, "notificacoes"), where("destinatario", "==", email));
     unsubscribeNotificacoes = onSnapshot(q, (snapshot) => {
         cacheNotifs = [];
-        snapshot.forEach((docSnap) => {
-            cacheNotifs.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        snapshot.forEach((docSnap) => { cacheNotifs.push({ id: docSnap.id, ...docSnap.data() }); });
         atualizarPainelNotificacoesUnificado();
     });
 }
@@ -190,6 +197,10 @@ window.abrirMenuNotificacoes = function(event) {
 }
 
 window.responderConvite = async function(conviteId, projetoId, remetente, projetoNome, aceitar) {
+    // UI OTIMISTA: Apaga o bloco da tela instantaneamente para o usuário não sentir lag
+    const box = document.getElementById(`convite-${conviteId}`);
+    if(box) box.style.display = 'none';
+
     try {
         if (aceitar && projetoId) {
             const projRef = doc(db, "projetos", projetoId);
@@ -199,29 +210,35 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
             mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
         }
 
-        // APAGA O CONVITE PARA SEMPRE DA BASE DE DADOS
+        // Deleta o convite definitivamente do banco
         await deleteDoc(doc(db, "convites", conviteId));
 
-        // Envia notificação de feedback para o dono (remetente)
+        // Envia notificação feedback
         const meuNome = formatarNomeUsuario(usuarioAtual.email);
         const statusMsg = aceitar ? "aceitou" : "recusou";
         await addDoc(collection(db, "notificacoes"), {
             destinatario: remetente,
-            mensagem: `<b>${meuNome}</b> ${statusMsg} seu convite para <b>${projetoNome}</b>.`
+            mensagem: `<b>${meuNome}</b> ${statusMsg} seu convite para <b>${projetoNome}</b>.`,
+            timestamp: Date.now()
         });
 
-        document.getElementById('notifications-menu').style.display = 'none';
     } catch(e) {
         console.error(e);
+        if(box) box.style.display = 'block'; // Volta o bloco se deu erro de rede
         mostrarToast("Erro ao responder convite.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
     }
 }
 
 window.apagarNotificacao = async function(notifId) {
+    // UI OTIMISTA: Remove da tela primeiro
+    const box = document.getElementById(`notif-${notifId}`);
+    if(box) box.style.display = 'none';
+    
     try {
         await deleteDoc(doc(db, "notificacoes", notifId));
     } catch(e) {
         console.error(e);
+        if(box) box.style.display = 'block'; // Volta se deu erro
     }
 }
 
@@ -462,7 +479,7 @@ window.novaConversa = function(indexProj, event) {
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
-// ==== COLABORAÇÃO, CONVITES E GESTÃO DE USUÁRIOS ====
+// ==== COLABORAÇÃO E GESTÃO DE USUÁRIOS ====
 window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
@@ -507,7 +524,8 @@ window.confirmarCompartilhamento = async () => {
             projetoNome: proj.nome,
             remetente: usuarioAtual.email,
             destinatario: email,
-            status: "pendente"
+            status: "pendente",
+            timestamp: Date.now()
         });
         document.getElementById('input-email-convite').value = '';
         abrirModalCompartilhar(); 
