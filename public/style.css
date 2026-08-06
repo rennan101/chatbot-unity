@@ -123,10 +123,13 @@ body {
 #profile-menu { min-width: 160px; }
 #notifications-menu { width: 300px; padding: 12px; right: 20px; }
 
+/* CORREÇÃO DO HOVER PARA O TEXTO FICAR BRANCO */
 .context-item { padding: 10px 15px; color: #c9d1d9; cursor: pointer; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: background 0.2s;}
-.context-item:hover { background: #F58220; color: white; }
+.context-item:hover { background: #F58220; color: #ffffff !important; }
+.context-item:hover svg { stroke: #ffffff !important; }
 .context-item.danger { color: #ff7b72; }
-.context-item.danger:hover { background: #da3633; color: white; }
+.context-item.danger:hover { background: #da3633; color: #ffffff !important; }
+.context-item.danger:hover svg { stroke: #ffffff !important; }
 
 #config-menu { padding: 15px; width: 260px; }
 .config-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #c9d1d9; gap: 15px; line-height: 1.4; }
