@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Unity AI</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #1e1e1e; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #2d2d30; padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #3e3e42; }
+        #chat { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .balao { max-width: 80%; padding: 12px 18px; border-radius: 8px; line-height: 1.5; }
+        .aluno { align-self: flex-end; background: #007acc; }
+        .bot { align-self: flex-start; background: #333333; border: 1px solid #444; }
+        pre, code { background: #000; padding: 5px; border-radius: 4px; font-family: monospace; }
+        pre { padding: 12px; overflow-x: auto; }
+        #input-container { display: flex; padding: 15px; background: #252526; }
+        input { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid #444; background: #1e1e1e; color: white; outline: none; }
+        button { margin-left: 10px; padding: 0 20px; background: #007acc; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #005f9e; }
+    </style>
+</head>
+<body>
+    <header>🤖 Professor Unity AI</header>
+    <div id="chat">
+        <div class="balao bot">Olá! Sou seu professor de Unity. Como posso te ajudar com a ferramenta hoje?</div>
+    </div>
+    <div id="input-container">
+        <input type="text" id="mensagem" placeholder="Faça uma pergunta sobre Unity..." onkeypress="if(event.key === 'Enter') enviar()">
+        <button onclick="enviar()">Enviar</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        async function enviar() {
+            const input = document.getElementById('mensagem');
+            const chat = document.getElementById('chat');
+            const texto = input.value.trim();
+            if(!texto) return;
+
+            // Adiciona mensagem do aluno
+            chat.innerHTML += `<div class="balao aluno">${texto}</div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            // Adiciona mensagem de carregamento
+            const botMsgId = 'bot-' + Date.now();
+            chat.innerHTML += `<div id="${botMsgId}" class="balao bot">Pensando...</div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                // Chama a nossa API (o arquivo index.py)
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ texto: texto })
+                });
+                const dados = await res.json();
+                
+                // Transforma o Markdown da resposta em HTML e exibe
+                document.getElementById(botMsgId).innerHTML = marked.parse(dados.resposta);
+            } catch (e) {
+                document.getElementById(botMsgId).innerHTML = "Erro ao conectar com o servidor.";
+            }
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
