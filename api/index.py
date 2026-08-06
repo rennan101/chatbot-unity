@@ -60,7 +60,7 @@ def verificar_token(authorization: str = Header(None)):
 @app.post("/api/chat")
 def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
     resposta = client_gemini.models.generate_content(
-        model="gemini-2.5-flash", 
+        model="gemini-3.5-flash", 
         contents=msg.texto,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION
