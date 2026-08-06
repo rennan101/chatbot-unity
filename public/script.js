@@ -547,26 +547,30 @@ async function enviarMensagem() {
     const controller = new AbortController();
     statusConversas[chave] = { ativa: true, controller: controller };
     
-    renderizarSidebar();
+  renderizarSidebar();
     if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
         renderizarChat();
         atualizarEstadoBotaoEnvio();
     }
 
-try {
-        // Substitua '/api/chat' pelo link completo do Render
+    try {
+        // GARANTE UM TOKEN NOVO E VÁLIDO ANTES DE ENVIAR A MENSAGEM
+        const usuarioAtivo = auth.currentUser;
+        if (!usuarioAtivo) throw new Error("Usuário não autenticado");
+        const tokenFresco = await usuarioAtivo.getIdToken(true); 
+
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { 
             method: 'POST', 
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokenAtual}`
+                'Authorization': `Bearer ${tokenFresco}`
             }, 
             body: JSON.stringify({ texto: texto }),
             signal: controller.signal 
         });
         
         let respostaFinal = "";
-        
+                
         if (res.status === 429) { 
             respostaFinal = "Limite da IA atingido. O Gemini está processando muitos pedidos agora. Por favor, tente novamente em alguns instantes.";
             conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} ${respostaFinal}` });

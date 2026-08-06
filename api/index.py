@@ -1,6 +1,6 @@
 import os
 from fastapi import FastAPI, Depends, HTTPException, Header
-from fastapi.middleware.cors import CORSMiddleware # ADICIONE ESTA LINHA
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
@@ -12,11 +12,11 @@ if not firebase_admin._apps:
 
 app = FastAPI()
 
-# ADICIONE ESTE BLOCO PARA LIBERAR O CORS
+# CORREÇÃO DE CORS: allow_credentials deve ser False quando origins é "*"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permite que qualquer frontend se conecte (você pode colocar a URL do Vercel aqui depois)
-    allow_credentials=True,
+    allow_origins=["*"], 
+    allow_credentials=False, 
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,15 +33,20 @@ Regras OBRIGATÓRIAS:
 class Mensagem(BaseModel):
     texto: str
 
+# SISTEMA DE VALIDAÇÃO COM LOG DE ERROS
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
+        print("🚨 ERRO DE AUTH: Header de autorização ausente ou incorreto enviado pelo navegador.")
         raise HTTPException(status_code=401, detail="Faltando Token de Autenticação")
+    
     token = authorization.split("Bearer ")[1]
+    
     try:
         decoded_token = auth.verify_id_token(token)
         return decoded_token
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Token Inválido ou Expirado")
+        print(f"🔥 ERRO DO FIREBASE AO VALIDAR TOKEN: {str(e)}") # Isso aparecerá nos logs do Render
+        raise HTTPException(status_code=401, detail=f"Token Inválido ou Expirado: {str(e)}")
 
 @app.post("/api/chat")
 def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
