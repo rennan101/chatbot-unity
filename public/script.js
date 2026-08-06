@@ -3,7 +3,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, si
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB9PBfyHyFygm8_GLrjIfuRJDcMG9eKMw8",
+  apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
   projectId: "comboboy-researcher",
   storageBucket: "comboboy-researcher.firebasestorage.app",
