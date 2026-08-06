@@ -187,7 +187,6 @@ window.salvarApiKey = () => {
 
 // ================= UTILITÁRIOS E UI =================
 
-
 let configAskToSave = true;
 if (localStorage.getItem('unity_config_ask_save') !== null) {
     configAskToSave = localStorage.getItem('unity_config_ask_save') === 'true';
@@ -241,7 +240,7 @@ function formatarBlocosDeCodigo() {
             }
         }
 
-        // --- NOVO: FORÇA A PINTURA DO CÓDIGO COM HIGHLIGHT.JS ---
+        // --- FORÇA A PINTURA DO CÓDIGO COM HIGHLIGHT.JS ---
         if (codeElement && !codeElement.dataset.highlighted) {
             hljs.highlightElement(codeElement);
         }
