@@ -1,4 +1,5 @@
 import os
+import json
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,12 +8,22 @@ from google.genai import types
 import firebase_admin
 from firebase_admin import credentials, auth
 
+# INICIALIZAÇÃO BLINDADA DO FIREBASE
 if not firebase_admin._apps:
-    firebase_admin.initialize_app(options={'projectId': 'comboboy-researcher'})
+    # Tenta puxar a chave mestra (JSON) das variáveis de ambiente do Render
+    firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
+    
+    if firebase_creds_json:
+        # Converte o texto JSON de volta para um dicionário e autentica
+        cred_dict = json.loads(firebase_creds_json)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+    else:
+        # Plano B caso a variável não seja encontrada
+        firebase_admin.initialize_app(options={'projectId': 'comboboy-researcher'})
 
 app = FastAPI()
 
-# CORREÇÃO DE CORS: allow_credentials deve ser False quando origins é "*"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -33,10 +44,8 @@ Regras OBRIGATÓRIAS:
 class Mensagem(BaseModel):
     texto: str
 
-# SISTEMA DE VALIDAÇÃO COM LOG DE ERROS
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
-        print("🚨 ERRO DE AUTH: Header de autorização ausente ou incorreto enviado pelo navegador.")
         raise HTTPException(status_code=401, detail="Faltando Token de Autenticação")
     
     token = authorization.split("Bearer ")[1]
@@ -45,7 +54,7 @@ def verificar_token(authorization: str = Header(None)):
         decoded_token = auth.verify_id_token(token)
         return decoded_token
     except Exception as e:
-        print(f"🔥 ERRO DO FIREBASE AO VALIDAR TOKEN: {str(e)}") # Isso aparecerá nos logs do Render
+        print(f"🔥 ERRO DO FIREBASE AO VALIDAR TOKEN: {str(e)}") 
         raise HTTPException(status_code=401, detail=f"Token Inválido ou Expirado: {str(e)}")
 
 @app.post("/api/chat")
