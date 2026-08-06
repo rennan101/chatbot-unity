@@ -9,7 +9,6 @@ from google.genai.errors import APIError
 import firebase_admin
 from firebase_admin import credentials, auth
 
-# INICIALIZAÇÃO BLINDADA DO FIREBASE
 if not firebase_admin._apps:
     firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
     if firebase_creds_json:
@@ -29,12 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ======== CONFIGURAÇÕES DA API E MODELO ========
+# Chave Global (Para Visitantes) e Modelo Padrão
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-# Puxa o modelo da variável de ambiente no Render. Se não existir, usa o 3.5-flash como padrão.
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash") 
-
-client_gemini = genai.Client(api_key=GOOGLE_API_KEY)
 
 SYSTEM_INSTRUCTION = """Você é o ComboBoy Researcher, um professor sênior especialista em Unity Engine, C# e arquitetura de jogos.
 Regras OBRIGATÓRIAS:
@@ -46,23 +42,34 @@ class Mensagem(BaseModel):
     texto: str
 
 def verificar_token(authorization: str = Header(None)):
+    # Se não houver token, retorna None (Usuário Visitante)
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Faltando Token de Autenticação")
+        return None
     
     token = authorization.split("Bearer ")[1]
-    
     try:
         decoded_token = auth.verify_id_token(token)
         return decoded_token
     except Exception as e:
         print(f"🔥 ERRO DO FIREBASE AO VALIDAR TOKEN: {str(e)}") 
-        raise HTTPException(status_code=401, detail=f"Token Inválido ou Expirado: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Token Inválido ou Expirado")
 
 @app.post("/api/chat")
-def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
+def chat(
+    msg: Mensagem, 
+    usuario_logado: dict = Depends(verificar_token),
+    x_google_api_key: str = Header(None)
+):
+    # Lógica de prioridade: Chave do Usuário > Chave Global do Servidor
+    chave_final = x_google_api_key if x_google_api_key else GOOGLE_API_KEY
+    
+    if not chave_final:
+        raise HTTPException(status_code=400, detail="Serviço indisponível. Nenhuma API Key configurada.")
+
     try:
-        resposta = client_gemini.models.generate_content(
-            model=GEMINI_MODEL, # Agora o modelo é injetado dinamicamente aqui
+        client = genai.Client(api_key=chave_final)
+        resposta = client.models.generate_content(
+            model=GEMINI_MODEL, 
             contents=msg.texto,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION
@@ -72,11 +79,12 @@ def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
         
     except APIError as e:
         if e.code == 503:
-            mensagem_erro = "⚠️ **Aviso:** Os servidores da IA estão sobrecarregados no momento. Por favor, aguarde uns instantes e tente novamente."
-            return {"resposta": mensagem_erro}
+            return {"resposta": "⚠️ **Aviso:** Os servidores da IA estão sobrecarregados no momento. Por favor, aguarde uns instantes e tente novamente."}
         elif e.code == 429:
-            mensagem_erro = "⚠️ **Aviso:** O limite de cota da chave da API foi atingido. Tente novamente mais tarde."
-            return {"resposta": mensagem_erro}
+            dono = "da **sua chave** " if x_google_api_key else ""
+            return {"resposta": f"⚠️ **Aviso:** O limite de cota {dono}da API foi atingido. Tente novamente mais tarde."}
+        elif e.code == 400 and "API key not valid" in str(e).lower():
+            return {"resposta": "⚠️ **Aviso:** A sua Google API Key é inválida. Verifique nas Configurações."}
         else:
             return {"resposta": f"⚠️ **Erro na IA:** Ocorreu um problema inesperado de comunicação ({e.code})."}
             

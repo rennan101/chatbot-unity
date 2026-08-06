@@ -17,7 +17,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
-let tokenAtual = null; 
 window.projetos = [];  
 let idConversaAtiva = null; 
 let idProjetoAtivo = null;
@@ -38,61 +37,120 @@ const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" s
 const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
 const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 
-const loginOverlay = document.getElementById('login-overlay');
-const appInterface = document.getElementById('app-interface');
+let isCreatingAccount = false; 
 
+// ================= GESTÃO DE AUTH E MIGRAÇÃO =================
 onAuthStateChanged(auth, async (user) => {
+    fecharModalAuth();
+    
     if (user) {
         usuarioAtual = user;
-        tokenAtual = await user.getIdToken(); 
-        loginOverlay.style.display = 'none';
-        appInterface.style.display = 'flex';
-        idConversaAtiva = null;
-        idProjetoAtivo = null;
-        window.projetos = [];
-        resetarVisualizacaoChat();
-        await carregarProjetosDoFirebase();
+        const btnProfile = document.getElementById('btn-profile');
+        btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff7b72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span class="texto-btn" style="color: #ff7b72;">Sair (Logado)</span>`;
+        btnProfile.onclick = () => signOut(auth);
+        
+        document.getElementById('config-btn-apikey').style.display = 'flex';
+
+        if (isCreatingAccount) {
+            // Conta nova: Salva os projetos locais atuais direto no Firebase do novo usuário
+            await salvarLocalmente();
+            isCreatingAccount = false;
+            mostrarToast("Conta criada! Projetos migrados para nuvem.", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+        } else {
+            // Login existente: Carrega o Firebase e substitui a visualização local
+            await carregarProjetosDoFirebase();
+            resetarVisualizacaoChat();
+            mostrarToast("Login efetuado com sucesso!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+        }
     } else {
+        // Usuário Anônimo / Deslogado
         usuarioAtual = null;
-        tokenAtual = null;
-        window.projetos = [];
-        idConversaAtiva = null;
-        idProjetoAtivo = null;
-        loginOverlay.style.display = 'flex';
-        appInterface.style.display = 'none';
+        const btnProfile = document.getElementById('btn-profile');
+        btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
+        btnProfile.onclick = () => abrirModalAuth();
+        
+        document.getElementById('config-btn-apikey').style.display = 'none';
+
+        carregarProjetosLocais();
         resetarVisualizacaoChat();
     }
 });
 
-document.getElementById('btn-login-email').onclick = () => {
+// Mensagens de erro amigáveis do Firebase
+function tratarErroAuth(erroCode) {
+    switch(erroCode) {
+        case 'auth/email-already-in-use': return 'Este e-mail já está cadastrado.';
+        case 'auth/invalid-email': return 'Digite um e-mail com formato válido.';
+        case 'auth/weak-password': return 'A senha é fraca. Use pelo menos 6 caracteres.';
+        case 'auth/user-not-found': return 'Usuário não encontrado. Verifique o e-mail.';
+        case 'auth/wrong-password': return 'Senha incorreta.';
+        case 'auth/invalid-credential': return 'E-mail ou senha incorretos.';
+        default: return 'Ocorreu um erro. Verifique seus dados e tente novamente.';
+    }
+}
+
+window.abrirModalAuth = () => {
+    document.getElementById('auth-error-msg').innerText = '';
+    document.getElementById('modal-auth').style.display = 'flex';
+}
+window.fecharModalAuth = () => document.getElementById('modal-auth').style.display = 'none';
+
+document.getElementById('btn-login-email').onclick = async () => {
     const email = document.getElementById('email-input').value;
     const senha = document.getElementById('senha-input').value;
-    signInWithEmailAndPassword(auth, email, senha).catch(e => alert("Erro ao logar: " + e.message));
-};
-
-document.getElementById('btn-cadastro-email').onclick = () => {
-    const email = document.getElementById('email-input').value;
-    const senha = document.getElementById('senha-input').value;
-    createUserWithEmailAndPassword(auth, email, senha).catch(e => alert("Erro ao criar: " + e.message));
-};
-
-document.getElementById('btn-login-google').onclick = () => {
-    signInWithPopup(auth, new GoogleAuthProvider()).catch(e => alert("Erro Google: " + e.message));
-};
-
-document.getElementById('btn-logout').onclick = () => signOut(auth);
-
-async function salvarLocalmente() {
-    if (!usuarioAtual) return;
+    const errorMsg = document.getElementById('auth-error-msg');
+    
+    if(!email || !senha) { errorMsg.innerText = "Preencha e-mail e senha."; return; }
+    
+    errorMsg.innerText = "Conectando...";
+    errorMsg.style.color = "#c9d1d9";
     try {
-        await setDoc(doc(db, "usuarios", usuarioAtual.uid), { projetos: window.projetos });
-    } catch (e) {
-        console.error("Erro ao salvar na nuvem", e);
+        await signInWithEmailAndPassword(auth, email, senha);
+    } catch(e) {
+        errorMsg.style.color = "#ff7b72";
+        errorMsg.innerText = tratarErroAuth(e.code);
+    }
+};
+
+document.getElementById('btn-cadastro-email').onclick = async () => {
+    const email = document.getElementById('email-input').value;
+    const senha = document.getElementById('senha-input').value;
+    const errorMsg = document.getElementById('auth-error-msg');
+    
+    if(!email || senha.length < 6) { 
+        errorMsg.style.color = "#ff7b72";
+        errorMsg.innerText = "Digite um e-mail válido e senha (mínimo 6 caracteres)."; 
+        return; 
+    }
+    
+    errorMsg.innerText = "Criando conta...";
+    errorMsg.style.color = "#c9d1d9";
+    try {
+        isCreatingAccount = true;
+        await createUserWithEmailAndPassword(auth, email, senha);
+    } catch(e) {
+        isCreatingAccount = false;
+        errorMsg.style.color = "#ff7b72";
+        errorMsg.innerText = tratarErroAuth(e.code);
+    }
+};
+
+document.getElementById('btn-login-google').onclick = async () => {
+    try { await signInWithPopup(auth, new GoogleAuthProvider()); } 
+    catch(e) { document.getElementById('auth-error-msg').innerText = tratarErroAuth(e.code); }
+};
+
+// ================= GESTÃO DE ARMAZENAMENTO =================
+async function salvarLocalmente() {
+    if (usuarioAtual) {
+        try { await setDoc(doc(db, "usuarios", usuarioAtual.uid), { projetos: window.projetos }); } 
+        catch (e) { console.error("Erro ao salvar na nuvem", e); }
+    } else {
+        localStorage.setItem('unity_projetos_locais', JSON.stringify(window.projetos));
     }
 }
 
 async function carregarProjetosDoFirebase() {
-    if (!usuarioAtual) return;
     try {
         const docSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
         if (docSnap.exists() && docSnap.data().projetos) {
@@ -101,11 +159,33 @@ async function carregarProjetosDoFirebase() {
             window.projetos = [];
         }
         renderizarSidebar(); 
-    } catch (e) {
-        console.error("Erro ao puxar dados", e);
-    }
+    } catch (e) { console.error("Erro ao puxar dados", e); }
 }
 
+function carregarProjetosLocais() {
+    const salvo = localStorage.getItem('unity_projetos_locais');
+    if (salvo) { window.projetos = JSON.parse(salvo); } 
+    else { window.projetos = []; }
+    renderizarSidebar();
+}
+
+// ================= GESTÃO DA API KEY CUSTOMIZADA =================
+let userApiKey = localStorage.getItem('unity_google_api_key') || '';
+document.getElementById('input-api-key').value = userApiKey;
+
+window.abrirModalApiKey = () => {
+    document.getElementById('config-menu').style.display = 'none';
+    document.getElementById('modal-apikey').style.display = 'flex';
+}
+window.salvarApiKey = () => {
+    const input = document.getElementById('input-api-key').value.trim();
+    userApiKey = input;
+    localStorage.setItem('unity_google_api_key', userApiKey);
+    document.getElementById('modal-apikey').style.display = 'none';
+    mostrarToast('Chave API salva no navegador!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS);
+}
+
+// ================= UTILITÁRIOS E UI =================
 marked.setOptions({
     highlight: function(code, lang) {
         const language = hljs.getLanguage(lang) ? lang : 'plaintext';
@@ -136,9 +216,8 @@ window.abrirConfigMenu = function(event) {
     const menu = document.getElementById('config-menu');
     const btn = document.getElementById('btn-config').getBoundingClientRect();
     
-    if (menu.style.display === 'block') {
-        menu.style.display = 'none';
-    } else {
+    if (menu.style.display === 'block') { menu.style.display = 'none'; } 
+    else {
         menu.style.display = 'block';
         menu.style.left = (btn.left + 10) + 'px';
         menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
@@ -239,9 +318,11 @@ async function baixarCodigo(texto, linguagem) {
     mostrarToast(`Download iniciado!`, 'rgba(245, 130, 32, 0.9)', SVG_DOWNLOAD);
 }
 
-document.addEventListener('click', () => { 
+document.addEventListener('click', (e) => { 
+    if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) {
+        document.getElementById('config-menu').style.display = 'none'; 
+    }
     document.getElementById('context-menu').style.display = 'none'; 
-    document.getElementById('config-menu').style.display = 'none'; 
 });
 
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
@@ -507,11 +588,8 @@ window.lidarComAcao = function() {
     const chave = getChaveConversa(idProjetoAtivo, idConversaAtiva);
     const estaProcessando = statusConversas[chave] && statusConversas[chave].ativa;
 
-    if (estaProcessando) {
-        cancelarRequisicao(chave);
-    } else {
-        enviarMensagem();
-    }
+    if (estaProcessando) { cancelarRequisicao(chave); } 
+    else { enviarMensagem(); }
 }
 
 function cancelarRequisicao(chave) {
@@ -547,35 +625,40 @@ async function enviarMensagem() {
     const controller = new AbortController();
     statusConversas[chave] = { ativa: true, controller: controller };
     
-  renderizarSidebar();
+    renderizarSidebar();
     if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
         renderizarChat();
         atualizarEstadoBotaoEnvio();
     }
 
     try {
-        // GARANTE UM TOKEN NOVO E VÁLIDO ANTES DE ENVIAR A MENSAGEM
-        const usuarioAtivo = auth.currentUser;
-        if (!usuarioAtivo) throw new Error("Usuário não autenticado");
-        const tokenFresco = await usuarioAtivo.getIdToken(true); 
+        // MONTA OS HEADERS BASEADOS NO STATUS DO USUÁRIO
+        const headers = { 'Content-Type': 'application/json' };
+        
+        if (usuarioAtual) {
+            const tokenFresco = await usuarioAtual.getIdToken(true);
+            headers['Authorization'] = `Bearer ${tokenFresco}`;
+            
+            // Só envia a chave personalizada se o usuário estiver logado e a configurou
+            if (userApiKey) { headers['x-google-api-key'] = userApiKey; }
+        }
 
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { 
             method: 'POST', 
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokenFresco}`
-            }, 
+            headers: headers, 
             body: JSON.stringify({ texto: texto }),
             signal: controller.signal 
         });
         
-        let respostaFinal = "";
-                
+        let respostaFinal = "";        
         if (res.status === 429) { 
             respostaFinal = "Limite da IA atingido. O Gemini está processando muitos pedidos agora. Por favor, tente novamente em alguns instantes.";
             conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} ${respostaFinal}` });
         } else if (!res.ok) {
-            throw new Error('Falha no Servidor');
+            // Tenta pegar o detalhe do erro vindo do Python
+            let detalheErro = "Falha no Servidor";
+            try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){}
+            throw new Error(detalheErro);
         } else {
             const dados = await res.json();
             if (dados.error && (String(dados.error).includes('429') || String(dados.error).toLowerCase().includes('quota'))) {
@@ -591,7 +674,7 @@ async function enviarMensagem() {
         if (e.name === 'AbortError') {
             conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_WARN} Geração de resposta cancelada pelo usuário.` });
         } else {
-            conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_WARN} Erro ao conectar com o servidor. Verifique sua API.` });
+            conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_WARN} Erro de comunicação: ${e.message}` });
         }
     } finally {
         statusConversas[chave].ativa = false;
