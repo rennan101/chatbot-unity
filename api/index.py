@@ -6,7 +6,7 @@ from google.genai import types
 import firebase_admin
 from firebase_admin import credentials, auth
 
-# Inicializa apenas o Auth do Firebase no Backend (que continua 100% gratuito no plano Spark)
+# Inicializa o Auth do Firebase no Backend
 if not firebase_admin._apps:
     firebase_admin.initialize_app(options={'projectId': 'comboboy-researcher'})
 
@@ -15,8 +15,30 @@ app = FastAPI()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 client_gemini = genai.Client(api_key=GOOGLE_API_KEY)
 
-# Aponta para a pasta docs dentro do projeto enviada ao Vercel
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "..", "docs")
+
+# CACHE GLOBAL: Carrega os arquivos para a RAM apenas uma vez na inicialização
+CACHE_DOCS = []
+
+def carregar_docs_cache():
+    global CACHE_DOCS
+    if CACHE_DOCS:
+        return CACHE_DOCS
+    
+    if os.path.exists(DOCS_DIR):
+        for arquivo in os.listdir(DOCS_DIR):
+            if arquivo.endswith('.md'):
+                caminho = os.path.join(DOCS_DIR, arquivo)
+                try:
+                    with open(caminho, 'r', encoding='utf-8', errors='ignore') as f:
+                        conteudo = f.read()
+                        CACHE_DOCS.append((arquivo, conteudo))
+                except Exception:
+                    continue
+    return CACHE_DOCS
+
+# Pré-carrega o cache assim que o servidor subir
+carregar_docs_cache()
 
 # INSTRUÇÕES DE SISTEMA DO PROFESSOR
 SYSTEM_INSTRUCTION = """Você é um professor especialista em Unity.
@@ -39,33 +61,29 @@ def verificar_token(authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Token Inválido ou Expirado")
 
 def buscar_contexto_local(termo_busca: str):
-    """Busca rápida por relevância de palavras-chave nos arquivos .md locais da pasta docs"""
+    docs = carregar_docs_cache()
     contexto_acumulado = []
     palavras = [p.lower() for p in termo_busca.split() if len(p) > 2]
     
-    if not os.path.exists(DOCS_DIR):
+    if not docs:
         return "Nenhuma documentação encontrada no servidor."
 
-    for arquivo in os.listdir(DOCS_DIR):
-        if arquivo.endswith('.md'):
-            caminho = os.path.join(DOCS_DIR, arquivo)
-            try:
-                with open(caminho, 'r', encoding='utf-8', errors='ignore') as f:
-                    conteudo = f.read()
-                    pontos = sum(conteudo.lower().count(p) for p in palavras)
-                    if pontos > 0:
-                        contexto_acumulado.append((pontos, conteudo[:3500]))
-            except Exception:
-                continue
+    for arquivo, conteudo in docs:
+        # Pontuação baseada nas palavras da pergunta do aluno
+        pontos = sum(conteudo.lower().count(p) for p in palavras)
+        if pontos > 0:
+            # Pega uma fatia relevante do arquivo para não estourar o limite de tokens da IA
+            contexto_acumulado.append((pontos, conteudo[:2000]))
 
+    # Ordena pelos trechos mais relevantes e pega os top 2
     contexto_acumulado.sort(key=lambda x: x[0], reverse=True)
-    melhores_trechos = [t[1] for t in contexto_acumulado[:3]]
+    melhores_trechos = [t[1] for t in contexto_acumulado[:2]]
     
-    return "\n---\n".join(melhores_trechos) if melhores_trechos else "Nenhum trecho específico encontrado na documentação."
+    return "\n---\n".join(melhores_trechos) if melhores_trechos else "Nenhum trecho específico encontrado na documentação, responda com base no seu conhecimento geral de Unity."
 
 @app.post("/api/chat")
 def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
-    # Extrai o contexto diretamente dos arquivos .md locais do repositório
+    # Busca o contexto otimizado na memória RAM
     texto_contexto = buscar_contexto_local(msg.texto)
 
     prompt_final = f"Documentação encontrada:\n{texto_contexto}\n\nPergunta do Aluno: {msg.texto}"
