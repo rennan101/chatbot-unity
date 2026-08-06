@@ -137,8 +137,8 @@ window.abrirMenuNotificacoes = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('profile-menu').style.display = 'none';
         menu.style.display = 'block';
-        menu.style.left = (btn.left - 240) + 'px';
-        menu.style.top = (btn.top + 35) + 'px';
+        menu.style.right = '20px';
+        menu.style.top = (btn.bottom + 10) + 'px';
     }
 }
 
@@ -279,10 +279,10 @@ function renderizarSidebar() {
         const containerConversas = document.getElementById(`conversas-${indexProj}`);
         proj.conversas.forEach((conv, indexConv) => {
             const chave = getChaveConversa(indexProj, indexConv);
-            const estaProcessando = statusConversas[chave] && statusConversas[chave].ativa;
+            const estaProcessando = statusConversas[chave]?.ativa; // Correção: uso de optional chaining para evitar erro e spinner infinito
             const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
             
-            // Agrupa avatares na conversa (máximo 1 visível + pill badge com contagem e tooltip de nomes)
+            // Agrupamento inteligente de avatares com suporte a "+N" e tooltips
             let emailsNaConversa = [];
             if (proj.presenca) {
                 Object.entries(proj.presenca).forEach(([emailUser, cIdx]) => {
@@ -311,7 +311,7 @@ function renderizarSidebar() {
             
             convDiv.innerHTML = `
                 <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 40px);">${conv.nome}</span>
-                <span style="display:flex; align-items:center; flex-shrink:0;">${avataresPresencaHTML} <span class="status-icon">${SVG_SPINNER}</span></span>
+                <span style="display:flex; align-items:center; flex-shrink:0;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
             
             convDiv.onclick = () => selecionarConversa(indexProj, indexConv);
@@ -336,7 +336,6 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
         }
         menuHTML += `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Projeto</div><div class="context-item" onclick="exportarProjetoZip()">${SVG_ARCHIVE} Baixar (.zip)</div><div class="context-item danger" onclick="deletarProjeto()">${SVG_TRASH} Apagar</div>`;
     } else {
-        // Regra: Só pode apagar conversa se foi criada por ele (ou se for visitante / dono local)
         const conv = window.projetos[indexProj].conversas[indexConv];
         const podeApagar = !usuarioAtual || !conv.criador || conv.criador === usuarioAtual.email;
         
@@ -365,7 +364,7 @@ window.confirmarProjeto = async function() {
     const descricao = document.getElementById('input-desc-projeto').value.trim();
 
     if (nome) { 
-        window.fecharModal(); // Fecha imediatamente por UX fluida
+        window.fecharModal(); // Fecha o modal imediatamente garantindo fluidez
         if (usuarioAtual) {
             await addDoc(collection(db, "projetos"), {
                 nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {}
@@ -383,8 +382,6 @@ window.confirmarProjeto = async function() {
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     const generoStr = window.projetos[indexProj].genero ? ` de ${window.projetos[indexProj].genero}` : "";
-    
-    // Associa a autoria (criador) da conversa para controle de exclusão
     const emailCriador = usuarioAtual ? usuarioAtual.email : 'visitante';
     
     window.projetos[indexProj].conversas.push({ 
@@ -426,7 +423,11 @@ window.confirmarRenomear = function() {
     const novo = document.getElementById('input-nome-renomear').value.trim(); if (!novo) return;
     if (alvoMenu.tipo === 'projeto') window.projetos[alvoMenu.indexProj].nome = novo;
     else window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome = novo;
-    salvarDadosAtuais(alvoMenu.indexProj); renderizarSidebar(); if (idProjetoAtivo !== null) document.getElementById('header-title').innerText = `${window.projetos[idProjetoAtivo].nome} / ${window.projetos[idProjetoAtivo].conversas[idConversaAtiva].nome}`; window.fecharModalRenomear();
+    salvarDadosAtuais(alvoMenu.indexProj); renderizarSidebar(); 
+    if (idProjetoAtivo !== null) {
+        document.getElementById('header-title').innerText = `${window.projetos[idProjetoAtivo].nome} / ${window.projetos[idProjetoAtivo].conversas[idConversaAtiva].nome}`;
+    }
+    window.fecharModalRenomear();
 }
 
 window.deletarConversa = function() {
@@ -454,7 +455,15 @@ window.deletarProjeto = async function() {
 
 // ================= LÓGICA DO CHAT E PRESENÇA =================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
-function resetarVisualizacaoChat() { idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; }
+
+function resetarVisualizacaoChat() { 
+    idProjetoAtivo = null; 
+    idConversaAtiva = null; 
+    document.getElementById('input-container').classList.remove('ativo'); 
+    document.getElementById('header-title').innerText = 'ComboBoy Researcher'; 
+    document.getElementById('header-subtitle').innerText = ''; 
+    document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
+}
 
 async function selecionarConversa(indexProj, indexConv) {
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
@@ -464,9 +473,7 @@ async function selecionarConversa(indexProj, indexConv) {
         const proj = window.projetos[indexProj];
         proj.presenca = proj.presenca || {};
         proj.presenca[usuarioAtual.email] = indexConv;
-        renderizarSidebar(); // Atualiza instantaneamente a UI local
-        
-        // Sincroniza em segundo plano com a nuvem
+        renderizarSidebar(); 
         updateDoc(doc(db, "projetos", proj.id), { presenca: proj.presenca });
     }
 
@@ -474,7 +481,16 @@ async function selecionarConversa(indexProj, indexConv) {
     const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`);
     if (itemAtivo) itemAtivo.classList.add('ativa');
     document.getElementById('input-container').classList.add('ativo');
-    document.getElementById('header-title').innerText = `${window.projetos[indexProj].nome} / ${window.projetos[indexProj].conversas[indexConv].nome}`;
+    
+    const proj = window.projetos[indexProj];
+    const conv = proj.conversas[indexConv];
+    
+    document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
+    
+    // Insere o autor da conversa logo abaixo no header
+    const autorConversa = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
+    document.getElementById('header-subtitle').innerText = `Criado por: ${autorConversa}`;
+
     renderizarChat(); atualizarEstadoBotaoEnvio(); validarInput();
 }
 

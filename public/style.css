@@ -93,10 +93,11 @@ body {
 .conversa-item:hover { background: rgba(255, 255, 255, 0.05); color: #c9d1d9; }
 .conversa-item.ativa { background: rgba(245, 130, 32, 0.15) !important; color: #F58220 !important; font-weight: 600; border-left: 3px solid #F58220;}
 
+/* ALINHAMENTO PERFEITO DO SPINNER E DOS AVATARES */
 .conversa-item .status-icon {
-    display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; color: #F58220;
+    display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; color: #F58220; width: 14px; height: 14px; flex-shrink: 0;
 }
-.status-icon svg { animation: spin 1s linear infinite; }
+.status-icon svg { animation: spin 1s linear infinite; width: 14px; height: 14px; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
 /* ================= RODAPÉ / CONFIGURAÇÕES ================= */
@@ -113,14 +114,16 @@ body {
 #sidebar.recolhido .btn-config .texto-btn { display: none; }
 
 /* ================= MENUS DE CONTEXTO E CONFIGURAÇÕES ================= */
-#context-menu, #config-menu, #profile-menu {
-    position: absolute; background: rgba(22, 27, 34, 0.85); 
+#context-menu, #config-menu, #profile-menu, #notifications-menu {
+    position: absolute; background: rgba(22, 27, 34, 0.95); 
     backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 5px; display: none; z-index: 1000; 
 }
 #context-menu { min-width: 180px; }
 #profile-menu { min-width: 160px; }
+#notifications-menu { width: 280px; padding: 12px; }
+
 .context-item { padding: 10px 15px; color: #c9d1d9; cursor: pointer; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: background 0.2s;}
 .context-item:hover { background: #F58220; color: white; }
 .context-item.danger { color: #ff7b72; }
@@ -137,12 +140,17 @@ input:checked + .slider { background-color: rgba(245, 130, 32, 0.3); border-colo
 input:checked + .slider:before { transform: translateX(16px); background-color: #F58220; }
 
 /* ================= ÁREA PRINCIPAL ================= */
-#main-area { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; }
+#main-area { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; overflow: hidden; }
 header { 
     background: rgba(13, 17, 23, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    padding: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; 
+    padding: 15px 24px; text-align: left; 
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10; letter-spacing: 0.5px;
+    display: flex; justify-content: space-between; align-items: center;
 }
+#header-title-container { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+#header-title { font-size: 1.1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#header-subtitle { font-size: 0.75rem; color: #8b949e; }
+
 #chat { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth; }
 #sem-conversa-msg { margin: auto; color: #8b949e; text-align: center; font-size: 1.1rem; opacity: 0.7;}
 
@@ -241,7 +249,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 
 /* ================= MODAIS & TOAST ================= */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);}
-.modal-content { background: rgba(22, 27, 34, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 350px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);}
+.modal-content { background: rgba(22, 27, 34, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 350px; max-width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.5);}
 .modal-content h3 { margin: 0 0 20px 0; font-size: 1.3rem; font-weight: 600;}
 .modal-content input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; transition: border-color 0.2s;}
 .modal-content input:focus { border-color: #F58220; }
@@ -273,3 +281,11 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s;
 }
 .btn-fechar-modal:hover { color: #ffffff; background: rgba(255,255,255,0.1); }
+
+/* ================= RESPONSIVIDADE ================= */
+@media (max-width: 768px) {
+    #sidebar { position: absolute; height: 100%; z-index: 500; width: 240px; transform: translateX(-100%); }
+    #sidebar:not(.recolhido) { transform: translateX(0); }
+    #sidebar.recolhido { transform: translateX(0); width: 68px; }
+    .balao { max-width: 90%; }
+}
