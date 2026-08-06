@@ -165,9 +165,9 @@ header {
 pre, code { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9rem; }
 code { background: rgba(0,0,0,0.3); padding: 3px 6px; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #F58220; }
 pre { background: rgba(0,0,0,0.3); padding: 16px; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow-x: auto; margin: 12px 0;}
-pre code { padding: 0; border: none; color: inherit; background: transparent; }
+pre code { padding: 0; border: none; background: transparent; }
 
-.hljs { background: transparent !important; padding: 0 !important; color: inherit; }
+.hljs { background: transparent !important; padding: 0 !important; }
 
 .code-wrapper { margin: 12px 0; background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.2);}
 .code-header { 

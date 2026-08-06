@@ -186,13 +186,7 @@ window.salvarApiKey = () => {
 }
 
 // ================= UTILITÁRIOS E UI =================
-marked.setOptions({
-    highlight: function(code, lang) {
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        return hljs.highlight(code, { language }).value;
-    },
-    langPrefix: 'hljs language-'
-});
+
 
 let configAskToSave = true;
 if (localStorage.getItem('unity_config_ask_save') !== null) {
@@ -247,6 +241,11 @@ function formatarBlocosDeCodigo() {
             }
         }
 
+        // --- NOVO: FORÇA A PINTURA DO CÓDIGO COM HIGHLIGHT.JS ---
+        if (codeElement && !codeElement.dataset.highlighted) {
+            hljs.highlightElement(codeElement);
+        }
+
         const wrapper = document.createElement('div');
         wrapper.className = 'code-wrapper';
         
@@ -290,7 +289,6 @@ function formatarBlocosDeCodigo() {
         wrapper.appendChild(pre);
     });
 }
-
 async function baixarCodigo(texto, linguagem) {
     const mapExt = { 'csharp': 'cs', 'cs': 'cs', 'javascript': 'js', 'js': 'js', 'python': 'py', 'py': 'py', 'html': 'html', 'css': 'css', 'json': 'json', 'cpp': 'cpp', 'java': 'java', 'xml': 'xml', 'shader': 'shader' };
     const ext = mapExt[linguagem] || 'txt';
