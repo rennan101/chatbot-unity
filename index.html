@@ -3,66 +3,659 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professor Unity AI</title>
+    <title>Unity Doc Researcher</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: -apple-system, sans-serif; background: #1e1e1e; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #2d2d30; padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #3e3e42; }
-        #chat { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .balao { max-width: 80%; padding: 12px 18px; border-radius: 8px; line-height: 1.5; }
-        .aluno { align-self: flex-end; background: #007acc; }
-        .bot { align-self: flex-start; background: #333333; border: 1px solid #444; }
-        pre, code { background: #000; padding: 5px; border-radius: 4px; font-family: monospace; }
-        pre { padding: 12px; overflow-x: auto; }
-        #input-container { display: flex; padding: 15px; background: #252526; }
-        input { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid #444; background: #1e1e1e; color: white; outline: none; }
-        button { margin-left: 10px; padding: 0 20px; background: #007acc; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #005f9e; }
+        /* ================= RESET E LAYOUT ================= */
+        body { font-family: 'Inter', sans-serif; background: #0d1117; color: #e6edf3; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+        /* ================= BARRA LATERAL ================= */
+        #sidebar { 
+            width: 280px; background: #161b22; border-right: 1px solid #30363d; 
+            display: flex; flex-direction: column; flex-shrink: 0; user-select: none; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar.recolhido { width: 68px; }
+
+        .sidebar-top { display: flex; justify-content: flex-end; padding: 12px 16px 0; }
+        #sidebar.recolhido .sidebar-top { justify-content: center; padding-left: 0; padding-right: 0; }
+
+        #btn-toggle-sidebar {
+            background: transparent; border: none; color: #8b949e; cursor: pointer;
+            padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+        #btn-toggle-sidebar:hover { background: #30363d; color: white; }
+        #btn-toggle-sidebar svg { transition: transform 0.3s ease; }
+        #sidebar.recolhido #btn-toggle-sidebar svg { transform: rotate(180deg); }
+
+        .sidebar-header { padding: 15px 20px; border-bottom: 1px solid #30363d; transition: padding 0.3s; }
+        #sidebar.recolhido .sidebar-header { padding: 15px 10px; }
+        
+        .btn-novo-projeto {
+            width: 100%; padding: 12px 16px; background: #238636; color: white; border: none; border-radius: 8px; cursor: pointer;
+            font-weight: 600; font-size: 0.95rem; transition: background 0.2s; display: flex; align-items: center; justify-content: flex-start; gap: 8px; white-space: nowrap;
+        }
+        .btn-novo-projeto:hover { background: #2ea043; }
+        #sidebar.recolhido .btn-novo-projeto { padding: 12px 0; justify-content: center; }
+        #sidebar.recolhido .texto-btn { display: none; }
+
+        #lista-projetos { flex: 1; overflow-y: auto; padding: 10px; overflow-x: hidden; }
+        #sidebar.recolhido #lista-projetos { padding: 10px 5px; }
+        
+        .projeto-item { margin-bottom: 5px; }
+        .projeto-header { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-radius: 6px; cursor: pointer; flex-wrap: nowrap; overflow: hidden;}
+        .projeto-header:hover { background: rgba(177, 186, 196, 0.12); }
+        .projeto-titulo { display: flex; align-items: center; gap: 8px; flex: 1; font-weight: 500; font-size: 0.95rem; white-space: nowrap; }
+
+        .projeto-avatar {
+            display: none; width: 34px; height: 34px; border-radius: 8px;
+            background: #30363d; color: #e6edf3; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 0.95rem; flex-shrink: 0; transition: background 0.2s;
+        }
+        .projeto-avatar:hover { background: #484f58; }
+        #sidebar.recolhido .projeto-avatar { display: flex; margin: 0 auto; }
+        #sidebar.recolhido .projeto-titulo { display: none; }
+        #sidebar.recolhido .icon-btn { display: none; }
+        #sidebar.recolhido .lista-conversas { display: none !important; }
+
+        .icon-btn { background: none; border: none; color: #8b949e; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
+        .icon-btn:hover { background: #30363d; color: #c9d1d9; }
+
+        .lista-conversas { padding-left: 20px; margin-top: 2px; display: none; }
+        .lista-conversas.aberta { display: block; }
+        .conversa-item {
+            padding: 8px 12px; margin-bottom: 2px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; color: #8b949e;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.1s;
+        }
+        .conversa-item:hover { background: rgba(177, 186, 196, 0.12); color: #c9d1d9; }
+        .conversa-item.ativa { background: #1f6feb !important; color: #ffffff !important; font-weight: 600; }
+
+        /* ================= RODAPÉ / CONFIGURAÇÕES ================= */
+        .sidebar-footer {
+            margin-top: auto; border-top: 1px solid #30363d; padding: 15px 20px; transition: padding 0.3s;
+        }
+        #sidebar.recolhido .sidebar-footer { padding: 15px 10px; display: flex; justify-content: center; }
+        
+        .btn-config {
+            width: 100%; padding: 10px; background: transparent; color: #8b949e; border: 1px solid transparent; 
+            border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+            display: flex; align-items: center; justify-content: flex-start; gap: 10px; transition: all 0.2s; white-space: nowrap;
+        }
+        .btn-config:hover { background: #30363d; color: #c9d1d9; border-color: #484f58; }
+        #sidebar.recolhido .btn-config { padding: 10px 0; justify-content: center; }
+        #sidebar.recolhido .btn-config .texto-btn { display: none; }
+
+        /* ================= MENU DE OPÇÕES GERAIS E CONFIG (Popups) ================= */
+        #context-menu, #config-menu {
+            position: absolute; background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); padding: 5px; display: none; z-index: 1000; 
+        }
+        #context-menu { min-width: 180px; }
+        .context-item { padding: 10px 15px; color: #c9d1d9; cursor: pointer; border-radius: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+        .context-item:hover { background: #1f6feb; color: white; }
+        .context-item.danger:hover { background: #da3633; color: white; }
+
+        /* Estilos específicos do menu de configurações (Toggle) */
+        #config-menu { padding: 15px; width: 240px; }
+        .config-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #c9d1d9; gap: 15px; line-height: 1.4; }
+        
+        /* O Interruptor (Toggle Switch) CSS Puro */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #238636; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* ================= ÁREA PRINCIPAL ================= */
+        #main-area { flex: 1; display: flex; flex-direction: column; background: #0d1117; position: relative; }
+        header { background: rgba(13, 17, 23, 0.9); backdrop-filter: blur(10px); padding: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; border-bottom: 1px solid #30363d; z-index: 10; }
+        #chat { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
+        #sem-conversa-msg { margin: auto; color: #8b949e; text-align: center; font-size: 1.1rem; }
+
+        .balao { max-width: 80%; padding: 14px 20px; line-height: 1.6; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); word-wrap: break-word; }
+        .aluno { align-self: flex-end; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border-radius: 20px 20px 4px 20px; }
+        .bot { align-self: flex-start; background: #161b22; border: 1px solid #30363d; border-radius: 20px 20px 20px 4px; width: 100%; }
+        
+        .rate-limit-aviso { background: rgba(218, 54, 51, 0.15) !important; border-color: #da3633 !important; color: #ff7b72; }
+
+        .bot p { margin: 0 0 10px 0; }
+        .bot p:last-child { margin: 0; }
+        pre, code { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.9rem; }
+        code { background: #0d1117; padding: 3px 6px; border: 1px solid #30363d; border-radius: 6px; color: #79c0ff; }
+        pre { background: #0d1117; padding: 16px; border: 1px solid #30363d; border-radius: 8px; overflow-x: auto; margin: 10px 0;}
+        pre code { padding: 0; border: none; color: inherit; background: transparent; }
+
+        .code-wrapper { margin: 12px 0; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+        .code-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #161b22; padding: 6px 12px; border-bottom: 1px solid #30363d;
+            font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+        }
+        .code-header-actions { display: flex; gap: 8px; align-items: center; }
+        
+        .code-wrapper pre { margin: 0; border: none; border-radius: 0; }
+        .btn-copy {
+            background: transparent; border: none; color: #8b949e; cursor: pointer;
+            font-size: 0.8rem; display: flex; align-items: center; gap: 4px;
+            font-family: 'Inter', sans-serif; font-weight: 500; transition: color 0.2s; padding: 4px 8px; border-radius: 4px;
+        }
+        .btn-copy:hover { color: #c9d1d9; background: #30363d; }
+        .btn-copy.copiado { color: #7ee787; }
+
+        #input-container { display: flex; padding: 20px 24px; background: #161b22; border-top: 1px solid #30363d; gap: 12px; align-items: flex-end; opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
+        #input-container.ativo { opacity: 1; pointer-events: auto; }
+        textarea { flex: 1; padding: 16px 20px; border-radius: 12px; border: 1px solid #30363d; background: #0d1117; color: white; font-size: 1rem; font-family: 'Inter', sans-serif; outline: none; resize: none; min-height: 24px; max-height: 150px; overflow-y: auto; line-height: 1.5; box-sizing: border-box; }
+        textarea:focus { border-color: #2563eb; }
+        button.btn-enviar { height: 56px; padding: 0 24px; background: #2563eb; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+        button.btn-enviar:hover { background: #1d4ed8; }
+
+        /* ================= MODAIS & TOAST (Avisos Visuais) ================= */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px); }
+        .modal-content { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; width: 350px; }
+        .modal-content h3 { margin: 0 0 16px 0; font-size: 1.2rem; }
+        .modal-content input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #30363d; background: #0d1117; color: white; margin-bottom: 20px; box-sizing: border-box; outline: none; font-family: 'Inter', sans-serif; }
+        .modal-content input:focus { border-color: #238636; }
+        .modal-acoes { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-cancelar { padding: 10px 16px; background: transparent; border: 1px solid #30363d; color: white; border-radius: 6px; cursor: pointer; }
+        .btn-cancelar:hover { background: #30363d; }
+        .btn-confirmar { padding: 10px 16px; background: #238636; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: 600;}
+        .btn-confirmar:hover { background: #2ea043; }
+
+        /* NOVO: TOAST NOTIFICATION */
+        #toast {
+            position: fixed; bottom: -60px; right: 24px; background: #238636; color: white;
+            padding: 12px 24px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            font-weight: 500; font-size: 0.95rem; z-index: 9999; display: flex; align-items: center; gap: 10px;
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animação elástica (Bounce) */
+        }
+        #toast.mostrar { bottom: 24px; }
+
+        .typing-indicator { display: flex; gap: 4px; align-items: center; height: 24px; }
+        .typing-indicator span { width: 8px; height: 8px; background-color: #8b949e; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
     </style>
 </head>
 <body>
-    <header>🤖 Professor Unity AI</header>
-    <div id="chat">
-        <div class="balao bot">Olá! Sou seu professor de Unity. Como posso te ajudar com a ferramenta hoje?</div>
+
+    <aside id="sidebar">
+        <div class="sidebar-top">
+            <button id="btn-toggle-sidebar" onclick="alternarSidebar()" title="Recolher/Expandir menu">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <div class="sidebar-header">
+            <button class="btn-novo-projeto" onclick="abrirModal()">
+                <span class="icone-btn">➕</span>
+                <span class="texto-btn">Novo Projeto</span>
+            </button>
+        </div>
+        <div id="lista-projetos"></div>
+
+        <!-- NOVO: Rodapé de Configurações -->
+        <div class="sidebar-footer">
+            <button id="btn-config" class="btn-config" onclick="abrirConfigMenu(event)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span class="texto-btn">Configurações</span>
+            </button>
+        </div>
+    </aside>
+
+    <main id="main-area">
+        <header id="chat-header">Unity Doc Researcher</header>
+        
+        <div id="chat">
+            <div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>
+        </div>
+        
+        <div id="input-container">
+            <textarea id="mensagem" rows="1" placeholder="Pergunta... (Pressione Shift + Enter para quebrar linha)" 
+                      onkeydown="lidarComTecla(event)" oninput="ajustarAltura(this)"></textarea>
+            <button class="btn-enviar" onclick="enviarMensagem()">Enviar</button>
+        </div>
+    </main>
+
+    <!-- MENUS FLUTUANTES -->
+    <div id="context-menu"></div>
+    
+    <div id="config-menu">
+        <div class="config-item">
+            <span>Sempre perguntar onde salvar o código gerado</span>
+            <label class="switch">
+                <input type="checkbox" id="toggle-ask-save" onchange="salvarPreferenciasConfig()">
+                <span class="slider"></span>
+            </label>
+        </div>
     </div>
-    <div id="input-container">
-        <input type="text" id="mensagem" placeholder="Faça uma pergunta sobre Unity..." onkeypress="if(event.key === 'Enter') enviar()">
-        <button onclick="enviar()">Enviar</button>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-projeto">
+        <div class="modal-content">
+            <h3>Nome do Projeto</h3>
+            <input type="text" id="input-nome-projeto" placeholder="Ex: Meu Jogo 2D" onkeypress="if(event.key === 'Enter') confirmarProjeto()">
+            <div class="modal-acoes">
+                <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-confirmar" onclick="confirmarProjeto()">Confirmar</button>
+            </div>
+        </div>
     </div>
+
+    <!-- TOAST DE NOTIFICAÇÃO -->
+    <div id="toast">✅ Ação concluída com sucesso!</div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
     <script>
-        async function enviar() {
-            const input = document.getElementById('mensagem');
-            const chat = document.getElementById('chat');
-            const texto = input.value.trim();
-            if(!texto) return;
+        let projetos = JSON.parse(localStorage.getItem('unity_projetos')) || [];
+        let idConversaAtiva = null; 
+        let idProjetoAtivo = null;
+        let alvoMenu = { tipo: null, indexProj: null, indexConv: null };
 
-            // Adiciona mensagem do aluno
-            chat.innerHTML += `<div class="balao aluno">${texto}</div>`;
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
+        // Variável Global de Configurações (Lê do Cache, se não tiver, padrão é true)
+        let configAskToSave = true;
+        if (localStorage.getItem('unity_config_ask_save') !== null) {
+            configAskToSave = localStorage.getItem('unity_config_ask_save') === 'true';
+        }
 
-            // Adiciona mensagem de carregamento
+        // Inicializa o botão (Toggle) na tela para espelhar a memória salva
+        document.getElementById('toggle-ask-save').checked = configAskToSave;
+
+        function salvarLocalmente() { localStorage.setItem('unity_projetos', JSON.stringify(projetos)); }
+        function alternarSidebar() { document.getElementById('sidebar').classList.toggle('recolhido'); }
+
+        // ================= SISTEMA DE TOAST (Avisos Visuais) =================
+        let toastTimeout;
+        function mostrarToast(mensagem, cor = '#238636', icone = '✅') {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = `${icone} ${mensagem}`;
+            toast.style.background = cor;
+            toast.classList.add('mostrar');
+
+            // Limpa o temporizador antigo caso o usuário clique em salvar 5x muito rápido
+            clearTimeout(toastTimeout);
+            
+            // Some automaticamente depois de 3 segundos
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('mostrar');
+            }, 3000);
+        }
+
+        // ================= SISTEMA DE CONFIGURAÇÕES =================
+        function abrirConfigMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('config-menu');
+            const btn = document.getElementById('btn-config').getBoundingClientRect();
+            
+            if (menu.style.display === 'block') {
+                menu.style.display = 'none';
+            } else {
+                menu.style.display = 'block';
+                // Posiciona o menu flutuante colado no botão de configurações, seja aberto ou recolhido
+                menu.style.left = (btn.left + 10) + 'px';
+                menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
+            }
+        }
+
+        function salvarPreferenciasConfig() {
+            const toggle = document.getElementById('toggle-ask-save');
+            configAskToSave = toggle.checked;
+            localStorage.setItem('unity_config_ask_save', configAskToSave);
+            
+            if (configAskToSave) {
+                mostrarToast('Agora você escolherá onde salvar.', '#2563eb', '⚙️');
+            } else {
+                mostrarToast('Downloads irão direto para a pasta padrão.', '#2563eb', '⚙️');
+            }
+        }
+
+        // ================= CÓPIAS E DOWNLOAD DE CÓDIGO (Atualizado com UX) =================
+        function formatarBlocosDeCodigo() {
+            document.querySelectorAll('.bot pre').forEach(pre => {
+                if (pre.parentElement.classList.contains('code-wrapper')) return;
+
+                const codeElement = pre.querySelector('code');
+                let linguagem = 'Código';
+                let linguagemRaw = '';
+                
+                if (codeElement && codeElement.className) {
+                    const match = codeElement.className.match(/language-(\w+)/);
+                    if (match) {
+                        linguagem = match[1];
+                        linguagemRaw = match[1].toLowerCase();
+                    }
+                }
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-wrapper';
+                
+                const header = document.createElement('div');
+                header.className = 'code-header';
+                
+                const title = document.createElement('span');
+                title.innerText = linguagem;
+
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'code-header-actions';
+                
+                const btnDownload = document.createElement('button');
+                btnDownload.className = 'btn-copy';
+                btnDownload.innerHTML = '💾 Baixar';
+                btnDownload.title = 'Baixar arquivo de código';
+                btnDownload.onclick = () => baixarCodigo(codeElement.innerText, linguagemRaw);
+
+                const btnCopy = document.createElement('button');
+                btnCopy.className = 'btn-copy';
+                btnCopy.innerHTML = '📋 Copiar';
+                btnCopy.onclick = () => {
+                    navigator.clipboard.writeText(codeElement.innerText).then(() => {
+                        // Feedback local (no botão) + global (Toast)
+                        btnCopy.innerHTML = '✅ Copiado!';
+                        btnCopy.classList.add('copiado');
+                        mostrarToast('Código copiado para a área de transferência!');
+                        setTimeout(() => {
+                            btnCopy.innerHTML = '📋 Copiar';
+                            btnCopy.classList.remove('copiado');
+                        }, 2000);
+                    });
+                };
+
+                actionsContainer.appendChild(btnDownload);
+                actionsContainer.appendChild(btnCopy);
+                header.appendChild(title);
+                header.appendChild(actionsContainer);
+                
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(header);
+                wrapper.appendChild(pre);
+            });
+        }
+
+        async function baixarCodigo(texto, linguagem) {
+            const mapExt = {
+                'csharp': 'cs', 'cs': 'cs', 'javascript': 'js', 'js': 'js', 'python': 'py', 'py': 'py',
+                'html': 'html', 'css': 'css', 'json': 'json', 'cpp': 'cpp', 'java': 'java', 'xml': 'xml', 'shader': 'shader'
+            };
+            const ext = mapExt[linguagem] || 'txt';
+            let nomeArquivo = `script.${ext}`;
+
+            if (ext === 'cs' || ext === 'java' || ext === 'cpp' || ext === 'js') {
+                const match = texto.match(/(?:class|interface|struct|enum)\s+([A-Za-z0-9_]+)/);
+                if (match && match[1]) {
+                    nomeArquivo = `${match[1]}.${ext}`;
+                }
+            }
+
+            // O Sistema Avançado de Salvamento (File System Access API)
+            // Só executa se o usuário ATIVOU no menu de Configurações E o navegador suportar a tecnologia.
+            if (configAskToSave && window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: nomeArquivo,
+                        types: [{ description: 'Arquivo de Código', accept: { 'text/plain': [`.${ext}`] } }],
+                    });
+                    
+                    const writable = await handle.createWritable();
+                    await writable.write(texto);
+                    await writable.close();
+                    
+                    mostrarToast(`<b>${nomeArquivo}</b> salvo no seu projeto!`);
+                    return; 
+                } catch (err) {
+                    if (err.name === 'AbortError') {
+                        // O aluno clicou em "Cancelar" na janela. Ignoramos sem avisos chatos.
+                        return; 
+                    }
+                    console.warn("Erro ao salvar usando showSaveFilePicker:", err);
+                }
+            }
+
+            // Fallback (Plano B): O usuário desativou a opção OU está num Firefox/Safari que não suporta a API.
+            const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
+            baixarArquivoBlob(blob, nomeArquivo);
+            mostrarToast(`Download de <b>${nomeArquivo}</b> iniciado!`, '#2563eb', '⬇️');
+        }
+
+        // ================= MENUS FLUTUANTES (Fechar ao clicar fora) =================
+        document.addEventListener('click', () => { 
+            document.getElementById('context-menu').style.display = 'none'; 
+            document.getElementById('config-menu').style.display = 'none'; 
+        });
+
+        // ================= RATE LIMIT =================
+        function iniciarContagemRegressiva(elementoId, segundos) {
+            const elemento = document.getElementById(elementoId);
+            if (!elemento) return;
+            elemento.classList.add('rate-limit-aviso');
+            let tempo = segundos;
+            const intervalo = setInterval(() => {
+                if (tempo <= 0) {
+                    clearInterval(intervalo);
+                    elemento.innerHTML = `✅ <b>O tempo de espera acabou!</b><br>Você já pode enviar sua pergunta novamente.`;
+                    elemento.style.color = '#7ee787';
+                } else {
+                    elemento.innerHTML = `⏳ <b>Limite da IA atingido!</b><br>O Gemini está processando muitos pedidos agora. Por favor, aguarde <b>${tempo}s</b> para tentar de novo.`;
+                    tempo--;
+                }
+            }, 1000);
+        }
+
+        // ================= RENDERIZAÇÕES E LÓGICA DE PROJETOS =================
+        function renderizarSidebar() {
+            const container = document.getElementById('lista-projetos');
+            container.innerHTML = ''; 
+
+            projetos.forEach((proj, indexProj) => {
+                const iconeSeta = proj.aberto ? '▼' : '▶';
+                const inicialProjeto = proj.nome.charAt(0).toUpperCase();
+
+                const projetoDiv = document.createElement('div');
+                projetoDiv.className = 'projeto-item';
+                projetoDiv.innerHTML = `
+                    <div class="projeto-header" oncontextmenu="abrirMenuContexto(event, 'projeto', ${indexProj})">
+                        <div class="projeto-avatar" title="${proj.nome}" onclick="alternarPasta(${indexProj})">${inicialProjeto}</div>
+                        <div class="projeto-titulo" onclick="alternarPasta(${indexProj})">
+                            <span style="font-size: 0.7rem; color: #8b949e; width: 15px;">${iconeSeta}</span>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.nome}</span>
+                        </div>
+                        <button class="icon-btn" title="Nova Conversa" onclick="novaConversa(${indexProj}, event)">➕</button>
+                    </div>
+                    <div class="lista-conversas ${proj.aberto ? 'aberta' : ''}" id="conversas-${indexProj}"></div>
+                `;
+                container.appendChild(projetoDiv);
+
+                const containerConversas = document.getElementById(`conversas-${indexProj}`);
+                proj.conversas.forEach((conv, indexConv) => {
+                    const convDiv = document.createElement('div');
+                    const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
+                    
+                    convDiv.id = `conv-${indexProj}-${indexConv}`;
+                    convDiv.className = `conversa-item ${estaAtiva ? 'ativa' : ''}`;
+                    convDiv.innerText = conv.nome;
+                    
+                    convDiv.onclick = () => selecionarConversa(indexProj, indexConv);
+                    convDiv.oncontextmenu = (e) => abrirMenuContexto(e, 'conversa', indexProj, indexConv);
+                    
+                    containerConversas.appendChild(convDiv);
+                });
+            });
+        }
+
+        function alternarPasta(indexProj) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('recolhido')) {
+                sidebar.classList.remove('recolhido');
+                projetos[indexProj].aberto = true;
+            } else {
+                projetos[indexProj].aberto = !projetos[indexProj].aberto;
+            }
+            salvarLocalmente(); renderizarSidebar();
+        }
+
+        function abrirMenuContexto(event, tipo, indexProj, indexConv = null) {
+            event.preventDefault(); 
+            alvoMenu = { tipo, indexProj, indexConv };
+            const menu = document.getElementById('context-menu');
+            menu.innerHTML = '';
+            if (tipo === 'projeto') {
+                menu.innerHTML = `<div class="context-item" onclick="exportarProjetoZip()">📦 Baixar Projeto (.zip)</div><div class="context-item danger" onclick="deletarProjeto()">🗑️ Apagar Projeto</div>`;
+            } else {
+                menu.innerHTML = `<div class="context-item" onclick="exportarConversaMD()">📄 Baixar Conversa (.md)</div><div class="context-item danger" onclick="deletarConversa()">🗑️ Apagar Conversa</div>`;
+            }
+            menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
+        }
+
+        function deletarConversa() {
+            if (confirm('Tem certeza que deseja apagar esta conversa?')) {
+                projetos[alvoMenu.indexProj].conversas.splice(alvoMenu.indexConv, 1);
+                verificarRedirecionamentoPosDelecao(alvoMenu.indexProj, alvoMenu.indexConv, 'conversa');
+                salvarLocalmente(); renderizarSidebar();
+                mostrarToast('Conversa deletada.', '#da3633', '🗑️');
+            }
+        }
+
+        function deletarProjeto() {
+            if (confirm('Atenção: Isso vai apagar a pasta inteira e todas as conversas dentro dela. Confirmar?')) {
+                projetos.splice(alvoMenu.indexProj, 1);
+                verificarRedirecionamentoPosDelecao(alvoMenu.indexProj, null, 'projeto');
+                salvarLocalmente(); renderizarSidebar();
+                mostrarToast('Projeto deletado.', '#da3633', '🗑️');
+            }
+        }
+
+        function verificarRedirecionamentoPosDelecao(indexProjExcluido, indexConvExcluido, tipo) {
+            if (tipo === 'projeto' && idProjetoAtivo === indexProjExcluido) resetarVisualizacaoChat();
+            else if (tipo === 'projeto' && idProjetoAtivo > indexProjExcluido) idProjetoAtivo--; 
+            else if (tipo === 'conversa' && idProjetoAtivo === indexProjExcluido) {
+                if (idConversaAtiva === indexConvExcluido) resetarVisualizacaoChat();
+                else if (idConversaAtiva > indexConvExcluido) idConversaAtiva--;
+            }
+        }
+
+        function resetarVisualizacaoChat() {
+            idProjetoAtivo = null; idConversaAtiva = null;
+            document.getElementById('input-container').classList.remove('ativo');
+            document.getElementById('chat-header').innerText = 'Unity Doc Researcher';
+            document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>';
+        }
+
+        function exportarConversaMD() {
+            const proj = projetos[alvoMenu.indexProj]; const conv = proj.conversas[alvoMenu.indexConv];
+            baixarArquivoBlob(new Blob([gerarMarkdownDaConversa(proj.nome, conv)], { type: 'text/markdown;charset=utf-8' }), `Unity_${conv.nome.replace(/[^a-z0-9]/gi, '_')}.md`);
+            mostrarToast('Conversa exportada em .md', '#2563eb', '📄');
+        }
+
+        async function exportarProjetoZip() {
+            const proj = projetos[alvoMenu.indexProj]; const zip = new JSZip();
+            proj.conversas.forEach((conv, i) => { zip.file(`${conv.nome.replace(/[^a-z0-9]/gi, '_').substring(0, 30)}_${i}.md`, gerarMarkdownDaConversa(proj.nome, conv)); });
+            baixarArquivoBlob(await zip.generateAsync({type:"blob"}), `Projeto_Unity_${proj.nome.replace(/[^a-z0-9]/gi, '_')}.zip`);
+            mostrarToast('Projeto compactado em .zip', '#2563eb', '📦');
+        }
+
+        function gerarMarkdownDaConversa(nomeProj, conv) {
+            let md = `# Projeto: ${nomeProj}\n## Conversa: ${conv.nome}\n\n---\n\n`;
+            conv.mensagens.forEach(msg => { md += (msg.papel === 'aluno' ? `**🧑‍💻 Você:**\n${msg.texto}\n\n` : `**🤖 Professor Unity:**\n${msg.texto}\n\n`) + `---\n\n`; });
+            return md;
+        }
+
+        function baixarArquivoBlob(blob, filename) {
+            const url = URL.createObjectURL(blob); 
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+        }
+
+        function abrirModal() { document.getElementById('modal-projeto').style.display = 'flex'; const input = document.getElementById('input-nome-projeto'); input.value = ''; input.focus(); }
+        function fecharModal() { document.getElementById('modal-projeto').style.display = 'none'; }
+        function confirmarProjeto() {
+            const nome = document.getElementById('input-nome-projeto').value.trim();
+            if (nome) { projetos.push({ nome: nome, aberto: true, conversas: [] }); salvarLocalmente(); renderizarSidebar(); fecharModal(); mostrarToast('Projeto criado!', '#238636', '📁'); }
+        }
+
+        function novaConversa(indexProj, event) {
+            event.stopPropagation();
+            projetos[indexProj].conversas.push({ nome: `Nova Conversa ${projetos[indexProj].conversas.length + 1}`, mensagens: [{ papel: 'bot', texto: "Olá! Sou seu professor especialista em Unity. Como posso te ajudar neste projeto?" }] });
+            projetos[indexProj].aberto = true; document.getElementById('sidebar').classList.remove('recolhido');
+            salvarLocalmente(); renderizarSidebar(); selecionarConversa(indexProj, projetos[indexProj].conversas.length - 1);
+        }
+
+        function selecionarConversa(indexProj, indexConv) {
+            idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
+            document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
+            const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`);
+            if (itemAtivo) itemAtivo.classList.add('ativa');
+            
+            document.getElementById('input-container').classList.add('ativo');
+            const msgVazia = document.getElementById('sem-conversa-msg'); if (msgVazia) msgVazia.style.display = 'none';
+            document.getElementById('chat-header').innerText = `Projeto: ${projetos[indexProj].nome} - ${projetos[indexProj].conversas[indexConv].nome}`;
+            renderizarChat();
+        }
+
+        function renderizarChat() {
+            const chatBox = document.getElementById('chat'); chatBox.innerHTML = ''; 
+            projetos[idProjetoAtivo].conversas[idConversaAtiva].mensagens.forEach(msg => {
+                chatBox.innerHTML += `<div class="balao ${msg.papel}">${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
+            });
+            formatarBlocosDeCodigo();
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function enviarMensagem() {
+            if (idProjetoAtivo === null || idConversaAtiva === null) return;
+            const input = document.getElementById('mensagem'); const chatBox = document.getElementById('chat');
+            const texto = input.value.trim(); if(!texto) return;
+
+            const conversaAtual = projetos[idProjetoAtivo].conversas[idConversaAtiva];
+            conversaAtual.mensagens.push({ papel: 'aluno', texto: texto });
+            
+            if (conversaAtual.mensagens.length === 2) {
+                conversaAtual.nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
+                renderizarSidebar(); 
+            }
+            salvarLocalmente(); renderizarChat();
+            input.value = ''; input.style.height = 'auto'; 
+
             const botMsgId = 'bot-' + Date.now();
-            chat.innerHTML += `<div id="${botMsgId}" class="balao bot">Pensando...</div>`;
-            chat.scrollTop = chat.scrollHeight;
+            chatBox.innerHTML += `<div id="${botMsgId}" class="balao bot"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
 
             try {
-                // Chama a nossa API (o arquivo index.py)
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ texto: texto })
-                });
+                const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: texto }) });
+                
+                if (res.status === 429) { iniciarContagemRegressiva(botMsgId, 60); return; }
+                if (!res.ok) throw new Error('Falha no Servidor');
                 const dados = await res.json();
                 
-                // Transforma o Markdown da resposta em HTML e exibe
-                document.getElementById(botMsgId).innerHTML = marked.parse(dados.resposta);
+                if (dados.error && (String(dados.error).includes('429') || String(dados.error).toLowerCase().includes('quota'))) {
+                    iniciarContagemRegressiva(botMsgId, 60); return; 
+                }
+                
+                conversaAtual.mensagens.push({ papel: 'bot', texto: dados.resposta });
+                salvarLocalmente(); renderizarChat();
+                
             } catch (e) {
-                document.getElementById(botMsgId).innerHTML = "Erro ao conectar com o servidor.";
+                document.getElementById(botMsgId).innerHTML = "⚠️ Erro ao conectar com o servidor. Verifique sua API no Vercel.";
             }
-            chat.scrollTop = chat.scrollHeight;
         }
+
+        function ajustarAltura(elemento) { elemento.style.height = 'auto'; elemento.style.height = (elemento.scrollHeight) + 'px'; }
+        function lidarComTecla(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); enviarMensagem(); } }
+
+        renderizarSidebar();
     </script>
 </body>
 </html>
