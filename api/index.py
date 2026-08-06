@@ -1,9 +1,15 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, Header
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from pinecone import Pinecone
+import firebase_admin
+from firebase_admin import auth, credentials
+
+# Inicializa o Firebase no Backend
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(options={'projectId': 'comboboy-researcher'})
 
 app = FastAPI()
 
@@ -26,8 +32,20 @@ Regras OBRIGATÓRIAS:
 class Mensagem(BaseModel):
     texto: str
 
+# Função de Segurança que intercepta a requisição
+def verificar_token(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Faltando Token de Autenticação")
+    token = authorization.split("Bearer ")[1]
+    try:
+        # Valida o token JWT no servidor do Google
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token # Retorna os dados do usuário (uid, email, etc)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token Inválido ou Expirado")
+
 @app.post("/api/chat")
-def chat(msg: Mensagem):
+def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
     # 1. Converte a pergunta do aluno em vetor (Usando o modelo novo ajustado para 768)
     resultado_emb = client_gemini.models.embed_content(
         model="gemini-embedding-001", 
