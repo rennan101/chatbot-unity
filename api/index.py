@@ -5,21 +5,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
+from google.genai.errors import APIError
 import firebase_admin
 from firebase_admin import credentials, auth
 
 # INICIALIZAÇÃO BLINDADA DO FIREBASE
 if not firebase_admin._apps:
-    # Tenta puxar a chave mestra (JSON) das variáveis de ambiente do Render
     firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
-    
     if firebase_creds_json:
-        # Converte o texto JSON de volta para um dicionário e autentica
         cred_dict = json.loads(firebase_creds_json)
         cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
     else:
-        # Plano B caso a variável não seja encontrada
         firebase_admin.initialize_app(options={'projectId': 'comboboy-researcher'})
 
 app = FastAPI()
@@ -32,7 +29,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ======== CONFIGURAÇÕES DA API E MODELO ========
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+# Puxa o modelo da variável de ambiente no Render. Se não existir, usa o 3.5-flash como padrão.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash") 
+
 client_gemini = genai.Client(api_key=GOOGLE_API_KEY)
 
 SYSTEM_INSTRUCTION = """Você é o ComboBoy Researcher, um professor sênior especialista em Unity Engine, C# e arquitetura de jogos.
@@ -59,12 +60,26 @@ def verificar_token(authorization: str = Header(None)):
 
 @app.post("/api/chat")
 def chat(msg: Mensagem, usuario_logado: dict = Depends(verificar_token)):
-    resposta = client_gemini.models.generate_content(
-        model="gemini-3.5-flash", 
-        contents=msg.texto,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_INSTRUCTION
+    try:
+        resposta = client_gemini.models.generate_content(
+            model=GEMINI_MODEL, # Agora o modelo é injetado dinamicamente aqui
+            contents=msg.texto,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION
+            )
         )
-    )
-    
-    return {"resposta": resposta.text}
+        return {"resposta": resposta.text}
+        
+    except APIError as e:
+        if e.code == 503:
+            mensagem_erro = "⚠️ **Aviso:** Os servidores da IA estão sobrecarregados no momento. Por favor, aguarde uns instantes e tente novamente."
+            return {"resposta": mensagem_erro}
+        elif e.code == 429:
+            mensagem_erro = "⚠️ **Aviso:** O limite de cota da chave da API foi atingido. Tente novamente mais tarde."
+            return {"resposta": mensagem_erro}
+        else:
+            return {"resposta": f"⚠️ **Erro na IA:** Ocorreu um problema inesperado de comunicação ({e.code})."}
+            
+    except Exception as e:
+        print(f"🔥 ERRO INTERNO: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro interno no servidor.")
