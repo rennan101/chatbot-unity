@@ -2,9 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ================= 1. COLE SEU FIREBASE CONFIG AQUI =================
 const firebaseConfig = {
-  apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
+  apiKey: "AIzaSyB9PBfyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
   projectId: "comboboy-researcher",
   storageBucket: "comboboy-researcher.firebasestorage.app",
@@ -17,7 +16,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Estado Global
 let usuarioAtual = null;
 let tokenAtual = null; 
 window.projetos = [];  
@@ -26,9 +24,8 @@ let idProjetoAtivo = null;
 let alvoMenu = { tipo: null, indexProj: null, indexConv: null };
 let statusConversas = {};
 
-// ================= CONSTANTES DE ÍCONES (SVG Feather) =================
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
 const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
 const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
@@ -41,7 +38,6 @@ const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" s
 const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
 const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 
-// ================= 2. SISTEMA DE AUTENTICAÇÃO =================
 const loginOverlay = document.getElementById('login-overlay');
 const appInterface = document.getElementById('app-interface');
 
@@ -51,13 +47,20 @@ onAuthStateChanged(auth, async (user) => {
         tokenAtual = await user.getIdToken(); 
         loginOverlay.style.display = 'none';
         appInterface.style.display = 'flex';
-        carregarProjetosDoFirebase();
+        idConversaAtiva = null;
+        idProjetoAtivo = null;
+        window.projetos = [];
+        resetarVisualizacaoChat();
+        await carregarProjetosDoFirebase();
     } else {
         usuarioAtual = null;
         tokenAtual = null;
         window.projetos = [];
+        idConversaAtiva = null;
+        idProjetoAtivo = null;
         loginOverlay.style.display = 'flex';
         appInterface.style.display = 'none';
+        resetarVisualizacaoChat();
     }
 });
 
@@ -79,8 +82,6 @@ document.getElementById('btn-login-google').onclick = () => {
 
 document.getElementById('btn-logout').onclick = () => signOut(auth);
 
-
-// ================= 3. BANCO DE DADOS (Firestore) =================
 async function salvarLocalmente() {
     if (!usuarioAtual) return;
     try {
@@ -105,7 +106,6 @@ async function carregarProjetosDoFirebase() {
     }
 }
 
-// ================= CONFIGURAÇÃO DO HIGHLIGHT.JS =================
 marked.setOptions({
     highlight: function(code, lang) {
         const language = hljs.getLanguage(lang) ? lang : 'plaintext';
@@ -121,7 +121,7 @@ if (localStorage.getItem('unity_config_ask_save') !== null) {
 document.getElementById('toggle-ask-save').checked = configAskToSave;
 
 let toastTimeout;
-function mostrarToast(mensagem, cor = 'rgba(35, 134, 54, 0.9)', iconeSvg = SVG_CHECK) {
+function mostrarToast(mensagem, cor = 'rgba(234, 88, 12, 0.9)', iconeSvg = SVG_CHECK) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-icon').innerHTML = iconeSvg;
     document.getElementById('toast-msg').innerHTML = mensagem;
@@ -149,7 +149,7 @@ window.salvarPreferenciasConfig = function() {
     const toggle = document.getElementById('toggle-ask-save');
     configAskToSave = toggle.checked;
     localStorage.setItem('unity_config_ask_save', configAskToSave);
-    mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(31, 111, 235, 0.9)', SVG_SETTINGS);
+    mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(234, 88, 12, 0.9)', SVG_SETTINGS);
 }
 
 function formatarBlocosDeCodigo() {
@@ -193,7 +193,7 @@ function formatarBlocosDeCodigo() {
             navigator.clipboard.writeText(codeElement.innerText).then(() => {
                 btnCopy.innerHTML = `${SVG_CHECK} Copiado`;
                 btnCopy.classList.add('copiado');
-                mostrarToast('Código copiado!', 'rgba(35, 134, 54, 0.9)', SVG_CHECK);
+                mostrarToast('Código copiado!', 'rgba(234, 88, 12, 0.9)', SVG_CHECK);
                 setTimeout(() => {
                     btnCopy.innerHTML = `${SVG_COPY} Copiar`;
                     btnCopy.classList.remove('copiado');
@@ -228,7 +228,7 @@ async function baixarCodigo(texto, linguagem) {
             const writable = await handle.createWritable();
             await writable.write(texto);
             await writable.close();
-            mostrarToast(`<b>${nomeArquivo}</b> salvo!`, 'rgba(35, 134, 54, 0.9)', SVG_SAVE);
+            mostrarToast(`<b>${nomeArquivo}</b> salvo!`, 'rgba(234, 88, 12, 0.9)', SVG_SAVE);
             return; 
         } catch (err) { if (err.name === 'AbortError') return; }
     }
@@ -236,7 +236,7 @@ async function baixarCodigo(texto, linguagem) {
     const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob); 
     const a = document.createElement('a'); a.href = url; a.download = nomeArquivo; a.click(); URL.revokeObjectURL(url);
-    mostrarToast(`Download iniciado!`, 'rgba(31, 111, 235, 0.9)', SVG_DOWNLOAD);
+    mostrarToast(`Download iniciado!`, 'rgba(234, 88, 12, 0.9)', SVG_DOWNLOAD);
 }
 
 document.addEventListener('click', () => { 
@@ -346,10 +346,10 @@ window.confirmarRenomear = function() {
 
     if (alvoMenu.tipo === 'projeto') {
         window.projetos[alvoMenu.indexProj].nome = novoNome;
-        mostrarToast('Projeto renomeado!', 'rgba(31, 111, 235, 0.9)', SVG_FOLDER);
+        mostrarToast('Projeto renomeado!', 'rgba(234, 88, 12, 0.9)', SVG_FOLDER);
     } else {
         window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome = novoNome;
-        mostrarToast('Conversa renomeada!', 'rgba(31, 111, 235, 0.9)', SVG_FILE);
+        mostrarToast('Conversa renomeada!', 'rgba(234, 88, 12, 0.9)', SVG_FILE);
     }
 
     salvarLocalmente();
@@ -387,6 +387,8 @@ window.deletarProjeto = function() {
 }
 
 function resetarVisualizacaoChat() {
+    idProjetoAtivo = null;
+    idConversaAtiva = null;
     document.getElementById('input-container').classList.remove('ativo');
     document.getElementById('chat-header').innerText = 'ComboBoy Researcher';
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>';
@@ -415,7 +417,7 @@ window.abrirModal = function() { document.getElementById('modal-projeto').style.
 window.fecharModal = function() { document.getElementById('modal-projeto').style.display = 'none'; }
 window.confirmarProjeto = function() {
     const nome = document.getElementById('input-nome-projeto').value.trim();
-    if (nome) { window.projetos.push({ nome: nome, aberto: true, conversas: [] }); salvarLocalmente(); renderizarSidebar(); window.fecharModal(); mostrarToast('Projeto criado!', 'rgba(35, 134, 54, 0.9)', SVG_FOLDER); }
+    if (nome) { window.projetos.push({ nome: nome, aberto: true, conversas: [] }); salvarLocalmente(); renderizarSidebar(); window.fecharModal(); mostrarToast('Projeto criado!', 'rgba(234, 88, 12, 0.9)', SVG_FOLDER); }
 }
 
 window.novaConversa = function(indexProj, event) {
