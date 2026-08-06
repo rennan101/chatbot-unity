@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -28,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Chave Global (Para Visitantes) e Modelo Padrão
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash") 
 
@@ -46,12 +46,12 @@ Regras OBRIGATÓRIAS:
 
 class Mensagem(BaseModel):
     texto: str
+    imagem_base64: str = None  # Novo campo opcional para a imagem
+    mime_type: str = None      # Tipo do arquivo (ex: image/jpeg)
 
 def verificar_token(authorization: str = Header(None)):
-    # Se não houver token, retorna None (Usuário Visitante)
     if not authorization or not authorization.startswith("Bearer "):
         return None
-    
     token = authorization.split("Bearer ")[1]
     try:
         decoded_token = auth.verify_id_token(token)
@@ -66,17 +66,29 @@ def chat(
     usuario_logado: dict = Depends(verificar_token),
     x_google_api_key: str = Header(None)
 ):
-    # Lógica de prioridade: Chave do Usuário > Chave Global do Servidor
     chave_final = x_google_api_key if x_google_api_key else GOOGLE_API_KEY
-    
     if not chave_final:
         raise HTTPException(status_code=400, detail="Serviço indisponível. Nenhuma API Key configurada.")
 
     try:
         client = genai.Client(api_key=chave_final)
+        
+        # Constrói o pacote de dados (Texto + Imagem se existir)
+        conteudos = []
+        if msg.imagem_base64 and msg.mime_type:
+            try:
+                # Remove o cabeçalho do base64 gerado pelo navegador se existir
+                b64_data = msg.imagem_base64.split(",")[1] if "," in msg.imagem_base64 else msg.imagem_base64
+                image_bytes = base64.b64decode(b64_data)
+                conteudos.append(types.Part.from_bytes(data=image_bytes, mime_type=msg.mime_type))
+            except Exception as e:
+                print(f"⚠️ Erro ao processar imagem: {e}")
+
+        conteudos.append(msg.texto)
+
         resposta = client.models.generate_content(
             model=GEMINI_MODEL, 
-            contents=msg.texto,
+            contents=conteudos,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION
             )

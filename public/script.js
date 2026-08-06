@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+
 const firebaseConfig = {
   apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
@@ -25,6 +26,8 @@ let statusConversas = {};
 let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
+let imagemAtualBase64 = null;
+let imagemAtualMimeType = null;
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -629,9 +632,15 @@ function renderizarChat() {
     if (idProjetoAtivo === null || !window.projetos[idProjetoAtivo] || !window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) return;
     const chatBox = document.getElementById('chat'); chatBox.innerHTML = ''; 
     const conversa = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
+    
     conversa.mensagens.forEach(msg => {
-        if (msg.papel === 'system') chatBox.innerHTML += `<div class="system-msg">${msg.texto}</div>`;
-        else chatBox.innerHTML += `<div class="balao ${msg.papel}">${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
+        if (msg.papel === 'system') {
+            chatBox.innerHTML += `<div class="system-msg">${msg.texto}</div>`;
+        } else {
+            // Verifica se a mensagem continha imagem
+            let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
+            chatBox.innerHTML += `<div class="balao ${msg.papel}">${imgHtml}${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
+        }
     });
     
     const estaProcessando = conversa.processando === true;
@@ -643,12 +652,15 @@ function renderizarChat() {
 }
 
 window.validarInput = function() {
-    const input = document.getElementById('mensagem'); const btn = document.getElementById('btn-acao');
+    const input = document.getElementById('mensagem'); 
+    const btn = document.getElementById('btn-acao');
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
     const estaProcessando = conv?.processando === true;
+    
     if (!estaProcessando) {
-        btn.disabled = input.value.trim().length === 0;
+        // Agora o botão ativa se tiver texto OU se tiver imagem
+        btn.disabled = input.value.trim().length === 0 && !imagemAtualBase64;
     } else {
         btn.disabled = true;
     }
@@ -695,11 +707,24 @@ async function enviarMensagem() {
 
     const input = document.getElementById('mensagem'); 
     const texto = input.value.trim(); 
-    if(!texto) return;
-
-    conversaAtual.mensagens.push({ papel: 'aluno', texto: texto });
-    if (conversaAtual.mensagens.length === 2) conversaAtual.nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
+    const imgBase64 = imagemAtualBase64;
+    const imgMime = imagemAtualMimeType;
     
+    if(!texto && !imgBase64) return;
+
+    // Constrói o objeto de mensagem
+    const novaMsg = { papel: 'aluno', texto: texto };
+    if (imgBase64) novaMsg.imagem_url = imgBase64; // Salva para renderizar
+
+    conversaAtual.mensagens.push(novaMsg);
+    
+    // Gera nome da conversa baseado no texto (ou avisa que enviou imagem)
+    if (conversaAtual.mensagens.length === 2) {
+        if (texto) conversaAtual.nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
+        else conversaAtual.nome = "Análise de Imagem";
+    }
+    
+    window.removerImagem(); // Limpa o anexo visual
     conversaAtual.processando = true;
     salvarDadosAtuais(pIdx); 
     
@@ -710,6 +735,8 @@ async function enviarMensagem() {
         atualizarEstadoBotaoEnvio();
     }
 
+    const controller = new AbortController(); statusConversas[getChaveConversa(pIdx, cIdx)] = { ativa: true, controller: controller };
+
     try {
         const headers = { 'Content-Type': 'application/json' };
         if (usuarioAtual) {
@@ -717,7 +744,13 @@ async function enviarMensagem() {
             if (userApiKey) headers['x-google-api-key'] = userApiKey;
         }
 
-        const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify({ texto: texto }) });
+        const payload = { texto: texto };
+        if (imgBase64) {
+            payload.imagem_base64 = imgBase64;
+            payload.mime_type = imgMime;
+        }
+
+        const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify(payload), signal: controller.signal });
         
         if (res.status === 429) { 
             conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
@@ -747,6 +780,61 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('#notifications-menu') && !e.target.closest('#btn-notificacoes')) document.getElementById('notifications-menu').style.display = 'none'; 
     if (!e.target.closest('#context-menu') && !e.target.closest('.projeto-header') && !e.target.closest('.conversa-item')) document.getElementById('context-menu').style.display = 'none'; 
 });
+
+// ================= GESTÃO DE IMAGENS (COMPRESSÃO NO NAVEGADOR) =================
+function redimensionarEComprimirImagem(file, maxSize, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxSize || height > maxSize) {
+                if (width > height) { height = Math.round((height * maxSize) / width); width = maxSize; } 
+                else { width = Math.round((width * maxSize) / height); height = maxSize; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Comprime como JPEG com 80% de qualidade para transitar levíssimo no backend
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            callback(dataUrl, 'image/jpeg');
+        }
+        img.src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+}
+
+window.lidarComImagem = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Mostra o spinner ou algo rápido
+    document.getElementById('btn-anexo').style.opacity = '0.5';
+    
+    // Comprime a imagem mantendo máximo de 1024px
+    redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
+        imagemAtualBase64 = base64Data;
+        imagemAtualMimeType = mimeType;
+        
+        document.getElementById('image-preview').src = imagemAtualBase64;
+        document.getElementById('image-preview-container').style.display = 'block';
+        document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
+        document.getElementById('btn-anexo').style.opacity = '1';
+        window.validarInput();
+    });
+}
+
+window.removerImagem = function() {
+    imagemAtualBase64 = null;
+    imagemAtualMimeType = null;
+    document.getElementById('input-imagem').value = '';
+    document.getElementById('image-preview-container').style.display = 'none';
+    document.getElementById('main-input-wrapper').style.borderRadius = '16px';
+    window.validarInput();
+}
 
 window.ajustarAltura = (e) => { e.style.height = 'auto'; e.style.height = (e.scrollHeight) + 'px'; }
 window.lidarComTecla = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const btn = document.getElementById('btn-acao'); if (btn.classList.contains('enviar') && !btn.disabled) window.lidarComAcao(); } }

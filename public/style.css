@@ -314,3 +314,13 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     #sidebar.recolhido { transform: translateX(0); width: 68px; }
     .balao { max-width: 90%; }
 }
+/* --- ESTILOS PARA IMAGENS NO CHAT E UPLOADS --- */
+#input-container { padding-bottom: 20px; }
+.balao-imagem { 
+    max-width: 100%; 
+    border-radius: 8px; 
+    margin-bottom: 10px; 
+    border: 1px solid rgba(255,255,255,0.1); 
+    display: block; 
+}
+.aluno .balao-imagem { border-color: rgba(255,255,255,0.3); }
