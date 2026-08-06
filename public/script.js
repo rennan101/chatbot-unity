@@ -25,7 +25,7 @@ let alvoMenu = { tipo: null, indexProj: null, indexConv: null };
 let statusConversas = {};
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
 const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
 const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
@@ -121,7 +121,7 @@ if (localStorage.getItem('unity_config_ask_save') !== null) {
 document.getElementById('toggle-ask-save').checked = configAskToSave;
 
 let toastTimeout;
-function mostrarToast(mensagem, cor = 'rgba(234, 88, 12, 0.9)', iconeSvg = SVG_CHECK) {
+function mostrarToast(mensagem, cor = 'rgba(245, 130, 32, 0.9)', iconeSvg = SVG_CHECK) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-icon').innerHTML = iconeSvg;
     document.getElementById('toast-msg').innerHTML = mensagem;
@@ -149,7 +149,7 @@ window.salvarPreferenciasConfig = function() {
     const toggle = document.getElementById('toggle-ask-save');
     configAskToSave = toggle.checked;
     localStorage.setItem('unity_config_ask_save', configAskToSave);
-    mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(234, 88, 12, 0.9)', SVG_SETTINGS);
+    mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS);
 }
 
 function formatarBlocosDeCodigo() {
@@ -193,7 +193,7 @@ function formatarBlocosDeCodigo() {
             navigator.clipboard.writeText(codeElement.innerText).then(() => {
                 btnCopy.innerHTML = `${SVG_CHECK} Copiado`;
                 btnCopy.classList.add('copiado');
-                mostrarToast('Código copiado!', 'rgba(234, 88, 12, 0.9)', SVG_CHECK);
+                mostrarToast('Código copiado!', 'rgba(245, 130, 32, 0.9)', SVG_CHECK);
                 setTimeout(() => {
                     btnCopy.innerHTML = `${SVG_COPY} Copiar`;
                     btnCopy.classList.remove('copiado');
@@ -228,7 +228,7 @@ async function baixarCodigo(texto, linguagem) {
             const writable = await handle.createWritable();
             await writable.write(texto);
             await writable.close();
-            mostrarToast(`<b>${nomeArquivo}</b> salvo!`, 'rgba(234, 88, 12, 0.9)', SVG_SAVE);
+            mostrarToast(`<b>${nomeArquivo}</b> salvo!`, 'rgba(245, 130, 32, 0.9)', SVG_SAVE);
             return; 
         } catch (err) { if (err.name === 'AbortError') return; }
     }
@@ -236,7 +236,7 @@ async function baixarCodigo(texto, linguagem) {
     const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob); 
     const a = document.createElement('a'); a.href = url; a.download = nomeArquivo; a.click(); URL.revokeObjectURL(url);
-    mostrarToast(`Download iniciado!`, 'rgba(234, 88, 12, 0.9)', SVG_DOWNLOAD);
+    mostrarToast(`Download iniciado!`, 'rgba(245, 130, 32, 0.9)', SVG_DOWNLOAD);
 }
 
 document.addEventListener('click', () => { 
@@ -346,10 +346,10 @@ window.confirmarRenomear = function() {
 
     if (alvoMenu.tipo === 'projeto') {
         window.projetos[alvoMenu.indexProj].nome = novoNome;
-        mostrarToast('Projeto renomeado!', 'rgba(234, 88, 12, 0.9)', SVG_FOLDER);
+        mostrarToast('Projeto renomeado!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER);
     } else {
         window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome = novoNome;
-        mostrarToast('Conversa renomeada!', 'rgba(234, 88, 12, 0.9)', SVG_FILE);
+        mostrarToast('Conversa renomeada!', 'rgba(245, 130, 32, 0.9)', SVG_FILE);
     }
 
     salvarLocalmente();
@@ -417,7 +417,7 @@ window.abrirModal = function() { document.getElementById('modal-projeto').style.
 window.fecharModal = function() { document.getElementById('modal-projeto').style.display = 'none'; }
 window.confirmarProjeto = function() {
     const nome = document.getElementById('input-nome-projeto').value.trim();
-    if (nome) { window.projetos.push({ nome: nome, aberto: true, conversas: [] }); salvarLocalmente(); renderizarSidebar(); window.fecharModal(); mostrarToast('Projeto criado!', 'rgba(234, 88, 12, 0.9)', SVG_FOLDER); }
+    if (nome) { window.projetos.push({ nome: nome, aberto: true, conversas: [] }); salvarLocalmente(); renderizarSidebar(); window.fecharModal(); mostrarToast('Projeto criado!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); }
 }
 
 window.novaConversa = function(indexProj, event) {
