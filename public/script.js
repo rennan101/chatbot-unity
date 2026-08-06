@@ -42,6 +42,13 @@ const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 
 let isCreatingAccount = false; 
 
+// Formatação limpa do nome do usuário a partir do e-mail ou display name
+function formatarNomeUsuario(emailOrName) {
+    if (!emailOrName) return 'Visitante';
+    const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
 // ================= GESTÃO DE AUTH E CONVITES =================
 onAuthStateChanged(auth, async (user) => {
     fecharModalAuth();
@@ -52,7 +59,7 @@ onAuthStateChanged(auth, async (user) => {
         usuarioAtual = user;
         const userEmail = user.email || 'Usuario';
         const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${userEmail}&background=21262d&color=c9d1d9&rounded=true`;
-        const displayName = user.displayName || userEmail.split('@')[0];
+        const displayName = user.displayName || formatarNomeUsuario(userEmail);
 
         btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</span>`;
         btnProfile.onclick = abrirProfileMenu;
@@ -116,7 +123,7 @@ function iniciarEscutaConvites(email) {
             const id = docSnap.id;
             listaConvites.innerHTML += `
                 <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
-                    <div style="color: #e6edf3; margin-bottom: 4px;"><b>${convite.remetente}</b> convidou você para o projeto <b>${convite.projetoNome}</b></div>
+                    <div style="color: #e6edf3; margin-bottom: 4px;"><b>${formatarNomeUsuario(convite.remetente)}</b> convidou você para o projeto <b>${convite.projetoNome}</b></div>
                     <div style="display: flex; gap: 6px;">
                         <button onclick="responderConvite('${id}', '${convite.projetoId}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
                         <button onclick="responderConvite('${id}', null, false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
@@ -137,8 +144,6 @@ window.abrirMenuNotificacoes = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('profile-menu').style.display = 'none';
         menu.style.display = 'block';
-        menu.style.right = '20px';
-        menu.style.top = (btn.bottom + 10) + 'px';
     }
 }
 
@@ -279,8 +284,7 @@ function renderizarSidebar() {
 
         const containerConversas = document.getElementById(`conversas-${indexProj}`);
         proj.conversas.forEach((conv, indexConv) => {
-            const chave = getChaveConversa(indexProj, indexConv);
-            const estaProcessando = statusConversas[chave]?.ativa;
+            const estaProcessando = conv.processando === true;
             const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
             
             let emailsNaConversa = [];
@@ -295,11 +299,12 @@ function renderizarSidebar() {
             let avataresPresencaHTML = '';
             if (emailsNaConversa.length > 0) {
                 const primeiroEmail = emailsNaConversa[0];
+                const nomePrimeiro = formatarNomeUsuario(primeiroEmail);
                 const primeiroAvatar = `https://ui-avatars.com/api/?name=${primeiroEmail}&background=21262d&color=c9d1d9&rounded=true`;
-                avataresPresencaHTML += `<img src="${primeiroAvatar}" title="${primeiroEmail}" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #F58220; object-fit: cover; vertical-align: middle; margin-left: 4px;">`;
+                avataresPresencaHTML += `<img src="${primeiroAvatar}" title="${nomePrimeiro}" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #F58220; object-fit: cover; vertical-align: middle; margin-left: 4px;">`;
                 
                 if (emailsNaConversa.length > 1) {
-                    const todosNomes = emailsNaConversa.join(', ');
+                    const todosNomes = emailsNaConversa.map(e => formatarNomeUsuario(e)).join(', ');
                     const extrasCount = emailsNaConversa.length - 1;
                     avataresPresencaHTML += `<span title="${todosNomes}" style="font-size: 0.7rem; background: rgba(245,130,32,0.2); color: #F58220; padding: 1px 4px; border-radius: 4px; margin-left: 3px; vertical-align: middle; cursor: help;">+${extrasCount}</span>`;
                 }
@@ -387,6 +392,7 @@ window.novaConversa = function(indexProj, event) {
     window.projetos[indexProj].conversas.push({ 
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, 
         criador: emailCriador,
+        processando: false,
         mensagens: [{ papel: 'bot', texto: `Olá! Sou seu professor especialista em Unity. Como posso te ajudar neste projeto${generoStr}?` }] 
     });
     window.projetos[indexProj].aberto = true; 
@@ -400,7 +406,6 @@ window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
     
-    // Renderiza a lista de colaboradores atuais com botão de remover
     const container = document.getElementById('lista-colaboradores-atual');
     container.innerHTML = '';
     
@@ -412,11 +417,11 @@ window.abrirModalCompartilhar = () => {
             const row = document.createElement('div');
             row.className = 'colaborador-row';
             
+            const nomeFormatado = formatarNomeUsuario(email);
             const badgeDono = (email === membros[0]) ? ' <span style="font-size:0.75rem; background:rgba(245,130,32,0.2); color:#F58220; padding:1px 6px; border-radius:4px; margin-left:6px;">Dono</span>' : '';
             
-            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;">${email}${badgeDono}</span>`;
+            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${nomeFormatado}${badgeDono}</span>`;
             
-            // Permite remover qualquer membro exceto o dono principal (índice 0)
             if (email !== membros[0]) {
                 const btnRemover = document.createElement('button');
                 btnRemover.className = 'btn-remover-collab';
@@ -444,13 +449,13 @@ window.confirmarCompartilhamento = async () => {
             status: "pendente"
         });
         document.getElementById('input-email-convite').value = '';
-        abrirModalCompartilhar(); // Atualiza painel do modal
+        abrirModalCompartilhar(); 
         mostrarToast('Convite enviado com sucesso!', 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
     }
 }
 
 window.removerColaborador = async (email) => {
-    if (confirm(`Deseja remover ${email} deste projeto?`)) {
+    if (confirm(`Deseja remover ${formatarNomeUsuario(email)} deste projeto?`)) {
         if (alvoMenu.indexProj !== null) {
             const proj = window.projetos[alvoMenu.indexProj];
             if (proj && proj.id) {
@@ -535,8 +540,8 @@ async function selecionarConversa(indexProj, indexConv) {
     
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     
-    const autorConversa = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
-    document.getElementById('header-subtitle').innerText = `Criado por: ${autorConversa}`;
+    const autorEmail = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
+    document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
 
     renderizarChat(); atualizarEstadoBotaoEnvio(); validarInput();
 }
@@ -549,48 +554,84 @@ function renderizarChat() {
         if (msg.papel === 'system') chatBox.innerHTML += `<div class="system-msg">${msg.texto}</div>`;
         else chatBox.innerHTML += `<div class="balao ${msg.papel}">${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
     });
-    const chave = getChaveConversa(idProjetoAtivo, idConversaAtiva);
-    if (statusConversas[chave] && statusConversas[chave].ativa) chatBox.innerHTML += `<div id="indicador-${chave}" class="balao bot"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+    
+    // Verifica se a conversa atual está pensando na nuvem
+    const estaProcessando = conversa.processando === true;
+    if (estaProcessando) {
+        chatBox.innerHTML += `<div class="balao bot"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+    }
+
     formatarBlocosDeCodigo(); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 window.validarInput = function() {
     const input = document.getElementById('mensagem'); const btn = document.getElementById('btn-acao');
-    if (idProjetoAtivo === null) return;
-    const estaProcessando = statusConversas[getChaveConversa(idProjetoAtivo, idConversaAtiva)]?.ativa;
-    if (!estaProcessando) btn.disabled = input.value.trim().length === 0;
+    if (idProjetoAtivo === null || idConversaAtiva === null) return;
+    const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
+    const estaProcessando = conv?.processando === true;
+    if (!estaProcessando) {
+        btn.disabled = input.value.trim().length === 0;
+    } else {
+        btn.disabled = true;
+    }
 }
 
 function atualizarEstadoBotaoEnvio() {
-    if (idProjetoAtivo === null) return;
+    if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const btn = document.getElementById('btn-acao'); const iconSend = document.getElementById('icon-send'); const iconStop = document.getElementById('icon-stop');
-    const estaProcessando = statusConversas[getChaveConversa(idProjetoAtivo, idConversaAtiva)]?.ativa;
-    if (estaProcessando) { btn.classList.remove('enviar'); btn.classList.add('stop'); btn.disabled = false; iconSend.style.display = 'none'; iconStop.style.display = 'block'; btn.title = "Cancelar Resposta"; } 
-    else { btn.classList.remove('stop'); btn.classList.add('enviar'); iconStop.style.display = 'none'; iconSend.style.display = 'block'; btn.title = "Enviar"; window.validarInput(); }
+    const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
+    const estaProcessando = conv?.processando === true;
+
+    if (estaProcessando) {
+        btn.classList.remove('enviar');
+        btn.classList.add('stop');
+        btn.disabled = true;
+        iconSend.style.display = 'none';
+        iconStop.style.display = 'block';
+        btn.title = "Aguardando resposta da IA...";
+    } else {
+        btn.classList.remove('stop');
+        btn.classList.add('enviar');
+        iconStop.style.display = 'none';
+        iconSend.style.display = 'block';
+        btn.title = "Enviar";
+        window.validarInput();
+    }
 }
 
 window.lidarComAcao = function() {
-    const chave = getChaveConversa(idProjetoAtivo, idConversaAtiva);
-    if (statusConversas[chave]?.ativa) { statusConversas[chave].controller.abort(); } else { enviarMensagem(); }
+    if (idProjetoAtivo === null || idConversaAtiva === null) return;
+    const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
+    if (!conv?.processando) {
+        enviarMensagem();
+    }
 }
 
 async function enviarMensagem() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
-    const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva; const chave = getChaveConversa(pIdx, cIdx);
+    const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva;
+    const proj = window.projetos[pIdx];
+    const conversaAtual = proj.conversas[cIdx];
     
-    if (statusConversas[chave]?.ativa) return;
+    if (conversaAtual.processando) return;
 
-    const input = document.getElementById('mensagem'); const texto = input.value.trim(); if(!texto) return;
+    const input = document.getElementById('mensagem'); 
+    const texto = input.value.trim(); 
+    if(!texto) return;
 
-    window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'aluno', texto: texto });
-    if (window.projetos[pIdx].conversas[cIdx].mensagens.length === 2) window.projetos[pIdx].conversas[cIdx].nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
+    conversaAtual.mensagens.push({ papel: 'aluno', texto: texto });
+    if (conversaAtual.mensagens.length === 2) conversaAtual.nome = texto.substring(0, 25) + (texto.length > 25 ? "..." : "");
     
+    // ATIVA O ESTADO DE PENSANDO COMPARTILHADO NA NUVEM PARA ESSA CONVERSA
+    conversaAtual.processando = true;
     salvarDadosAtuais(pIdx); 
     
     input.value = ''; input.style.height = 'auto';
-    const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
-    
-    renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); atualizarEstadoBotaoEnvio(); }
+    renderizarSidebar(); 
+    if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
+        renderizarChat();
+        atualizarEstadoBotaoEnvio();
+    }
 
     try {
         const headers = { 'Content-Type': 'application/json' };
@@ -599,22 +640,27 @@ async function enviarMensagem() {
             if (userApiKey) headers['x-google-api-key'] = userApiKey;
         }
 
-        const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify({ texto: texto }), signal: controller.signal });
+        const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify({ texto: texto }) });
         
         if (res.status === 429) { 
-            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
+            conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
         } else if (!res.ok) {
             let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro);
         } else {
             const dados = await res.json();
-            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta });
+            conversaAtual.mensagens.push({ papel: 'bot', texto: dados.resposta });
         }
     } catch (e) {
-        window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado pelo usuário.' : 'Erro de comunicação: ' + e.message}` });
+        conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_WARN} Erro de comunicação: ${e.message}` });
     } finally {
-        statusConversas[chave].ativa = false;
+        // DESATIVA O ESTADO DE PENSANDO COMPARTILHADO
+        conversaAtual.processando = false;
         salvarDadosAtuais(pIdx);
-        renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); atualizarEstadoBotaoEnvio(); }
+        renderizarSidebar(); 
+        if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
+            renderizarChat(); 
+            atualizarEstadoBotaoEnvio();
+        }
     }
 }
 

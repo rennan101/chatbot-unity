@@ -121,7 +121,7 @@ body {
 }
 #context-menu { min-width: 180px; }
 #profile-menu { min-width: 160px; }
-#notifications-menu { width: 280px; padding: 12px; }
+#notifications-menu { width: 280px; padding: 12px; right: 20px; }
 
 .context-item { padding: 10px 15px; color: #c9d1d9; cursor: pointer; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: background 0.2s;}
 .context-item:hover { background: #F58220; color: white; }
@@ -258,7 +258,6 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 .btn-confirmar { padding: 10px 18px; background: linear-gradient(135deg, #e06c00 0%, #b35600 100%); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: 'Space Grotesk', sans-serif; transition: transform 0.1s;}
 .btn-confirmar:hover { transform: translateY(-1px); }
 
-/* ESTILOS PARA A LISTA DE COLABORADORES NO MODAL */
 .colaborador-row {
     display: flex;
     align-items: center;
@@ -280,9 +279,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     font-family: 'Space Grotesk', sans-serif;
     transition: background 0.2s;
 }
-.btn-remover-collab:hover {
-    background: rgba(218, 54, 51, 0.4);
-}
+.btn-remover-collab:hover { background: rgba(218, 54, 51, 0.4); }
 
 #toast {
     position: fixed; bottom: -60px; right: 24px; background: rgba(245, 130, 32, 0.9); color: white;
