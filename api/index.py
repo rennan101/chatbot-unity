@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi.middleware.cors import CORSMiddleware # ADICIONE ESTA LINHA
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
@@ -10,6 +11,15 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(options={'projectId': 'comboboy-researcher'})
 
 app = FastAPI()
+
+# ADICIONE ESTE BLOCO PARA LIBERAR O CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Permite que qualquer frontend se conecte (você pode colocar a URL do Vercel aqui depois)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 client_gemini = genai.Client(api_key=GOOGLE_API_KEY)

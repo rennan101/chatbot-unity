@@ -553,8 +553,9 @@ async function enviarMensagem() {
         atualizarEstadoBotaoEnvio();
     }
 
-    try {
-        const res = await fetch('/api/chat', { 
+try {
+        // Substitua '/api/chat' pelo link completo do Render
+        const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { 
             method: 'POST', 
             headers: { 
                 'Content-Type': 'application/json',
