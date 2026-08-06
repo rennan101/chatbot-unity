@@ -64,7 +64,7 @@
 
         <div class="sidebar-footer" style="flex-direction: column; gap: 10px; display: flex; position: relative;">
             <button id="btn-config" class="btn-config" onclick="abrirConfigMenu(event)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span class="texto-btn">Configurações</span>
             </button>
             <button id="btn-profile" class="btn-config"></button>
@@ -72,7 +72,6 @@
     </aside>
 
     <main id="main-area">
-        <!-- HEADER COM SINO ALINHADO À DIREITA SEM ESTOURAR -->
         <header id="chat-header">
             <div id="header-title-container">
                 <span id="header-title">ComboBoy Researcher</span>
@@ -106,7 +105,7 @@
         </div>
     </div>
 
-    <!-- MENU DE NOTIFICAÇÕES POSICIONADO À DIREITA -->
+    <!-- MENU DE NOTIFICAÇÕES -->
     <div id="notifications-menu">
         <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; color: #F58220; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">Convites de Projeto</div>
         <div id="lista-convites-popup" style="max-height: 200px; overflow-y: auto;">
@@ -145,18 +144,23 @@
         </div>
     </div>
 
-    <!-- MODAL COMPARTILHAR -->
+    <!-- MODAL GERENCIAR COLABORADORES -->
     <div class="modal-overlay" id="modal-compartilhar">
-        <div class="modal-content">
+        <div class="modal-content" style="width: 450px;">
             <button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <h3 style="display:flex; align-items:center; gap:10px;">Convidar Membro</h3>
-            <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">Digite o e-mail para enviar um convite de colaboração.</p>
-            <input type="email" id="input-email-convite" placeholder="amigo@email.com" style="width: 100%;">
-            <div class="modal-acoes">
-                <button class="btn-cancelar" onclick="document.getElementById('modal-compartilhar').style.display='none'">Cancelar</button>
-                <button class="btn-confirmar" onclick="confirmarCompartilhamento()">Enviar Convite</button>
+            <h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colaboradores</h3>
+            
+            <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div>
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                <input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;">
+                <button class="btn-confirmar" onclick="confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div>
+            <div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                <!-- Preenchido via JS -->
             </div>
         </div>
     </div>

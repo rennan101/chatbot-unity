@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
@@ -38,7 +38,7 @@ const SVG_WARN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
 const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
 const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>`;
+const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
 
 let isCreatingAccount = false; 
 
@@ -167,6 +167,7 @@ async function sincronizarProjetoNaNuvem(indexProj) {
         nome: proj.nome, 
         aberto: proj.aberto, 
         conversas: proj.conversas,
+        membros: proj.membros || [],
         presenca: proj.presenca || {} 
     });
 }
@@ -279,10 +280,9 @@ function renderizarSidebar() {
         const containerConversas = document.getElementById(`conversas-${indexProj}`);
         proj.conversas.forEach((conv, indexConv) => {
             const chave = getChaveConversa(indexProj, indexConv);
-            const estaProcessando = statusConversas[chave]?.ativa; // Correção: uso de optional chaining para evitar erro e spinner infinito
+            const estaProcessando = statusConversas[chave]?.ativa;
             const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
             
-            // Agrupamento inteligente de avatares com suporte a "+N" e tooltips
             let emailsNaConversa = [];
             if (proj.presenca) {
                 Object.entries(proj.presenca).forEach(([emailUser, cIdx]) => {
@@ -332,7 +332,7 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     
     if (tipo === 'projeto') {
         if (usuarioAtual && window.projetos[indexProj].id) {
-            menuHTML += `<div class="context-item" style="color:#F58220" onclick="abrirModalCompartilhar()">${SVG_SHARE} Compartilhar</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
+            menuHTML += `<div class="context-item" style="color:#F58220" onclick="abrirModalCompartilhar()">${SVG_SHARE} Add Colaborador</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
         }
         menuHTML += `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Projeto</div><div class="context-item" onclick="exportarProjetoZip()">${SVG_ARCHIVE} Baixar (.zip)</div><div class="context-item danger" onclick="deletarProjeto()">${SVG_TRASH} Apagar</div>`;
     } else {
@@ -364,7 +364,7 @@ window.confirmarProjeto = async function() {
     const descricao = document.getElementById('input-desc-projeto').value.trim();
 
     if (nome) { 
-        window.fecharModal(); // Fecha o modal imediatamente garantindo fluidez
+        window.fecharModal(); 
         if (usuarioAtual) {
             await addDoc(collection(db, "projetos"), {
                 nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {}
@@ -395,12 +395,43 @@ window.novaConversa = function(indexProj, event) {
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
-// ==== COLABORAÇÃO E CONVITES ====
+// ==== COLABORAÇÃO, CONVITES E GESTÃO DE USUÁRIOS ====
 window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
+    
+    // Renderiza a lista de colaboradores atuais com botão de remover
+    const container = document.getElementById('lista-colaboradores-atual');
+    container.innerHTML = '';
+    
+    if (alvoMenu.indexProj !== null) {
+        const proj = window.projetos[alvoMenu.indexProj];
+        const membros = proj.membros || [];
+        
+        membros.forEach(email => {
+            const row = document.createElement('div');
+            row.className = 'colaborador-row';
+            
+            const badgeDono = (email === membros[0]) ? ' <span style="font-size:0.75rem; background:rgba(245,130,32,0.2); color:#F58220; padding:1px 6px; border-radius:4px; margin-left:6px;">Dono</span>' : '';
+            
+            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;">${email}${badgeDono}</span>`;
+            
+            // Permite remover qualquer membro exceto o dono principal (índice 0)
+            if (email !== membros[0]) {
+                const btnRemover = document.createElement('button');
+                btnRemover.className = 'btn-remover-collab';
+                btnRemover.innerText = 'Remover';
+                btnRemover.onclick = () => removerColaborador(email);
+                row.appendChild(btnRemover);
+            }
+            
+            container.appendChild(row);
+        });
+    }
+    
     document.getElementById('modal-compartilhar').style.display = 'flex';
 }
+
 window.confirmarCompartilhamento = async () => {
     const email = document.getElementById('input-email-convite').value.trim();
     if (email && usuarioAtual && alvoMenu.indexProj !== null) {
@@ -412,8 +443,24 @@ window.confirmarCompartilhamento = async () => {
             destinatario: email,
             status: "pendente"
         });
-        document.getElementById('modal-compartilhar').style.display = 'none';
+        document.getElementById('input-email-convite').value = '';
+        abrirModalCompartilhar(); // Atualiza painel do modal
         mostrarToast('Convite enviado com sucesso!', 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
+    }
+}
+
+window.removerColaborador = async (email) => {
+    if (confirm(`Deseja remover ${email} deste projeto?`)) {
+        if (alvoMenu.indexProj !== null) {
+            const proj = window.projetos[alvoMenu.indexProj];
+            if (proj && proj.id) {
+                const ref = doc(db, "projetos", proj.id);
+                await updateDoc(ref, { membros: arrayRemove(email) });
+                proj.membros = proj.membros.filter(m => m !== email);
+                abrirModalCompartilhar();
+                mostrarToast("Colaborador removido.", "rgba(245, 130, 32, 0.9)", SVG_CHECK);
+            }
+        }
     }
 }
 
@@ -425,7 +472,9 @@ window.confirmarRenomear = function() {
     else window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome = novo;
     salvarDadosAtuais(alvoMenu.indexProj); renderizarSidebar(); 
     if (idProjetoAtivo !== null) {
-        document.getElementById('header-title').innerText = `${window.projetos[idProjetoAtivo].nome} / ${window.projetos[idProjetoAtivo].conversas[idConversaAtiva].nome}`;
+        const proj = window.projetos[idProjetoAtivo];
+        const conv = proj.conversas[idConversaAtiva];
+        document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     }
     window.fecharModalRenomear();
 }
@@ -468,7 +517,6 @@ function resetarVisualizacaoChat() {
 async function selecionarConversa(indexProj, indexConv) {
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
     
-    // Atualização instantânea local de presença antes do Firestore para máxima velocidade
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj];
         proj.presenca = proj.presenca || {};
@@ -487,7 +535,6 @@ async function selecionarConversa(indexProj, indexConv) {
     
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     
-    // Insere o autor da conversa logo abaixo no header
     const autorConversa = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
     document.getElementById('header-subtitle').innerText = `Criado por: ${autorConversa}`;
 

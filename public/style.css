@@ -93,7 +93,6 @@ body {
 .conversa-item:hover { background: rgba(255, 255, 255, 0.05); color: #c9d1d9; }
 .conversa-item.ativa { background: rgba(245, 130, 32, 0.15) !important; color: #F58220 !important; font-weight: 600; border-left: 3px solid #F58220;}
 
-/* ALINHAMENTO PERFEITO DO SPINNER E DOS AVATARES */
 .conversa-item .status-icon {
     display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; color: #F58220; width: 14px; height: 14px; flex-shrink: 0;
 }
@@ -258,6 +257,32 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 .btn-cancelar:hover { background: rgba(255,255,255,0.05); }
 .btn-confirmar { padding: 10px 18px; background: linear-gradient(135deg, #e06c00 0%, #b35600 100%); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: 'Space Grotesk', sans-serif; transition: transform 0.1s;}
 .btn-confirmar:hover { transform: translateY(-1px); }
+
+/* ESTILOS PARA A LISTA DE COLABORADORES NO MODAL */
+.colaborador-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #e6edf3;
+}
+.btn-remover-collab {
+    background: rgba(218, 54, 51, 0.2);
+    color: #ff7b72;
+    border: 1px solid rgba(218, 54, 51, 0.4);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: background 0.2s;
+}
+.btn-remover-collab:hover {
+    background: rgba(218, 54, 51, 0.4);
+}
 
 #toast {
     position: fixed; bottom: -60px; right: 24px; background: rgba(245, 130, 32, 0.9); color: white;

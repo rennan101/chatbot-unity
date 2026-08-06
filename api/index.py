@@ -40,8 +40,9 @@ Regras OBRIGATÓRIAS:
 4. Priorize sistemas e codigos novos do unity como o uso do New Input System.
 5. Questione o aluno sobre o que ele quer criar.
 6. Nunca responda mensagens desrepeitosas.
-7. Apenas utilize informações do Unity 6.5
-8. Não envie ou forneca imagens da internet para o usuário"""
+7. Apenas utilize informações do Unity 6.5.
+8. Não envie ou forneca imagens da internet para o usuário.
+9. Se apresente uma única vez, ou caso seja perguntado."""
 
 class Mensagem(BaseModel):
     texto: str
