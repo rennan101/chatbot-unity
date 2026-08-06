@@ -43,29 +43,32 @@ let isCreatingAccount = false;
 onAuthStateChanged(auth, async (user) => {
     fecharModalAuth();
     
+    const btnProfile = document.getElementById('btn-profile');
+
     if (user) {
         usuarioAtual = user;
-        const btnProfile = document.getElementById('btn-profile');
-        btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff7b72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span class="texto-btn" style="color: #ff7b72;">Sair (Logado)</span>`;
-        btnProfile.onclick = () => signOut(auth);
+        
+        // Puxa a foto do Google ou gera um avatar com a inicial do email
+        const userEmail = user.email || 'Usuario';
+        const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${userEmail}&background=21262d&color=c9d1d9&rounded=true`;
+        const displayName = user.displayName || userEmail.split('@')[0];
+
+        btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</span>`;
+        btnProfile.onclick = abrirProfileMenu;
         
         document.getElementById('config-btn-apikey').style.display = 'flex';
 
         if (isCreatingAccount) {
-            // Conta nova: Salva os projetos locais atuais direto no Firebase do novo usuário
             await salvarLocalmente();
             isCreatingAccount = false;
             mostrarToast("Conta criada! Projetos migrados para nuvem.", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
         } else {
-            // Login existente: Carrega o Firebase e substitui a visualização local
             await carregarProjetosDoFirebase();
             resetarVisualizacaoChat();
             mostrarToast("Login efetuado com sucesso!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
         }
     } else {
-        // Usuário Anônimo / Deslogado
         usuarioAtual = null;
-        const btnProfile = document.getElementById('btn-profile');
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
         btnProfile.onclick = () => abrirModalAuth();
         
@@ -75,6 +78,29 @@ onAuthStateChanged(auth, async (user) => {
         resetarVisualizacaoChat();
     }
 });
+
+// Abertura e fechamento do Popup de Sair
+window.abrirProfileMenu = function(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('profile-menu');
+    const btn = document.getElementById('btn-profile').getBoundingClientRect();
+    
+    if (menu.style.display === 'block') { 
+        menu.style.display = 'none'; 
+    } else {
+        document.getElementById('config-menu').style.display = 'none'; 
+        menu.style.display = 'block';
+        menu.style.left = (btn.left + 10) + 'px';
+        menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
+    }
+}
+
+window.confirmarLogout = function() {
+    if (confirm("Tem certeza que deseja sair da sua conta?")) {
+        signOut(auth);
+        document.getElementById('profile-menu').style.display = 'none';
+    }
+}
 
 // Mensagens de erro amigáveis do Firebase
 function tratarErroAuth(erroCode) {
@@ -104,12 +130,8 @@ document.getElementById('btn-login-email').onclick = async () => {
     
     errorMsg.innerText = "Conectando...";
     errorMsg.style.color = "#c9d1d9";
-    try {
-        await signInWithEmailAndPassword(auth, email, senha);
-    } catch(e) {
-        errorMsg.style.color = "#ff7b72";
-        errorMsg.innerText = tratarErroAuth(e.code);
-    }
+    try { await signInWithEmailAndPassword(auth, email, senha); } 
+    catch(e) { errorMsg.style.color = "#ff7b72"; errorMsg.innerText = tratarErroAuth(e.code); }
 };
 
 document.getElementById('btn-cadastro-email').onclick = async () => {
@@ -118,21 +140,14 @@ document.getElementById('btn-cadastro-email').onclick = async () => {
     const errorMsg = document.getElementById('auth-error-msg');
     
     if(!email || senha.length < 6) { 
-        errorMsg.style.color = "#ff7b72";
-        errorMsg.innerText = "Digite um e-mail válido e senha (mínimo 6 caracteres)."; 
+        errorMsg.style.color = "#ff7b72"; errorMsg.innerText = "Digite um e-mail válido e senha (mínimo 6 caracteres)."; 
         return; 
     }
     
     errorMsg.innerText = "Criando conta...";
     errorMsg.style.color = "#c9d1d9";
-    try {
-        isCreatingAccount = true;
-        await createUserWithEmailAndPassword(auth, email, senha);
-    } catch(e) {
-        isCreatingAccount = false;
-        errorMsg.style.color = "#ff7b72";
-        errorMsg.innerText = tratarErroAuth(e.code);
-    }
+    try { isCreatingAccount = true; await createUserWithEmailAndPassword(auth, email, senha); } 
+    catch(e) { isCreatingAccount = false; errorMsg.style.color = "#ff7b72"; errorMsg.innerText = tratarErroAuth(e.code); }
 };
 
 document.getElementById('btn-login-google').onclick = async () => {
@@ -186,7 +201,6 @@ window.salvarApiKey = () => {
 }
 
 // ================= UTILITÁRIOS E UI =================
-
 let configAskToSave = true;
 if (localStorage.getItem('unity_config_ask_save') !== null) {
     configAskToSave = localStorage.getItem('unity_config_ask_save') === 'true';
@@ -211,6 +225,7 @@ window.abrirConfigMenu = function(event) {
     
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else {
+        document.getElementById('profile-menu').style.display = 'none'; 
         menu.style.display = 'block';
         menu.style.left = (btn.left + 10) + 'px';
         menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
@@ -234,13 +249,9 @@ function formatarBlocosDeCodigo() {
         
         if (codeElement && codeElement.className) {
             const match = codeElement.className.match(/language-(\w+)/);
-            if (match) {
-                linguagem = match[1];
-                linguagemRaw = match[1].toLowerCase();
-            }
+            if (match) { linguagem = match[1]; linguagemRaw = match[1].toLowerCase(); }
         }
 
-        // --- FORÇA A PINTURA DO CÓDIGO COM HIGHLIGHT.JS ---
         if (codeElement && !codeElement.dataset.highlighted) {
             hljs.highlightElement(codeElement);
         }
@@ -271,10 +282,7 @@ function formatarBlocosDeCodigo() {
                 btnCopy.innerHTML = `${SVG_CHECK} Copiado`;
                 btnCopy.classList.add('copiado');
                 mostrarToast('Código copiado!', 'rgba(245, 130, 32, 0.9)', SVG_CHECK);
-                setTimeout(() => {
-                    btnCopy.innerHTML = `${SVG_COPY} Copiar`;
-                    btnCopy.classList.remove('copiado');
-                }, 2000);
+                setTimeout(() => { btnCopy.innerHTML = `${SVG_COPY} Copiar`; btnCopy.classList.remove('copiado'); }, 2000);
             });
         };
 
@@ -318,6 +326,9 @@ async function baixarCodigo(texto, linguagem) {
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) {
         document.getElementById('config-menu').style.display = 'none'; 
+    }
+    if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) {
+        document.getElementById('profile-menu').style.display = 'none'; 
     }
     document.getElementById('context-menu').style.display = 'none'; 
 });
@@ -491,18 +502,53 @@ function gerarMarkdownDaConversa(nomeProj, conv) {
     return md;
 }
 
-window.abrirModal = function() { document.getElementById('modal-projeto').style.display = 'flex'; const input = document.getElementById('input-nome-projeto'); input.value = ''; input.focus(); }
+window.abrirModal = function() { 
+    document.getElementById('modal-projeto').style.display = 'flex'; 
+    document.getElementById('input-nome-projeto').value = ''; 
+    document.getElementById('input-genero-projeto').value = ''; 
+    document.getElementById('input-desc-projeto').value = ''; 
+    document.getElementById('input-nome-projeto').focus(); 
+}
+
 window.fecharModal = function() { document.getElementById('modal-projeto').style.display = 'none'; }
+
+// ======= CRIAÇÃO DO PROJETO COM OS NOVOS CAMPOS =======
 window.confirmarProjeto = function() {
     const nome = document.getElementById('input-nome-projeto').value.trim();
-    if (nome) { window.projetos.push({ nome: nome, aberto: true, conversas: [] }); salvarLocalmente(); renderizarSidebar(); window.fecharModal(); mostrarToast('Projeto criado!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); }
+    const genero = document.getElementById('input-genero-projeto').value.trim();
+    const descricao = document.getElementById('input-desc-projeto').value.trim();
+
+    if (nome) { 
+        window.projetos.push({ 
+            nome: nome, 
+            genero: genero,
+            descricao: descricao,
+            aberto: true, 
+            conversas: [] 
+        }); 
+        salvarLocalmente(); 
+        renderizarSidebar(); 
+        window.fecharModal(); 
+        mostrarToast('Projeto criado!', 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
+    }
 }
 
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
-    window.projetos[indexProj].conversas.push({ nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, mensagens: [{ papel: 'bot', texto: "Olá! Sou seu professor especialista em Unity. Como posso te ajudar neste projeto?" }] });
-    window.projetos[indexProj].aberto = true; document.getElementById('sidebar').classList.remove('recolhido');
-    salvarLocalmente(); renderizarSidebar(); selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
+    
+    // Puxa as informações caso elas existam para personalizar o início da conversa
+    const generoStr = window.projetos[indexProj].genero ? ` de ${window.projetos[indexProj].genero}` : "";
+    
+    window.projetos[indexProj].conversas.push({ 
+        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, 
+        mensagens: [{ papel: 'bot', texto: `Olá! Sou seu professor especialista em Unity. Como posso te ajudar neste projeto${generoStr}?` }] 
+    });
+    
+    window.projetos[indexProj].aberto = true; 
+    document.getElementById('sidebar').classList.remove('recolhido');
+    salvarLocalmente(); 
+    renderizarSidebar(); 
+    selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
 function selecionarConversa(indexProj, indexConv) {
@@ -629,14 +675,11 @@ async function enviarMensagem() {
     }
 
     try {
-        // MONTA OS HEADERS BASEADOS NO STATUS DO USUÁRIO
         const headers = { 'Content-Type': 'application/json' };
         
         if (usuarioAtual) {
             const tokenFresco = await usuarioAtual.getIdToken(true);
             headers['Authorization'] = `Bearer ${tokenFresco}`;
-            
-            // Só envia a chave personalizada se o usuário estiver logado e a configurou
             if (userApiKey) { headers['x-google-api-key'] = userApiKey; }
         }
 
@@ -652,7 +695,6 @@ async function enviarMensagem() {
             respostaFinal = "Limite da IA atingido. O Gemini está processando muitos pedidos agora. Por favor, tente novamente em alguns instantes.";
             conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} ${respostaFinal}` });
         } else if (!res.ok) {
-            // Tenta pegar o detalhe do erro vindo do Python
             let detalheErro = "Falha no Servidor";
             try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){}
             throw new Error(detalheErro);

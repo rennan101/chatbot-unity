@@ -48,14 +48,15 @@ body {
 
 .btn-novo-projeto {
     width: 100%; padding: 12px 16px; 
-    background: linear-gradient(135deg, #F58220 0%, #D46913 100%);
+    /* LARANJA ESCURO PARA CONTRASTE */
+    background: linear-gradient(135deg, #e06c00 0%, #b35600 100%);
     color: white; border: none; border-radius: 8px; cursor: pointer;
     font-weight: 600; font-size: 0.95rem; font-family: 'Space Grotesk', sans-serif;
     transition: transform 0.1s, box-shadow 0.2s; 
     display: flex; align-items: center; justify-content: flex-start; gap: 8px; white-space: nowrap;
-    box-shadow: 0 4px 15px rgba(245, 130, 32, 0.2); 
+    box-shadow: 0 4px 15px rgba(224, 108, 0, 0.2); 
 }
-.btn-novo-projeto:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245, 130, 32, 0.3); }
+.btn-novo-projeto:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(224, 108, 0, 0.3); }
 .btn-novo-projeto:active { transform: translateY(1px); }
 .icone-btn { color: white; font-weight: bold; display: flex; align-items: center; }
 #sidebar.recolhido .btn-novo-projeto { padding: 12px 0; justify-content: center; }
@@ -114,15 +115,17 @@ body {
 #sidebar.recolhido .btn-config .texto-btn { display: none; }
 
 /* ================= MENUS DE CONTEXTO E CONFIGURAÇÕES ================= */
-#context-menu, #config-menu {
+#context-menu, #config-menu, #profile-menu {
     position: absolute; background: rgba(22, 27, 34, 0.85); 
     backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 5px; display: none; z-index: 1000; 
 }
 #context-menu { min-width: 180px; }
+#profile-menu { min-width: 160px; }
 .context-item { padding: 10px 15px; color: #c9d1d9; cursor: pointer; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: background 0.2s;}
 .context-item:hover { background: #F58220; color: white; }
+.context-item.danger { color: #ff7b72; }
 .context-item.danger:hover { background: #da3633; color: white; }
 
 #config-menu { padding: 15px; width: 260px; }
@@ -148,7 +151,8 @@ header {
 .balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; }
 .aluno { 
     align-self: flex-end; 
-    background: linear-gradient(135deg, #F58220 0%, #D46913 100%); 
+    /* LARANJA ESCURO PARA CONTRASTE NA FONTE */
+    background: linear-gradient(135deg, #e06c00 0%, #b35600 100%); 
     color: #ffffff; border-radius: 20px 20px 4px 20px; 
     border: 1px solid rgba(255,255,255,0.1);
 }
@@ -168,10 +172,10 @@ header {
 .bot p { margin: 0 0 12px 0; }
 .bot p:last-child { margin: 0; }
 
-/* ================= CÓDIGO E HIGHLIGHT.JS (FONTES AUMENTADAS) ================= */
+/* ================= CÓDIGO E HIGHLIGHT.JS ================= */
 pre, code { 
     font-family: 'Fira Code', 'Consolas', monospace; 
-    font-size: 1.05rem; /* Fonte Aumentada */
+    font-size: 1.05rem; 
     line-height: 1.6;
 }
 code { background: rgba(0,0,0,0.3); padding: 3px 6px; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #F58220; }
@@ -247,7 +251,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 .modal-acoes { display: flex; justify-content: flex-end; gap: 12px; }
 .btn-cancelar { padding: 10px 18px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #c9d1d9; border-radius: 8px; cursor: pointer; font-weight: 500; font-family: 'Space Grotesk', sans-serif; transition: background 0.2s;}
 .btn-cancelar:hover { background: rgba(255,255,255,0.05); }
-.btn-confirmar { padding: 10px 18px; background: linear-gradient(135deg, #F58220 0%, #D46913 100%); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: 'Space Grotesk', sans-serif; transition: transform 0.1s;}
+.btn-confirmar { padding: 10px 18px; background: linear-gradient(135deg, #e06c00 0%, #b35600 100%); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: 'Space Grotesk', sans-serif; transition: transform 0.1s;}
 .btn-confirmar:hover { transform: translateY(-1px); }
 
 #toast {
