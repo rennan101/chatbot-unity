@@ -91,24 +91,18 @@
         <div id="chat"><div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div></div>
         
         <div id="input-container" style="flex-direction: column; align-items: stretch; gap: 0;">
-            <!-- CONTAINER DE PRÉ-VISUALIZAÇÃO DO ANEXO (Imagem ou Arquivo) -->
             <div id="anexo-preview-container" style="display: none; padding: 12px 24px; background: rgba(13, 17, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-bottom: none; border-radius: 16px 16px 0 0; position: relative; align-items: center;">
                 <div style="position: relative; display: inline-block;">
-                    <!-- PREVIEW DE IMAGEM -->
                     <img id="image-preview" src="" style="max-height: 80px; border-radius: 8px; border: 2px solid #F58220; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none;">
-                    
-                    <!-- PREVIEW DE ARQUIVO DE CÓDIGO (.cs, .txt, etc) -->
                     <div id="file-preview" style="display: none; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 8px; border: 1px solid #F58220; color: #e6edf3; font-size: 0.85rem; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
                         <span id="file-name" style="font-weight: 500;">script.cs</span>
                     </div>
-
                     <button onclick="removerAnexo()" style="position: absolute; top: -8px; right: -8px; background: #da3633; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">✕</button>
                 </div>
             </div>
 
             <div class="input-wrapper" id="main-input-wrapper">
-                <!-- INPUT INVISÍVEL AGORA ACEITA CÓDIGO E TEXTO -->
                 <input type="file" id="input-anexo" accept="image/png, image/jpeg, image/webp, .cs, .txt, .js, .json" style="display: none;" onchange="lidarComAnexo(event)">
                 
                 <button id="btn-anexo" class="btn-acao-moderno" onclick="document.getElementById('input-anexo').click()" style="background: transparent; color: #8b949e;" title="Anexar Imagem ou Arquivo de Código">
@@ -133,7 +127,6 @@
         </div>
     </div>
 
-    <!-- MENU DE NOTIFICAÇÕES UNIFICADO -->
     <div id="notifications-menu">
         <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; color: #F58220; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Notificações</div>
         <div id="lista-notificacoes-popup" style="max-height: 250px; overflow-y: auto;">
@@ -141,83 +134,84 @@
         </div>
     </div>
 
+    <!-- MENU DE CONFIGURAÇÕES -->
     <div id="config-menu">
         <div class="config-item">
-            <span>Perguntar onde salvar arquivos</span>
+            <span>Perguntar onde salvar</span>
             <label class="switch">
                 <input type="checkbox" id="toggle-ask-save" onchange="salvarPreferenciasConfig()">
                 <span class="slider"></span>
             </label>
         </div>
+
+        <hr style="border-color: rgba(255,255,255,0.05); margin: 10px 0;">
+
+        <!-- BOTÃO PERSONALIZAR -->
+        <div class="context-item" style="justify-content: center; background: rgba(255,255,255,0.05); color: #c9d1d9; font-weight: 500;" onclick="abrirModalPersonalizar()">
+            🎨 Personalizar Visual e IA
+        </div>
+
         <div id="config-btn-apikey" class="context-item" style="margin-top: 10px; display: none; padding: 10px; justify-content: center; background: rgba(255,255,255,0.05); color: #F58220; font-weight: 500;" onclick="abrirModalApiKey()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
             Inserir Própria API Key
         </div>
     </div>
-    
-    <!-- MODAL NOVO PROJETO -->
-    <div class="modal-overlay" id="modal-projeto">
-        <div class="modal-content" style="width: 400px;">
-            <h3>Novo Projeto Unity</h3>
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div>
-            <input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;">
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div>
-            <input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;">
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div>
-            <textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea>
-            <div class="modal-acoes">
-                <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
-                <button class="btn-confirmar" onclick="confirmarProjeto()">Criar Projeto</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- MODAL GERENCIAR COLABORADORES -->
-    <div class="modal-overlay" id="modal-compartilhar">
+    <!-- MODAL PERSONALIZAR VISUAL E IA -->
+    <div class="modal-overlay" id="modal-personalizar">
         <div class="modal-content" style="width: 450px;">
-            <button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <button onclick="fecharModalPersonalizar()" class="btn-fechar-modal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colaboradores</h3>
+            <h3 style="display:flex; align-items:center; gap:10px;">🎨 Personalizar Experiência</h3>
             
-            <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div>
-            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                <input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;">
-                <button class="btn-confirmar" onclick="confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button>
+            <div style="margin-bottom: 15px;">
+                <div style="color: #c9d1d9; font-size: 0.9rem; margin-bottom: 8px;">Tamanho da Fonte (Chat)</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-cancelar" onclick="ajustarFonte('chat', -0.05)" style="padding: 5px 15px;">A-</button>
+                    <span id="label-chat-fs" style="color: white; width: 40px; text-align: center;">0.95</span>
+                    <button class="btn-cancelar" onclick="ajustarFonte('chat', 0.05)" style="padding: 5px 15px;">A+</button>
+                </div>
             </div>
 
-            <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div>
-            <div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
+            <div style="margin-bottom: 20px;">
+                <div style="color: #c9d1d9; font-size: 0.9rem; margin-bottom: 8px;">Tamanho da Fonte (Código)</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-cancelar" onclick="ajustarFonte('code', -0.05)" style="padding: 5px 15px;">A-</button>
+                    <span id="label-code-fs" style="color: white; width: 40px; text-align: center;">1.05</span>
+                    <button class="btn-cancelar" onclick="ajustarFonte('code', 0.05)" style="padding: 5px 15px;">A+</button>
+                </div>
+            </div>
+
+            <hr style="border-color: rgba(255,255,255,0.05); margin: 20px 0;">
+
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #c9d1d9; font-size: 0.9rem;">Exigir código 100% comentado</span>
+                <label class="switch"><input type="checkbox" id="check-pref-comentado"><span class="slider"></span></label>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <div style="color: #c9d1d9; font-size: 0.9rem; margin-bottom: 8px;">Tamanho das Respostas</div>
+                <select id="select-pref-detalhe" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; font-family: inherit; outline: none; cursor: pointer;">
+                    <option value="true">Detalhadas (Passo a passo longo)</option>
+                    <option value="false">Curtas (Direto ao ponto/Apenas Código)</option>
+                </select>
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-confirmar" onclick="salvarPersonalizacao()" style="width: 100%;">Salvar Preferências</button>
+            </div>
         </div>
     </div>
+    
+    <!-- OUTROS MODAIS ORIGINAIS -->
+    <div class="modal-overlay" id="modal-projeto"><div class="modal-content" style="width: 400px;"><h3>Novo Projeto Unity</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div><input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div><input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div><textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea><div class="modal-acoes"><button class="btn-cancelar" onclick="fecharModal()">Cancelar</button><button class="btn-confirmar" onclick="confirmarProjeto()">Criar Projeto</button></div></div></div>
+
+    <div class="modal-overlay" id="modal-compartilhar"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colaboradores</h3><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div><div style="display: flex; gap: 8px; margin-bottom: 20px;"><input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;"><button class="btn-confirmar" onclick="confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button></div><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div><div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div></div></div>
 
     <div class="modal-overlay" id="modal-renomear"><div class="modal-content"><h3 id="titulo-modal-renomear">Renomear</h3><input type="text" id="input-nome-renomear"><div class="modal-acoes"><button class="btn-cancelar" onclick="fecharModalRenomear()">Cancelar</button><button class="btn-confirmar" onclick="confirmarRenomear()">Salvar</button></div></div></div>
     
-    <!-- MODAL API KEY RESTAURADO COM INSTRUÇÕES -->
-    <div class="modal-overlay" id="modal-apikey">
-        <div class="modal-content" style="width: 450px;">
-            <button onclick="document.getElementById('modal-apikey').style.display='none'" class="btn-fechar-modal">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-            <h3 style="display:flex; align-items:center; gap:10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                Google API Key (Opcional)
-            </h3>
-            <p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; text-align: left;">
-                Por padrão você utiliza o servidor global do <b>ComboBoy</b>, mas caso queira ter <b>respostas mais rápidas</b>, <b>evitar a fila</b> e ter limites exclusivos, conecte sua própria chave (Totalmente gratuito).
-            </p>
-            <ol style="color: #8b949e; font-size: 0.85rem; padding-left: 20px; margin-bottom: 25px; line-height: 1.6; text-align: left;">
-                <li>Acesse o <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Google AI Studio</a>.</li>
-                <li>Clique no botão azul "Create API key".</li>
-                <li>Copie o código gerado e cole no campo abaixo:</li>
-            </ol>
-            <input type="password" id="input-api-key" placeholder="AIzaSy..." style="width: 100%; font-family: 'Fira Code', monospace; letter-spacing: 2px;">
-            <div class="modal-acoes">
-                <button class="btn-cancelar" onclick="document.getElementById('modal-apikey').style.display='none'">Cancelar</button>
-                <button class="btn-confirmar" onclick="salvarApiKey()">Salvar Chave</button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-overlay" id="modal-apikey"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-apikey').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Google API Key (Opcional)</h3><p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; text-align: left;">Por padrão você utiliza o servidor global do <b>ComboBoy</b>, mas caso queira ter <b>respostas mais rápidas</b>, <b>evitar a fila</b> e ter limites exclusivos, conecte sua própria chave (Totalmente gratuito).</p><ol style="color: #8b949e; font-size: 0.85rem; padding-left: 20px; margin-bottom: 25px; line-height: 1.6; text-align: left;"><li>Acesse o <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Google AI Studio</a>.</li><li>Clique no botão azul "Create API key".</li><li>Copie o código gerado e cole no campo abaixo:</li></ol><input type="password" id="input-api-key" placeholder="AIzaSy..." style="width: 100%; font-family: 'Fira Code', monospace; letter-spacing: 2px;"><div class="modal-acoes"><button class="btn-cancelar" onclick="document.getElementById('modal-apikey').style.display='none'">Cancelar</button><button class="btn-confirmar" onclick="salvarApiKey()">Salvar Chave</button></div></div></div>
     
     <div id="toast"><span id="toast-icon"></span><span id="toast-msg"></span></div>
 </div>

@@ -26,6 +26,18 @@ let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
 
+// ================= PREFERÊNCIAS DO USUÁRIO =================
+let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false'; // Padrão: true
+let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true'; // Padrão: false
+let prefChatFs = parseFloat(localStorage.getItem('unity_pref_chat_fs')) || 0.95;
+let prefCodeFs = parseFloat(localStorage.getItem('unity_pref_code_fs')) || 1.05;
+
+function aplicarTamanhosFonte() {
+    document.documentElement.style.setProperty('--chat-fs', prefChatFs + 'rem');
+    document.documentElement.style.setProperty('--code-fs', prefCodeFs + 'rem');
+}
+aplicarTamanhosFonte(); // Aplica imediatamente no carregamento
+
 // VARIÁVEIS GLOBAIS DE ANEXOS
 let anexoImagemBase64 = null;
 let anexoImagemMimeType = null;
@@ -196,9 +208,6 @@ function iniciarEscutaProjetosNuvem(email) {
 }
 
 // ================= SISTEMA UNIFICADO DE NOTIFICAÇÕES =================
-let cacheConvites = [];
-let cacheNotifs = [];
-
 function atualizarBadgeGeral(temItens) {
     const badge = document.getElementById('badge-notificacao');
     badge.style.display = temItens ? 'block' : 'none';
@@ -409,6 +418,41 @@ document.getElementById('toggle-ask-save').checked = configAskToSave;
 window.abrirConfigMenu = function(e) { e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); if (menu.style.display === 'block') menu.style.display = 'none'; else { document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none'; menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; } }
 window.salvarPreferenciasConfig = function() { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
+// ================= MODAL DE PERSONALIZAÇÃO =================
+window.abrirModalPersonalizar = function() {
+    document.getElementById('config-menu').style.display = 'none';
+    document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2);
+    document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2);
+    document.getElementById('check-pref-comentado').checked = prefComentado;
+    document.getElementById('select-pref-detalhe').value = prefDetalhado.toString();
+    document.getElementById('modal-personalizar').style.display = 'flex';
+}
+window.fecharModalPersonalizar = function() {
+    document.getElementById('modal-personalizar').style.display = 'none';
+}
+window.ajustarFonte = function(tipo, valor) {
+    if (tipo === 'chat') {
+        prefChatFs = Math.max(0.7, Math.min(1.5, prefChatFs + valor));
+        document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2);
+    } else {
+        prefCodeFs = Math.max(0.7, Math.min(1.5, prefCodeFs + valor));
+        document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2);
+    }
+    aplicarTamanhosFonte();
+}
+window.salvarPersonalizacao = function() {
+    prefComentado = document.getElementById('check-pref-comentado').checked;
+    prefDetalhado = document.getElementById('select-pref-detalhe').value === "true";
+    
+    localStorage.setItem('unity_pref_chat_fs', prefChatFs);
+    localStorage.setItem('unity_pref_code_fs', prefCodeFs);
+    localStorage.setItem('unity_pref_comentado', prefComentado);
+    localStorage.setItem('unity_pref_detalhado', prefDetalhado);
+    
+    fecharModalPersonalizar();
+    mostrarToast('Preferências de IA atualizadas!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS);
+}
+
 // ================= RENDERIZAÇÃO E PRESENÇA OTIMIZADA =================
 function renderizarSidebar() {
     const container = document.getElementById('lista-projetos');
@@ -539,14 +583,14 @@ window.confirmarProjeto = async function() {
 
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
-    const generoStr = window.projetos[indexProj].genero ? ` de ${window.projetos[indexProj].genero}` : "";
     const emailCriador = usuarioAtual ? usuarioAtual.email : 'visitante';
     
+    // IA NUNCA SE APRESENTA. SÓ SE PREPARA PARA AJUDAR.
     window.projetos[indexProj].conversas.push({ 
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, 
         criador: emailCriador,
         processando: false,
-        mensagens: [{ papel: 'bot', texto: `Olá! Sou seu professor especialista em Unity. Como posso te ajudar neste projeto${generoStr}?` }] 
+        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
     });
     window.projetos[indexProj].aberto = true; 
     salvarDadosAtuais(indexProj); 
@@ -731,7 +775,7 @@ window.validarInput = function() {
     if (!estaProcessando) {
         btn.disabled = input.value.trim().length === 0 && !anexoImagemBase64 && !anexoTextoConteudo;
     } else {
-        btn.disabled = false; // DEVE FICAR FALSE PARA O BOTAO DE STOP FUNCIONAR!
+        btn.disabled = false; // BOTÃO FICA HABILITADO PARA PERMITIR CANCELAR
     }
 }
 
@@ -744,7 +788,7 @@ function atualizarEstadoBotaoEnvio() {
     if (estaProcessando) {
         btn.classList.remove('enviar');
         btn.classList.add('stop');
-        btn.disabled = false; // HABILITADO PARA CLICAR NO STOP
+        btn.disabled = false;
         iconSend.style.display = 'none';
         iconStop.style.display = 'block';
         btn.title = "Cancelar Resposta";
@@ -758,14 +802,22 @@ function atualizarEstadoBotaoEnvio() {
     }
 }
 
+// CORREÇÃO: CANCELAMENTO OTIMISTA
 window.lidarComAcao = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
-    const chave = getChaveConversa(idProjetoAtivo, idConversaAtiva);
-    const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
+    const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva;
+    const chave = getChaveConversa(pIdx, cIdx);
+    const conv = window.projetos[pIdx].conversas[cIdx];
 
     if (conv?.processando) {
         if (statusConversas[chave] && statusConversas[chave].controller) {
             statusConversas[chave].controller.abort();
+            
+            // OTIMISMO: Para imediatamente na interface do usuário local
+            window.projetos[pIdx].conversas[cIdx].processando = false;
+            salvarDadosAtuais(pIdx);
+            renderizarChat();
+            atualizarEstadoBotaoEnvio();
         } else {
             mostrarToast('Aguarde o outro colaborador terminar de perguntar.', 'rgba(245, 130, 32, 0.9)', SVG_WARN);
         }
@@ -777,9 +829,10 @@ window.lidarComAcao = function() {
 async function enviarMensagem() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva;
-    const chave = getChaveConversa(pIdx, cIdx);
+    const proj = window.projetos[pIdx];
+    const conversaAtual = proj.conversas[cIdx];
     
-    if (window.projetos[pIdx].conversas[cIdx].processando) return;
+    if (conversaAtual.processando) return;
 
     const input = document.getElementById('mensagem'); 
     let textoDigitado = input.value.trim(); 
@@ -800,16 +853,16 @@ async function enviarMensagem() {
     const novaMsg = { papel: 'aluno', texto: textoFinal };
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
 
-    window.projetos[pIdx].conversas[cIdx].mensagens.push(novaMsg);
+    conversaAtual.mensagens.push(novaMsg);
     
-    if (window.projetos[pIdx].conversas[cIdx].mensagens.length === 2) {
-        if (textoDigitado) window.projetos[pIdx].conversas[cIdx].nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
-        else if (anexoTextoNome) window.projetos[pIdx].conversas[cIdx].nome = `Análise: ${anexoTextoNome}`;
-        else window.projetos[pIdx].conversas[cIdx].nome = "Análise de Imagem";
+    if (conversaAtual.mensagens.length === 2) {
+        if (textoDigitado) conversaAtual.nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
+        else if (anexoTextoNome) conversaAtual.nome = `Análise: ${anexoTextoNome}`;
+        else conversaAtual.nome = "Análise de Imagem";
     }
     
     window.removerAnexo(); 
-    window.projetos[pIdx].conversas[cIdx].processando = true;
+    conversaAtual.processando = true;
     salvarDadosAtuais(pIdx); 
     
     input.value = ''; input.style.height = 'auto';
@@ -819,7 +872,7 @@ async function enviarMensagem() {
         atualizarEstadoBotaoEnvio();
     }
 
-    const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
+    const controller = new AbortController(); statusConversas[getChaveConversa(pIdx, cIdx)] = { ativa: true, controller: controller };
 
     try {
         const headers = { 'Content-Type': 'application/json' };
@@ -828,7 +881,11 @@ async function enviarMensagem() {
             if (userApiKey) headers['x-google-api-key'] = userApiKey;
         }
 
-        const payload = { texto: textoFinal };
+        const payload = { 
+            texto: textoFinal,
+            detalhado: prefDetalhado,
+            codigo_comentado: prefComentado
+        };
         if (imgBase64) {
             payload.imagem_base64 = imgBase64;
             payload.mime_type = imgMime;
@@ -836,8 +893,7 @@ async function enviarMensagem() {
 
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify(payload), signal: controller.signal });
         
-        // APÓS O AWAIT, GARANTIMOS O USO DA REFERENCIA ATUALIZADA
-        if (!window.projetos[pIdx] || !window.projetos[pIdx].conversas[cIdx]) return;
+        if (!window.projetos[pIdx] || !window.projetos[pIdx].conversas[cIdx]) return; // Proteção se a conversa foi deletada
 
         if (res.status === 429) { 
             window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
@@ -856,8 +912,6 @@ async function enviarMensagem() {
             window.projetos[pIdx].conversas[cIdx].processando = false;
             salvarDadosAtuais(pIdx);
         }
-        if (statusConversas[chave]) statusConversas[chave].ativa = false;
-        
         renderizarSidebar(); 
         if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
             renderizarChat(); 

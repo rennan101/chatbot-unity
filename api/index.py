@@ -41,13 +41,14 @@ Regras OBRIGATÓRIAS:
 5. Questione o aluno sobre o que ele quer criar.
 6. Nunca responda mensagens desrepeitosas.
 7. Apenas utilize informações do Unity 6.5.
-8. Não envie ou forneca imagens da internet para o usuário.
-9. Se apresente uma única vez, ou caso seja perguntado."""
-
+8. NUNCA se apresente. Não diga 'Olá, eu sou o ComboBoy...'. O usuário já o conhece, vá direto para a resposta.
+9. Se o usuário enviar uma imagem ou um arquivo cs, analise-a cuidadosamente e baseie sua resposta nela."""
 class Mensagem(BaseModel):
     texto: str
-    imagem_base64: str = None  # Novo campo opcional para a imagem
-    mime_type: str = None      # Tipo do arquivo (ex: image/jpeg)
+    imagem_base64: str = None  
+    mime_type: str = None      
+    detalhado: bool = True     
+    codigo_comentado: bool = False
 
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -73,11 +74,16 @@ def chat(
     try:
         client = genai.Client(api_key=chave_final)
         
-        # Constrói o pacote de dados (Texto + Imagem se existir)
+        # Aplica as preferências do usuário no prompt do sistema
+        instrucoes_dinamicas = SYSTEM_INSTRUCTION
+        if msg.codigo_comentado:
+            instrucoes_dinamicas += "\n8. OBRIGATÓRIO: Comente TODAS as linhas de código minuciosamente em português."
+        if not msg.detalhado:
+            instrucoes_dinamicas += "\n9. OBRIGATÓRIO: Seja EXTREMAMENTE BREVE e CURTO em suas explicações. Foque apenas no código e no que é estritamente necessário."
+
         conteudos = []
         if msg.imagem_base64 and msg.mime_type:
             try:
-                # Remove o cabeçalho do base64 gerado pelo navegador se existir
                 b64_data = msg.imagem_base64.split(",")[1] if "," in msg.imagem_base64 else msg.imagem_base64
                 image_bytes = base64.b64decode(b64_data)
                 conteudos.append(types.Part.from_bytes(data=image_bytes, mime_type=msg.mime_type))
@@ -90,7 +96,7 @@ def chat(
             model=GEMINI_MODEL, 
             contents=conteudos,
             config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION
+                system_instruction=instrucoes_dinamicas
             )
         )
         return {"resposta": resposta.text}
