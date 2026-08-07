@@ -188,7 +188,6 @@ window.confirmarLogout = function() {
     }
 }
 
-// PERFIL MODAL E TAGS
 const TAGS_DISPONIVEIS = [
     "Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", 
     "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", 
@@ -251,7 +250,7 @@ window.salvarPerfil = async function() {
 }
 
 // ==========================================================
-// 4. LÓGICA DE ANEXOS (JS)
+// 4. LÓGICA DE ANEXOS
 // ==========================================================
 window.lidarComAnexo = function(event) {
     const file = event.target.files[0];
@@ -405,7 +404,7 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
             await updateDoc(doc(db, "projetos", projetoId), { membros: arrayUnion(usuarioAtual.email) });
             mostrarToast(getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
         } else {
-            mostrarToast(getMeme('aviso'), "rgba(218, 54, 51, 0.9)", SVG_WARN);
+            mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
         }
         await deleteDoc(doc(db, "convites", conviteId));
         await addDoc(collection(db, "notificacoes"), { destinatario: remetente, mensagem: `<b>${formatarNomeUsuario(usuarioAtual.email)}</b> ${aceitar ? "aceitou" : "recusou"} seu convite para <b>${projetoNome}</b>.`, timestamp: Date.now() });
@@ -538,7 +537,7 @@ window.abrirProfileMenu = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('notifications-menu').style.display = 'none';
         document.getElementById('historico-menu').style.display = 'none';
-        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
+        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = 'auto'; menu.style.bottom = (window.innerHeight - btn.top + 10) + 'px';
     }
 }
 
@@ -590,7 +589,7 @@ window.confirmarCompartilhamento = async () => {
     if (email && usuarioAtual && window.alvoMenu.indexProj !== null) {
         const proj = window.projetos[window.alvoMenu.indexProj];
         await addDoc(collection(db, "convites"), { projetoId: proj.id, projetoNome: proj.nome, remetente: usuarioAtual.email, destinatario: email, status: "pendente", timestamp: Date.now() });
-        document.getElementById('input-email-convite').value = ''; window.abrirModalCompartilhar(); mostrarToast(getMeme('sucesso'), 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
+        document.getElementById('input-email-convite').value = ''; window.abrirModalCompartilhar(); mostrarToast('Convite enviado!', 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
     }
 }
 
@@ -638,7 +637,7 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES
+// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -646,7 +645,10 @@ window.abrirConfigMenu = function(e) {
         document.getElementById('profile-menu').style.display = 'none'; 
         document.getElementById('notifications-menu').style.display = 'none'; 
         document.getElementById('historico-menu').style.display = 'none';
-        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; 
+        menu.style.display = 'block'; 
+        menu.style.left = (btn.left + 10) + 'px'; 
+        menu.style.top = 'auto'; // Limpa o ancoramento superior
+        menu.style.bottom = (window.innerHeight - btn.top + 10) + 'px'; // Ancoragem perfeita pela base
     } 
 }
 
@@ -693,7 +695,7 @@ window.salvarApiKey = async () => {
 }
 
 let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false'; document.getElementById('toggle-ask-save').checked = configAskToSave;
-window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
+window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast('Salvo', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
 
 // ==========================================================
@@ -739,7 +741,10 @@ window.abrirMenuHistorico = function(event) {
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
         document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
-        menu.style.display = 'block'; menu.style.left = '50%'; menu.style.transform = 'translateX(-50%)'; menu.style.top = (btn.bottom + 5) + 'px';
+        menu.style.display = 'block'; 
+        menu.style.left = (btn.left + (btn.width / 2)) + 'px'; 
+        menu.style.transform = 'translateX(-50%)'; 
+        menu.style.top = (btn.bottom + 8) + 'px';
     }
 }
 
@@ -879,11 +884,11 @@ async function enviarMensagem() {
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify(payload), signal: controller.signal });
         if (!window.projetos[pIdx] || !window.projetos[pIdx].conversas[cIdx]) return; 
 
-        if (res.status === 429) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` }); } 
+        if (res.status === 429) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Fomos nerfados! Limite atingido.` }); } 
         else if (!res.ok) { let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro); } 
         else { const dados = await res.json(); window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta }); }
     } catch (e) {
-        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado.' : 'Erro: ' + e.message}` }); }
+        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Miss click? Ação cancelada.' : 'Erro: ' + e.message}` }); }
     } finally {
         if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); }
         if (statusConversas[chave]) statusConversas[chave].ativa = false;
@@ -892,7 +897,6 @@ async function enviarMensagem() {
 }
 window.enviarMensagem = enviarMensagem;
 
-// Eventos Globais Livres
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
