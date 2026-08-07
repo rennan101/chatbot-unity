@@ -308,25 +308,12 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 .btn-confirmar:hover { transform: translateY(-1px); }
 
 .colaborador-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    color: #e6edf3;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03); padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; color: #e6edf3;
 }
 .btn-remover-collab {
-    background: rgba(218, 54, 51, 0.2);
-    color: #ff7b72;
-    border: 1px solid rgba(218, 54, 51, 0.4);
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-family: 'Space Grotesk', sans-serif;
-    transition: background 0.2s;
+    background: rgba(218, 54, 51, 0.2); color: #ff7b72; border: 1px solid rgba(218, 54, 51, 0.4);
+    padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-family: 'Space Grotesk', sans-serif; transition: background 0.2s;
 }
 .btn-remover-collab:hover { background: rgba(218, 54, 51, 0.4); }
 
@@ -365,9 +352,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     transition: all 0.2s; user-select: none;
 }
 .tag-badge:hover { background: rgba(255,255,255,0.1); }
-.tag-badge.selected {
-    background: rgba(245, 130, 32, 0.2); border-color: #F58220; color: #F58220; font-weight: 500;
-}
+.tag-badge.selected { background: rgba(245, 130, 32, 0.2); border-color: #F58220; color: #F58220; font-weight: 500; }
 
 /* ================= TOUR GUIADO (ONBOARDING) ================= */
 #tour-overlay {
@@ -381,10 +366,11 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 2px rgba(245, 130, 32, 0.2);
     text-align: center;
 }
+/* Apenas adiciona sombra/borda sem alterar as cores/fundo originais do elemento */
 .tour-highlight {
-    position: relative !important; z-index: 3001 !important;
-    box-shadow: 0 0 0 4px #F58220, 0 0 20px rgba(245, 130, 32, 0.5) !important;
-    background: rgba(22, 27, 34, 0.95) !important; border-radius: 8px !important;
+    position: relative !important; 
+    box-shadow: 0 0 0 4px #F58220, 0 0 20px rgba(245, 130, 32, 0.6) !important;
+    border-radius: 8px !important;
     pointer-events: none;
 }
 
@@ -395,9 +381,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     #sidebar.recolhido { transform: translateX(-100%); width: 280px; }
     #btn-toggle-sidebar { display: none !important; }
     .sidebar-backdrop.active { display: block; }
-    
     .mobile-menu-btn { display: flex !important; }
-    
     #chat-header { padding: 12px 15px; }
     #chat { padding: 15px; }
     #input-container { padding: 15px; }
