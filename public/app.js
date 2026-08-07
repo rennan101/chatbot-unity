@@ -754,7 +754,7 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT E TELA DE BOAS VINDAS
+// 7. SISTEMA DE CHAT, NOMES E ÍNDICE DE PERGUNTAS
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
@@ -763,12 +763,12 @@ window.resetarVisualizacaoChat = function() {
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     
-    // TELA DE BOAS VINDAS DO COMBOBOY COM LOGO E TEXTO AJUSTADOS
+    // TELA DE BOAS VINDAS DO COMBOBOY CORRIGIDA COM OS NOMES JUNTOS
     document.getElementById('chat').innerHTML = `
         <div id="sem-conversa-msg" style="margin: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.9; text-align: center; max-width: 500px; padding: 20px;">
             <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 200px; height: 200px; margin-bottom: 10px; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5));">
             <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:8px;">
-                <span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span> 
+                <div><span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span></div> 
                 <span style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; color: #8b949e; font-style: normal; font-weight: 500; margin-top: 12px;">Online!</span>
             </h2>
             <p style="color: #c9d1d9; font-size: 1rem; line-height: 1.5; margin: 0 0 15px 0;">
@@ -991,6 +991,90 @@ async function enviarMensagem() {
         if (statusConversas[chave]) statusConversas[chave].ativa = false;
         window.renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
+}
+
+// ==========================================================
+// 8. LÓGICA DO TOUR DE ONBOARDING
+// ==========================================================
+const tourSteps = [
+    { 
+        target: null, 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+        title: "Bem-vindo ao ComboBoy!", 
+        text: "Seu assistente IA especialista em Unity. Sincronize projetos, tire dúvidas com códigos otimizados e colabore em tempo real com sua equipe!" 
+    },
+    { 
+        target: "sidebar", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+        title: "Seus Projetos", 
+        text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem." 
+    },
+    { 
+        target: "input-container", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+        title: "Área de Pesquisa", 
+        text: "Faça perguntas ou arraste imagens e scripts (.cs) diretamente para cá!" 
+    },
+    { 
+        target: "btn-config", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+        title: "Configurações", 
+        text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." 
+    },
+    { 
+        target: "btn-notificacoes", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+        title: "Notificações", 
+        text: "Acompanhe convites de colaboração e interações da sua equipe por aqui." 
+    }
+];
+let currentTourStep = 0;
+
+window.iniciarTour = function() {
+    currentTourStep = 0;
+    document.getElementById('config-menu').style.display = 'none';
+    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
+    document.getElementById('tour-overlay').style.display = 'block';
+    window.renderizarStepTour();
+}
+
+window.renderizarStepTour = function() {
+    const step = tourSteps[currentTourStep];
+    
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+    
+    const card = document.getElementById('tour-card');
+    card.style.display = 'block';
+    
+    document.getElementById('tour-title').innerHTML = `<span style="display:flex; align-items:center; justify-content:center; gap:8px; color: #F58220;">${step.icon} ${step.title}</span>`;
+    document.getElementById('tour-text').innerText = step.text;
+    document.getElementById('tour-btn-next').innerText = currentTourStep === tourSteps.length - 1 ? "Finalizar" : "Avançar";
+    
+    if (step.target) {
+        const targetEl = document.getElementById(step.target);
+        if(targetEl) {
+            targetEl.classList.add('tour-highlight');
+            if(targetEl.closest('aside')) targetEl.closest('aside').classList.add('tour-highlight-parent');
+            if(targetEl.closest('header')) targetEl.closest('header').classList.add('tour-highlight-parent');
+            if(targetEl.id === 'input-container') targetEl.classList.add('tour-highlight-parent');
+        }
+    }
+}
+
+window.avancarTour = function() {
+    if (currentTourStep < tourSteps.length - 1) {
+        currentTourStep++; window.renderizarStepTour();
+    } else { window.fecharTour(); }
+}
+
+window.fecharTour = function() {
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+    document.getElementById('tour-overlay').style.display = 'none';
+    document.getElementById('tour-card').style.display = 'none';
+    localStorage.setItem('comboboy_tour', 'true');
+    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('active');}
 }
 
 document.addEventListener('click', (e) => { 
