@@ -55,23 +55,19 @@ let userApiKey = '';
 // ==========================================================
 // 2. PRESENÇA EM TEMPO REAL BLINDADA E SYNC DE NOMES
 // ==========================================================
-function removerPresencaLocal() {
+// Transformado em Async/Await para garantir o Firebase apague a presença antes do logout
+async function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
-        const proj = window.projetos[idProjetoAtivo];
-        if(proj.presenca) {
-            delete proj.presenca[usuarioAtual.email];
-            updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField()).catch(e=>console.log(e));
-        }
+        try {
+            await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField());
+        } catch(e) { console.log(e); }
     }
 }
 
 function adicionarPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && idConversaAtiva !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
-        const proj = window.projetos[idProjetoAtivo];
-        proj.presenca = proj.presenca || {};
-        proj.presenca[usuarioAtual.email] = idConversaAtiva;
         updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), idConversaAtiva).catch(e=>console.log(e));
     }
 }
@@ -93,9 +89,7 @@ function iniciarEscutaUsuarios() {
         
         if (window.atualizarBotaoPerfilGlobal) window.atualizarBotaoPerfilGlobal();
         if (window.renderizarSidebar) window.renderizarSidebar();
-        if (idProjetoAtivo !== null && idConversaAtiva !== null) {
-            window.renderizarChat();
-        }
+        if (idProjetoAtivo !== null && idConversaAtiva !== null) window.renderizarChat();
     });
 }
 
@@ -151,9 +145,7 @@ onAuthStateChanged(auth, async (user) => {
         iniciarEscutaConvites(user.email);
         iniciarEscutaNotificacoes(user.email);
         
-        if (localStorage.getItem('comboboy_tour') !== 'true') {
-            window.iniciarTour();
-        }
+        if (localStorage.getItem('comboboy_tour') !== 'true') window.iniciarTour();
 
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
@@ -211,13 +203,14 @@ document.getElementById('btn-login-google').onclick = async () => {
     try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { document.getElementById('auth-error-msg').innerText = tratarErroAuth(e.code); }
 };
 
-window.confirmarLogout = function() {
+// O logout agora aguarda a saída ser finalizada e confirmada no Banco de Dados
+window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
-        removerPresencaLocal(); 
+        await removerPresencaLocal(); 
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
-        signOut(auth);
+        await signOut(auth);
         document.getElementById('profile-menu').style.display = 'none';
     }
 }
@@ -702,6 +695,7 @@ window.deletarProjeto = async function() {
     }
 }
 
+// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -806,10 +800,14 @@ window.selecionarConversa = function(indexProj, indexConv) {
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
+    const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
         document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
         menu.style.display = 'block'; 
+        menu.style.left = (btn.left + (btn.width / 2)) + 'px'; 
+        menu.style.transform = 'translateX(-50%)'; 
+        menu.style.top = (btn.bottom + 8) + 'px'; 
     }
 }
 
@@ -983,10 +981,9 @@ async function enviarMensagem() {
         window.renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
-window.enviarMensagem = enviarMensagem;
 
 // ==========================================================
-// 8. LÓGICA DO TOUR DE ONBOARDING E MENU
+// 8. LÓGICA DO TOUR DE ONBOARDING (SEM EMOJIS, ILUMINADO)
 // ==========================================================
 const tourSteps = [
     { 
@@ -1034,14 +1031,12 @@ window.renderizarStepTour = function() {
     const step = tourSteps[currentTourStep];
     
     document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
-    document.getElementById('sidebar').style.zIndex = '';
-    document.getElementById('chat-header').style.zIndex = '';
-    document.getElementById('input-container').style.zIndex = '';
+    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
     
     const card = document.getElementById('tour-card');
     card.style.display = 'block';
     
-    document.getElementById('tour-title').innerHTML = `<span style="display:flex; align-items:center; justify-content:center; gap:8px;">${step.icon} ${step.title}</span>`;
+    document.getElementById('tour-title').innerHTML = `<span style="display:flex; align-items:center; justify-content:center; gap:8px; color: #F58220;">${step.icon} ${step.title}</span>`;
     document.getElementById('tour-text').innerText = step.text;
     document.getElementById('tour-btn-next').innerText = currentTourStep === tourSteps.length - 1 ? "Finalizar" : "Avançar";
     
@@ -1050,10 +1045,10 @@ window.renderizarStepTour = function() {
         if(targetEl) {
             targetEl.classList.add('tour-highlight');
             
-            // Eleva os containers pai para cima do overlay preto
-            if(targetEl.closest('aside')) document.getElementById('sidebar').style.zIndex = '3001';
-            if(targetEl.closest('header')) document.getElementById('chat-header').style.zIndex = '3001';
-            if(targetEl.closest('#input-container')) document.getElementById('input-container').style.zIndex = '3001';
+            // Eleva os elementos pai acima da camada preta para não esconder o conteúdo real
+            if(targetEl.closest('aside')) targetEl.closest('aside').classList.add('tour-highlight-parent');
+            if(targetEl.closest('header')) targetEl.closest('header').classList.add('tour-highlight-parent');
+            if(targetEl.id === 'input-container') targetEl.classList.add('tour-highlight-parent');
         }
     }
 }
@@ -1066,9 +1061,7 @@ window.avancarTour = function() {
 
 window.fecharTour = function() {
     document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
-    document.getElementById('sidebar').style.zIndex = '';
-    document.getElementById('chat-header').style.zIndex = '';
-    document.getElementById('input-container').style.zIndex = '';
+    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
     document.getElementById('tour-overlay').style.display = 'none';
     document.getElementById('tour-card').style.display = 'none';
     localStorage.setItem('comboboy_tour', 'true');
