@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Importa todas as ferramentas visuais do utilitário
 import { 
@@ -60,19 +60,25 @@ let userApiKey = '';
 function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
-        // Usamos deleteField para apagar especificamente a chave do usuário sem ferir os outros online
-        updateDoc(ref, { [`presenca.${usuarioAtual.email}`]: deleteField() }).catch(e=>console.log(e));
+        const proj = window.projetos[idProjetoAtivo];
+        if(proj.presenca) {
+            delete proj.presenca[usuarioAtual.email];
+            updateDoc(ref, { presenca: proj.presenca }).catch(e=>console.log(e));
+        }
     }
 }
 
 function adicionarPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && idConversaAtiva !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
-        updateDoc(ref, { [`presenca.${usuarioAtual.email}`]: idConversaAtiva }).catch(e=>console.log(e));
+        const proj = window.projetos[idProjetoAtivo];
+        proj.presenca = proj.presenca || {};
+        proj.presenca[usuarioAtual.email] = idConversaAtiva;
+        updateDoc(ref, { presenca: proj.presenca }).catch(e=>console.log(e));
     }
 }
 
-// Se o usuário fechar ou mudar de aba, limpamos o ghost de presença na hora
+// Se o usuário fechar ou mudar de aba, limpamos a presença na hora
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') removerPresencaLocal();
     else adicionarPresencaLocal();
@@ -84,7 +90,7 @@ window.addEventListener('beforeunload', removerPresencaLocal);
 // 3. AUTH E GESTÃO DE PERFIL
 // ==========================================================
 onAuthStateChanged(auth, async (user) => {
-    fecharModalAuth();
+    if(window.fecharModalAuth) window.fecharModalAuth();
     const btnProfile = document.getElementById('btn-profile');
     const btnNotif = document.getElementById('btn-notificacoes');
 
@@ -95,12 +101,11 @@ onAuthStateChanged(auth, async (user) => {
         const displayName = user.displayName || formatarNomeUsuario(userEmail);
 
         btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</span>`;
-        btnProfile.onclick = abrirProfileMenu;
+        btnProfile.onclick = window.abrirProfileMenu;
         
         document.getElementById('config-btn-apikey').style.display = 'flex';
         btnNotif.style.display = 'flex';
 
-        // Puxa Perfil e API Key do Firestore
         try {
             const docSnap = await getDoc(doc(db, "usuarios", user.uid));
             if (docSnap.exists()) {
@@ -135,7 +140,7 @@ onAuthStateChanged(auth, async (user) => {
         perfilGlobalData = { profissao: "", tags: [] };
         
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
-        btnProfile.onclick = abrirModalAuth;
+        btnProfile.onclick = window.abrirModalAuth;
         
         document.getElementById('config-btn-apikey').style.display = 'none';
         btnNotif.style.display = 'none';
@@ -145,7 +150,7 @@ onAuthStateChanged(auth, async (user) => {
         atualizarIndicadorApiKey(userApiKey);
         
         carregarProjetosLocais();
-        resetarVisualizacaoChat();
+        window.resetarVisualizacaoChat();
     }
 });
 
@@ -212,6 +217,7 @@ function renderizarTags() {
         container.appendChild(span);
     });
 }
+window.renderizarTags = renderizarTags;
 
 window.abrirModalPerfil = async function() {
     document.getElementById('profile-menu').style.display = 'none';
@@ -292,7 +298,7 @@ window.removerAnexo = function() {
 }
 
 // ==========================================================
-// 5. FIREBASE DB & NOTIFICAÇÕES (TEMPO REAL)
+// 5. FIREBASE REALTIME & NOTIFICAÇÕES
 // ==========================================================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
@@ -302,7 +308,7 @@ function iniciarEscutaProjetosNuvem(email) {
         renderizarSidebar();
         if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
             if(window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) renderizarChat();
-            else resetarVisualizacaoChat();
+            else window.resetarVisualizacaoChat();
         }
     });
 }
@@ -344,8 +350,8 @@ function atualizarPainelNotificacoesUnificado() {
             <div id="convite-${convite.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; border: 1px solid rgba(245, 130, 32, 0.2);">
                 <div style="color: #e6edf3; margin-bottom: 6px;"><b>${formatarNomeUsuario(convite.remetente)}</b> convidou você para <b>${convite.projetoNome}</b></div>
                 <div style="display: flex; gap: 6px;">
-                    <button onclick="responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
-                    <button onclick="responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
+                    <button onclick="window.responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
+                    <button onclick="window.responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
                 </div>
                 <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 6px;">${formatarDataHora(convite.timestamp)}</div>
             </div>`;
@@ -356,7 +362,7 @@ function atualizarPainelNotificacoesUnificado() {
             <div id="notif-${notif.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
                 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
                     <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
-                    <button onclick="apagarNotificacao(event, '${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;">✕</button>
+                    <button onclick="window.apagarNotificacao(event, '${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;">✕</button>
                 </div>
                 <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 4px;">${formatarDataHora(notif.timestamp)}</div>
             </div>`;
@@ -419,14 +425,14 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     
     if (tipo === 'projeto') {
         const isDonoProjeto = usuarioAtual && window.projetos[indexProj].membros && window.projetos[indexProj].membros[0] === usuarioAtual.email;
-        if (usuarioAtual && window.projetos[indexProj].id) menuHTML += `<div class="context-item" style="color:#F58220" onclick="abrirModalCompartilhar()">${SVG_SHARE} Add Colaborador</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
-        menuHTML += `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Projeto</div><div class="context-item" onclick="exportarProjetoZip()">${SVG_ARCHIVE} Baixar (.zip)</div>`;
-        if (isDonoProjeto || !window.projetos[indexProj].id) menuHTML += `<div class="context-item danger" onclick="deletarProjeto()">${SVG_TRASH} Apagar Projeto</div>`;
+        if (usuarioAtual && window.projetos[indexProj].id) menuHTML += `<div class="context-item" style="color:#F58220" onclick="window.abrirModalCompartilhar()">${SVG_SHARE} Gerenciar Colab</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
+        menuHTML += `<div class="context-item" onclick="window.abrirModalRenomear()">${SVG_EDIT} Renomear Projeto</div><div class="context-item" onclick="window.exportarProjetoZip()">${SVG_ARCHIVE} Baixar (.zip)</div>`;
+        if (isDonoProjeto || !window.projetos[indexProj].id) menuHTML += `<div class="context-item danger" onclick="window.deletarProjeto()">${SVG_TRASH} Apagar Projeto</div>`;
     } else {
         const conv = window.projetos[indexProj].conversas[indexConv];
         const isDonoConversa = !usuarioAtual || !conv.criador || conv.criador === usuarioAtual.email;
-        menuHTML = `<div class="context-item" onclick="abrirModalRenomear()">${SVG_EDIT} Renomear Conversa</div><div class="context-item" onclick="exportarConversaMD()">${SVG_FILE} Baixar (.md)</div>`;
-        if (isDonoConversa) menuHTML += `<div class="context-item danger" onclick="deletarConversa()">${SVG_TRASH} Apagar Conversa</div>`;
+        menuHTML = `<div class="context-item" onclick="window.abrirModalRenomear()">${SVG_EDIT} Renomear Conversa</div><div class="context-item" onclick="window.exportarConversaMD()">${SVG_FILE} Baixar (.md)</div>`;
+        if (isDonoConversa) menuHTML += `<div class="context-item danger" onclick="window.deletarConversa()">${SVG_TRASH} Apagar Conversa</div>`;
     }
     menu.innerHTML = menuHTML; menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
 }
@@ -443,13 +449,13 @@ function renderizarSidebar() {
         const projetoDiv = document.createElement('div');
         projetoDiv.className = 'projeto-item';
         projetoDiv.innerHTML = `
-            <div class="projeto-header" oncontextmenu="abrirMenuContexto(event, 'projeto', ${indexProj})">
-                <div class="projeto-avatar" title="${proj.nome}" onclick="alternarPasta(${indexProj})">${inicialProjeto}</div>
-                <div class="projeto-titulo" onclick="alternarPasta(${indexProj})">
+            <div class="projeto-header" oncontextmenu="window.abrirMenuContexto(event, 'projeto', ${indexProj})">
+                <div class="projeto-avatar" title="${proj.nome}" onclick="window.alternarPasta(${indexProj})">${inicialProjeto}</div>
+                <div class="projeto-titulo" onclick="window.alternarPasta(${indexProj})">
                     <span style="font-size: 0.6rem; color: #8b949e; width: 15px;">${iconeSeta}</span>
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.nome}</span>
                 </div>
-                <button class="icon-btn" title="Nova Conversa" onclick="novaConversa(${indexProj}, event)">
+                <button class="icon-btn" title="Nova Conversa" onclick="window.novaConversa(${indexProj}, event)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
             </div>
@@ -496,16 +502,16 @@ function renderizarSidebar() {
                 <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 50px);">${conv.nome}</span>
                 <span style="display:flex; align-items:center; flex-shrink:0;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
-            convDiv.onclick = () => selecionarConversa(indexProj, indexConv);
+            convDiv.onclick = () => window.selecionarConversa(indexProj, indexConv);
             convDiv.oncontextmenu = (e) => window.abrirMenuContexto(e, 'conversa', indexProj, indexConv);
             containerConversas.appendChild(convDiv);
         });
     });
-    atualizarEstadoBotaoEnvio();
+    window.atualizarEstadoBotaoEnvio();
 }
 
 window.alternarSidebar = function() { document.getElementById('sidebar').classList.toggle('recolhido'); }
-window.alternarPasta = function(indexProj) { window.projetos[indexProj].aberto = !window.projetos[indexProj].aberto; salvarDadosAtuais(indexProj); renderizarSidebar(); }
+window.alternarPasta = function(indexProj) { window.projetos[indexProj].aberto = !window.projetos[indexProj].aberto; window.salvarDadosAtuais(indexProj); renderizarSidebar(); }
 
 window.abrirProfileMenu = function(event) {
     event.stopPropagation();
@@ -533,7 +539,7 @@ window.abrirModalCompartilhar = () => {
             row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${formatarNomeUsuario(email)}${badgeDono}</span>`;
             if (email !== membros[0]) {
                 const btnRemover = document.createElement('button'); btnRemover.className = 'btn-remover-collab'; btnRemover.innerText = 'Remover';
-                btnRemover.onclick = () => removerColaborador(email); row.appendChild(btnRemover);
+                btnRemover.onclick = () => window.removerColaborador(email); row.appendChild(btnRemover);
             }
             container.appendChild(row);
         });
@@ -560,7 +566,7 @@ window.novaConversa = function(indexProj, event) {
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false,
         mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
     });
-    window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); renderizarSidebar(); selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
+    window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
 window.confirmarCompartilhamento = async () => {
@@ -656,11 +662,13 @@ window.resetarVisualizacaoChat = function() {
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
 }
 
-function selecionarConversa(indexProj, indexConv) {
+window.selecionarConversa = function(indexProj, indexConv) {
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj]; proj.presenca = proj.presenca || {}; proj.presenca[usuarioAtual.email] = indexConv;
-        renderizarSidebar(); updateDoc(doc(db, "projetos", proj.id), { [`presenca.${usuarioAtual.email}`]: indexConv });
+        renderizarSidebar(); 
+        // CORREÇÃO: ENVIO DO OBJETO INTEIRO PARA NÃO QUEBRAR O FIREBASE COM PONTOS NO E-MAIL
+        updateDoc(doc(db, "projetos", proj.id), { presenca: proj.presenca });
     }
     document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
     const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`); if (itemAtivo) itemAtivo.classList.add('ativa');
@@ -669,9 +677,8 @@ function selecionarConversa(indexProj, indexConv) {
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     const autorEmail = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
     document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
-    renderizarChat(); atualizarEstadoBotaoEnvio(); validarInput();
+    renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
-window.selecionarConversa = selecionarConversa;
 
 function renderizarChat() {
     if (idProjetoAtivo === null || !window.projetos[idProjetoAtivo] || !window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) return;
@@ -697,7 +704,7 @@ function renderizarChat() {
 }
 window.renderizarChat = renderizarChat;
 
-function validarInput() {
+window.validarInput = function() {
     const input = document.getElementById('mensagem'); const btn = document.getElementById('btn-acao');
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
@@ -705,9 +712,8 @@ function validarInput() {
     if (!conv?.processando) { btn.disabled = input.value.trim().length === 0 && !anexoImagemBase64 && !anexoTextoConteudo; } 
     else { btn.disabled = false; }
 }
-window.validarInput = validarInput;
 
-function atualizarEstadoBotaoEnvio() {
+window.atualizarEstadoBotaoEnvio = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const btn = document.getElementById('btn-acao'); const iconSend = document.getElementById('icon-send'); const iconStop = document.getElementById('icon-stop');
     const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
@@ -715,10 +721,9 @@ function atualizarEstadoBotaoEnvio() {
     if (conv?.processando) {
         btn.classList.remove('enviar'); btn.classList.add('stop'); btn.disabled = false; iconSend.style.display = 'none'; iconStop.style.display = 'block'; btn.title = "Cancelar Resposta";
     } else {
-        btn.classList.remove('stop'); btn.classList.add('enviar'); iconStop.style.display = 'none'; iconSend.style.display = 'block'; btn.title = "Enviar"; validarInput();
+        btn.classList.remove('stop'); btn.classList.add('enviar'); iconStop.style.display = 'none'; iconSend.style.display = 'block'; btn.title = "Enviar"; window.validarInput();
     }
 }
-window.atualizarEstadoBotaoEnvio = atualizarEstadoBotaoEnvio;
 
 window.lidarComAcao = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
@@ -727,7 +732,7 @@ window.lidarComAcao = function() {
 
     if (conv?.processando) {
         if (statusConversas[chave] && statusConversas[chave].controller) {
-            statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); renderizarChat(); atualizarEstadoBotaoEnvio();
+            statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); renderizarChat(); window.atualizarEstadoBotaoEnvio();
         } else { mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
     } else { enviarMensagem(); }
 }
@@ -760,7 +765,7 @@ async function enviarMensagem() {
     
     window.removerAnexo(); proj.conversas[cIdx].processando = true; window.salvarDadosAtuais(pIdx); 
     input.value = ''; input.style.height = 'auto'; renderizarSidebar(); 
-    if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); atualizarEstadoBotaoEnvio(); }
+    if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
 
     const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
 
@@ -781,14 +786,13 @@ async function enviarMensagem() {
         else if (!res.ok) { let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro); } 
         else { const dados = await res.json(); window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta }); }
     } catch (e) {
-        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado.' : 'Erro: ' + e.message}` }); }
+        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado pelo usuário.' : 'Erro: ' + e.message}` }); }
     } finally {
         if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); }
         if (statusConversas[chave]) statusConversas[chave].ativa = false;
-        renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); atualizarEstadoBotaoEnvio(); }
+        renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
-window.enviarMensagem = enviarMensagem;
 
 // Eventos Globais Livres
 document.addEventListener('click', (e) => { 
