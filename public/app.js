@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Importa todas as ferramentas visuais do utilitário
 import { 
@@ -63,7 +63,7 @@ function removerPresencaLocal() {
         const proj = window.projetos[idProjetoAtivo];
         if(proj.presenca) {
             delete proj.presenca[usuarioAtual.email];
-            updateDoc(ref, { presenca: proj.presenca }).catch(e=>console.log(e));
+            updateDoc(ref, { [`presenca.${usuarioAtual.email}`]: deleteField() }).catch(e=>console.log(e));
         }
     }
 }
@@ -74,11 +74,10 @@ function adicionarPresencaLocal() {
         const proj = window.projetos[idProjetoAtivo];
         proj.presenca = proj.presenca || {};
         proj.presenca[usuarioAtual.email] = idConversaAtiva;
-        updateDoc(ref, { presenca: proj.presenca }).catch(e=>console.log(e));
+        updateDoc(ref, { [`presenca.${usuarioAtual.email}`]: idConversaAtiva }).catch(e=>console.log(e));
     }
 }
 
-// Se o usuário fechar ou mudar de aba, limpamos a presença na hora
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') removerPresencaLocal();
     else adicionarPresencaLocal();
@@ -303,12 +302,28 @@ window.removerAnexo = function() {
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
     unsubscribeProjetos = onSnapshot(q, (snapshot) => {
+        // Armazena o ID do projeto ativo para garantir que não feche por acidente se mudar o index
+        let idProjAntigo = idProjetoAtivo !== null && window.projetos[idProjetoAtivo] ? window.projetos[idProjetoAtivo].id : null;
+
         window.projetos = [];
         snapshot.forEach((doc) => { window.projetos.push({ id: doc.id, ...doc.data() }); });
+        
+        // Bloqueio de Acesso Imediato ao perder permissão
+        if (idProjAntigo) {
+            const novoIndex = window.projetos.findIndex(p => p.id === idProjAntigo);
+            if (novoIndex !== -1) {
+                idProjetoAtivo = novoIndex; 
+                if (!window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) {
+                    window.resetarVisualizacaoChat(); // Conversa foi apagada
+                }
+            } else {
+                window.resetarVisualizacaoChat(); // Projeto sumiu para esse usuário
+            }
+        }
+
         renderizarSidebar();
-        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
-            if(window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) renderizarChat();
-            else window.resetarVisualizacaoChat();
+        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) {
+            renderizarChat();
         }
     });
 }
@@ -471,7 +486,12 @@ function renderizarSidebar() {
             let emailsNaConversa = [];
             if (proj.presenca) {
                 Object.entries(proj.presenca).forEach(([emailUser, cIdx]) => {
-                    if (cIdx === indexConv && (!usuarioAtual || emailUser !== usuarioAtual.email)) emailsNaConversa.push(emailUser);
+                    // BLINDAGEM DE FANTASMAS: O usuário deve estar na lista de membros oficiais
+                    if (proj.membros && !proj.membros.includes(emailUser)) return;
+
+                    if (cIdx === indexConv && (!usuarioAtual || emailUser !== usuarioAtual.email)) {
+                        emailsNaConversa.push(emailUser);
+                    }
                 });
             }
 
@@ -582,7 +602,16 @@ window.removerColaborador = async (email) => {
     if (confirm(`Deseja remover ${formatarNomeUsuario(email)}?`)) {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
-            if (proj && proj.id) { await updateDoc(doc(db, "projetos", proj.id), { membros: arrayRemove(email) }); proj.membros = proj.membros.filter(m => m !== email); window.abrirModalCompartilhar(); }
+            if (proj && proj.id) { 
+                const payload = { membros: arrayRemove(email) };
+                if (proj.presenca && proj.presenca[email] !== undefined) {
+                    payload[`presenca.${email}`] = deleteField(); // EXTERMINA O FANTASMA
+                }
+                await updateDoc(doc(db, "projetos", proj.id), payload); 
+                proj.membros = proj.membros.filter(m => m !== email); 
+                if(proj.presenca) delete proj.presenca[email];
+                window.abrirModalCompartilhar(); 
+            }
         }
     }
 }
@@ -596,6 +625,7 @@ window.confirmarRenomear = function() {
 }
 
 window.deletarConversa = function() {
+    document.getElementById('context-menu').style.display = 'none'; // Fecha o menu
     if (confirm('Apagar esta conversa?')) {
         const pIdx = window.alvoMenu.indexProj; const cIdx = window.alvoMenu.indexConv;
         window.projetos[pIdx].conversas.splice(cIdx, 1);
@@ -605,6 +635,7 @@ window.deletarConversa = function() {
 }
 
 window.deletarProjeto = async function() {
+    document.getElementById('context-menu').style.display = 'none'; // Fecha o menu
     if (confirm('Apagar permanentemente o projeto?')) {
         const pIdx = window.alvoMenu.indexProj;
         if (usuarioAtual && window.projetos[pIdx].id) await deleteDoc(doc(db, "projetos", window.projetos[pIdx].id));
@@ -667,8 +698,7 @@ window.selecionarConversa = function(indexProj, indexConv) {
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj]; proj.presenca = proj.presenca || {}; proj.presenca[usuarioAtual.email] = indexConv;
         renderizarSidebar(); 
-        // CORREÇÃO: ENVIO DO OBJETO INTEIRO PARA NÃO QUEBRAR O FIREBASE COM PONTOS NO E-MAIL
-        updateDoc(doc(db, "projetos", proj.id), { presenca: proj.presenca });
+        updateDoc(doc(db, "projetos", proj.id), { [`presenca.${usuarioAtual.email}`]: indexConv });
     }
     document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
     const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`); if (itemAtivo) itemAtivo.classList.add('ativa');
@@ -786,13 +816,14 @@ async function enviarMensagem() {
         else if (!res.ok) { let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro); } 
         else { const dados = await res.json(); window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta }); }
     } catch (e) {
-        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado pelo usuário.' : 'Erro: ' + e.message}` }); }
+        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado.' : 'Erro: ' + e.message}` }); }
     } finally {
         if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); }
         if (statusConversas[chave]) statusConversas[chave].ativa = false;
         renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
+window.enviarMensagem = enviarMensagem;
 
 // Eventos Globais Livres
 document.addEventListener('click', (e) => { 
