@@ -67,7 +67,6 @@ async function removerPresencaLocal() {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
         const proj = window.projetos[idProjetoAtivo];
         
-        // Remove peer ID se estiver na chamada
         if(meuPeer && meuPeer.id && proj.conversas && proj.conversas[idConversaAtiva] && proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
              window.sairDaChamada(true); 
         }
@@ -89,7 +88,6 @@ function adicionarPresencaLocal() {
     }
 }
 
-// REMOVIDO o visibilitychange. A presença agora só zera se fechar a aba ou atualizar (pagehide/beforeunload)
 window.addEventListener('pagehide', removerPresencaLocal);
 window.addEventListener('beforeunload', removerPresencaLocal);
 
@@ -97,16 +95,13 @@ function iniciarEscutaUsuarios() {
     unsubscribeUsuarios = onSnapshot(collection(db, "usuarios"), (snapshot) => {
         snapshot.forEach(doc => {
             const data = doc.data();
-            if(data.email && data.nome) {
-                window.mapUsuarios[data.email] = data.nome;
-            }
+            if(data.email && data.nome) window.mapUsuarios[data.email] = data.nome;
         });
-        
         if (window.atualizarBotaoPerfilGlobal) window.atualizarBotaoPerfilGlobal();
         if (window.renderizarSidebar) window.renderizarSidebar();
         if (idProjetoAtivo !== null && idConversaAtiva !== null) {
             window.renderizarChat();
-            window.renderizarChatLateral();
+            window.renderizarUsuariosNaChamada();
         }
     });
 }
@@ -162,9 +157,7 @@ onAuthStateChanged(auth, async (user) => {
         iniciarEscutaConvites(user.email);
         iniciarEscutaNotificacoes(user.email);
         
-        if (localStorage.getItem('comboboy_tour') !== 'true') {
-            window.iniciarTour();
-        }
+        if (localStorage.getItem('comboboy_tour') !== 'true') window.iniciarTour();
 
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
@@ -225,7 +218,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
-        await new Promise(r => setTimeout(r, 500)); // Aguarda confirmação
+        await new Promise(r => setTimeout(r, 500)); 
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -389,6 +382,7 @@ function iniciarEscutaProjetosNuvem(email) {
             window.renderizarChat();
             window.renderizarChatLateral();
             window.verificarNovosPeers();
+            window.renderizarUsuariosNaChamada();
         }
     });
 }
@@ -593,7 +587,6 @@ window.renderizarSidebar = function() {
                 <span style="display:flex; align-items:center; flex-shrink:0; pointer-events: none;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
             
-            // Drag and Drop (Conversas)
             convDiv.setAttribute('draggable', 'true');
             convDiv.ondragstart = (e) => {
                 e.dataTransfer.setData('application/json', JSON.stringify({ p: indexProj, c: indexConv }));
@@ -759,7 +752,7 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
+// ACORDEÃO E CONFIGURAÇÕES
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -822,7 +815,7 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT, NOMES E ÍNDICE DE PERGUNTAS
+// 7. SISTEMA DE CHAT E TELA INICIAL
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
@@ -832,12 +825,11 @@ window.resetarVisualizacaoChat = function() {
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     document.getElementById('btn-colab').style.display = 'none';
     
-    // TELA DE BOAS VINDAS
     document.getElementById('chat').innerHTML = `
         <div id="sem-conversa-msg" style="margin: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.9; text-align: center; max-width: 500px; padding: 20px;">
             <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 200px; height: 200px; margin-bottom: 10px; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5));">
-            <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 3rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:0px; line-height: 1;">
-                <span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span>
+            <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:8px;">
+                <div><span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span></div> 
             </h2>
             <p style="color: #c9d1d9; font-size: 1rem; line-height: 1.5; margin: 0 0 15px 0;">
                 Sou um pesquisador de game engines. Por enquanto, meu conhecimento é focado inteiramente no <b>Unity</b>.
@@ -877,11 +869,11 @@ window.selecionarConversa = function(indexProj, indexConv) {
 
     window.renderizarChat(); 
     window.renderizarChatLateral();
+    window.renderizarUsuariosNaChamada();
     window.atualizarEstadoBotaoEnvio(); 
     window.validarInput();
 }
 
-// POSICIONAMENTO CENTRALIZADO DO MENU DE HISTÓRICO
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
@@ -1067,17 +1059,17 @@ async function enviarMensagem() {
     }
 }
 
+
 // ==========================================================
-// 8. INFRAESTRUTURA WEBRTC P2P & CHAT LATERAL
+// 8. INFRAESTRUTURA WEBRTC P2P E COLABORAÇÃO
 // ==========================================================
 window.toggleSidebarColab = function() {
     const sidebarR = document.getElementById('sidebar-right');
     sidebarR.classList.toggle('open');
     if(sidebarR.classList.contains('open')) window.renderizarChatLateral();
 }
-window.fecharSidebarColab = function() {
-    document.getElementById('sidebar-right').classList.remove('open');
-}
+
+window.fecharSidebarColab = function() { document.getElementById('sidebar-right').classList.remove('open'); }
 
 window.renderizarChatLateral = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) return;
@@ -1111,16 +1103,40 @@ window.enviarMensagemLateral = function() {
     const proj = window.projetos[idProjetoAtivo];
     if (!proj.conversas[idConversaAtiva].chatLateral) proj.conversas[idConversaAtiva].chatLateral = [];
     
-    proj.conversas[idConversaAtiva].chatLateral.push({
-        email: usuarioAtual.email, texto: texto, timestamp: Date.now()
-    });
+    proj.conversas[idConversaAtiva].chatLateral.push({ email: usuarioAtual.email, texto: texto, timestamp: Date.now() });
 
-    window.salvarDadosAtuais(idProjetoAtivo);
-    input.value = '';
-    window.renderizarChatLateral();
+    window.salvarDadosAtuais(idProjetoAtivo); input.value = ''; window.renderizarChatLateral();
 }
 
-// INICIALIZAÇÃO DO PEER (WEBRTC)
+// ----------------------------------------------------
+// RENDERIZAÇÃO DE AVATARES DE VOZ
+window.renderizarUsuariosNaChamada = function() {
+    const container = document.getElementById('active-call-users');
+    if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) {
+        container.style.display = 'none'; return;
+    }
+    
+    const proj = window.projetos[idProjetoAtivo];
+    const chamadaAtiva = proj.conversas[idConversaAtiva].chamada || {};
+    const emailsNaChamada = Object.keys(chamadaAtiva);
+
+    if (emailsNaChamada.length > 0) {
+        container.style.display = 'flex';
+        container.innerHTML = '';
+        emailsNaChamada.forEach(email => {
+            const nome = window.formatarNomeUsuario(email);
+            const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=21262d&color=c9d1d9&rounded=true`;
+            container.innerHTML += `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;" title="${nome}">
+                    <img src="${avatar}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2ea043; object-fit: cover;">
+                    <span style="font-size: 0.65rem; color: #c9d1d9; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nome}</span>
+                </div>`;
+        });
+    } else { container.style.display = 'none'; }
+};
+
+// ----------------------------------------------------
+// MOTOR WEBRTC RECONSTRUÍDO (AUDIO INVISÍVEL VS TELA)
 function inicializarPeer() {
     if(meuPeer) return;
     meuPeer = new Peer();
@@ -1142,10 +1158,14 @@ function inicializarPeer() {
     });
 
     meuPeer.on('call', (call) => {
-        call.answer(streamLocalAudio || streamLocalVideo); 
+        let mediaCombinada = new MediaStream();
+        if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => mediaCombinada.addTrack(t));
+        if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => mediaCombinada.addTrack(t));
+        
+        call.answer(mediaCombinada); 
         chamadasAtivas[call.peer] = call;
-        call.on('stream', (streamRemoto) => { adicionarVideoRemoto(streamRemoto, call.peer); });
-        call.on('close', () => removerVideoRemoto(call.peer));
+        call.on('stream', (streamRemoto) => { window.gerenciarMediaRemota(streamRemoto, call.peer); });
+        call.on('close', () => window.limparMediaRemota(call.peer));
     });
 }
 
@@ -1213,22 +1233,41 @@ window.compartilharTela = async function() {
         if (!streamLocalVideo) {
             streamLocalVideo = await navigator.mediaDevices.getDisplayMedia({ video: true });
             document.getElementById('btn-call-screen').classList.add('active');
-            adicionarVideoRemoto(streamLocalVideo, meuPeer.id, true);
             
-            const videoTrack = streamLocalVideo.getVideoTracks()[0];
-            Object.values(chamadasAtivas).forEach(call => {
-                const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-                if(sender) sender.replaceTrack(videoTrack);
-            });
-
-            videoTrack.onended = () => window.compartilharTela();
+            streamLocalVideo.getVideoTracks()[0].onended = () => window.compartilharTela();
+            window.atualizarStreamsP2P();
         } else {
             streamLocalVideo.getTracks().forEach(t => t.stop());
             streamLocalVideo = null;
             document.getElementById('btn-call-screen').classList.remove('active');
-            removerVideoRemoto(meuPeer.id);
+            window.limparMediaRemota(meuPeer.id);
+            window.atualizarStreamsP2P();
         }
-    } catch(e) { console.log("Compartilhamento de tela cancelado", e); }
+    } catch(e) {}
+}
+
+window.atualizarStreamsP2P = function() {
+    let combinedStream = new MediaStream();
+    if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => combinedStream.addTrack(t));
+    if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => combinedStream.addTrack(t));
+    
+    window.gerenciarMediaRemota(combinedStream, meuPeer.id, true);
+
+    if (idProjetoAtivo === null || !window.projetos[idProjetoAtivo]) return;
+    const proj = window.projetos[idProjetoAtivo];
+    const chamadaAtiva = proj.conversas[idConversaAtiva].chamada || {};
+    
+    Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
+        if (email !== usuarioAtual.email) {
+            if(chamadasAtivas[peerIdRemoto]) chamadasAtivas[peerIdRemoto].close();
+            const call = meuPeer.call(peerIdRemoto, combinedStream);
+            if (call) {
+                chamadasAtivas[peerIdRemoto] = call;
+                call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));
+                call.on('close', () => window.limparMediaRemota(peerIdRemoto));
+            }
+        }
+    });
 }
 
 window.verificarNovosPeers = function() {
@@ -1236,101 +1275,110 @@ window.verificarNovosPeers = function() {
     const proj = window.projetos[idProjetoAtivo];
     const chamadaAtiva = proj.conversas[idConversaAtiva].chamada || {};
     
+    let combinedStream = new MediaStream();
+    if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => combinedStream.addTrack(t));
+    if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => combinedStream.addTrack(t));
+
     Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
         if (email !== usuarioAtual.email && !chamadasAtivas[peerIdRemoto]) {
-            const call = meuPeer.call(peerIdRemoto, streamLocalVideo || streamLocalAudio);
+            const call = meuPeer.call(peerIdRemoto, combinedStream);
             if (call) {
                 chamadasAtivas[peerIdRemoto] = call;
-                call.on('stream', (streamRemoto) => adicionarVideoRemoto(streamRemoto, peerIdRemoto));
-                call.on('close', () => removerVideoRemoto(peerIdRemoto));
+                call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));
+                call.on('close', () => window.limparMediaRemota(peerIdRemoto));
             }
         }
     });
 }
 
-function adicionarVideoRemoto(stream, peerId, isLocal = false) {
-    const stage = document.getElementById('stage-container');
-    stage.style.display = 'flex';
+window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
+    const hasVideo = stream.getVideoTracks().length > 0;
     
-    if(!document.getElementById(`video-${peerId}`)) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'video-wrapper';
-        wrapper.id = `video-${peerId}`;
-        
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.autoplay = true;
-        video.playsInline = true;
-        if(isLocal) video.muted = true; 
-        
-        const tag = document.createElement('div');
-        tag.className = 'video-tag';
-        tag.innerText = isLocal ? 'Você (Transmitindo)' : 'Colaborador';
-        
-        // Controles Avançados do Player de Vídeo (Volume, PiP, Fullscreen)
-        const controls = document.createElement('div');
-        controls.className = 'video-controls';
-        
-        let htmlControles = '';
-        if (!isLocal) {
-            htmlControles += `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:white; margin-left:8px;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                <input type="range" class="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume da Chamada">`;
-        }
-        htmlControles += `
-            <button class="ctrl-btn pip-btn" title="Miniatura (PiP)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="12" y="11" width="7" height="5" rx="1"></rect></svg>
-            </button>
-            <button class="ctrl-btn fs-btn" title="Tela Cheia">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-            </button>
-        `;
-        controls.innerHTML = htmlControles;
-        
-        if (!isLocal) {
-            const slider = controls.querySelector('.vol-slider');
-            slider.addEventListener('input', (e) => { video.volume = e.target.value; });
-        }
-        
-        // Logica Picture-in-Picture
-        controls.querySelector('.pip-btn').addEventListener('click', () => {
-            if (document.pictureInPictureElement) {
-                document.exitPictureInPicture();
-            } else if (video.requestPictureInPicture) {
-                video.requestPictureInPicture();
-            } else if (video.webkitSetPresentationMode) {
-                video.webkitSetPresentationMode('picture-in-picture'); 
-            }
-        });
-        
-        // Logica de Fullscreen
-        controls.querySelector('.fs-btn').addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                if (wrapper.requestFullscreen) wrapper.requestFullscreen();
-                else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // Safari
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
-        });
-        
-        wrapper.appendChild(video);
-        wrapper.appendChild(tag);
-        wrapper.appendChild(controls);
-        stage.appendChild(wrapper);
+    // Áudio Invisível (Garante o fluxo de voz sem criar caixa preta)
+    let audioEl = document.getElementById(`audio-${peerId}`);
+    if (!audioEl) {
+        audioEl = document.createElement('audio');
+        audioEl.id = `audio-${peerId}`;
+        audioEl.autoplay = true;
+        if(isLocal) audioEl.muted = true;
+        document.body.appendChild(audioEl);
     }
+    audioEl.srcObject = stream;
+
+    // Vídeo (O Palco só aparece se a track de vídeo existir)
+    const stage = document.getElementById('stage-container');
+    if (hasVideo) {
+        stage.style.display = 'flex';
+        let videoWrapper = document.getElementById(`video-${peerId}`);
+        
+        if (!videoWrapper) {
+            videoWrapper = document.createElement('div');
+            videoWrapper.className = 'video-wrapper';
+            videoWrapper.id = `video-${peerId}`;
+            
+            const videoEl = document.createElement('video');
+            videoEl.autoplay = true; videoEl.playsInline = true; videoEl.muted = true;
+            
+            const tag = document.createElement('div');
+            tag.className = 'video-tag'; tag.innerText = isLocal ? 'Você (Transmitindo)' : 'Colaborador';
+            
+            const controls = document.createElement('div');
+            controls.className = 'video-controls';
+            let htmlControles = '';
+            if (!isLocal) {
+                htmlControles += `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:white; margin-left:8px;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    <input type="range" class="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume da Chamada">`;
+            }
+            htmlControles += `
+                <button class="ctrl-btn pip-btn" title="Miniatura (PiP)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="12" y="11" width="7" height="5" rx="1"></rect></svg>
+                </button>
+                <button class="ctrl-btn fs-btn" title="Tela Cheia">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                </button>`;
+            controls.innerHTML = htmlControles;
+            
+            if (!isLocal) {
+                controls.querySelector('.vol-slider').addEventListener('input', (e) => { audioEl.volume = e.target.value; });
+            }
+            controls.querySelector('.pip-btn').addEventListener('click', () => {
+                if (document.pictureInPictureElement) document.exitPictureInPicture();
+                else videoEl.requestPictureInPicture();
+            });
+            controls.querySelector('.fs-btn').addEventListener('click', () => {
+                if (!document.fullscreenElement) videoWrapper.requestFullscreen();
+                else document.exitFullscreen();
+            });
+            
+            videoWrapper.appendChild(videoEl); videoWrapper.appendChild(tag); videoWrapper.appendChild(controls);
+            stage.appendChild(videoWrapper);
+        }
+        videoWrapper.querySelector('video').srcObject = stream;
+    } else {
+        window.limparMediaRemota(peerId, true);
+    }
+
+    stream.onaddtrack = () => window.gerenciarMediaRemota(stream, peerId, isLocal);
+    stream.onremovetrack = () => window.gerenciarMediaRemota(stream, peerId, isLocal);
 }
 
-function removerVideoRemoto(peerId) {
-    const el = document.getElementById(`video-${peerId}`);
-    if(el) el.remove();
+window.limparMediaRemota = function(peerId, keepAudio = false) {
+    const elVid = document.getElementById(`video-${peerId}`);
+    if(elVid) elVid.remove();
+    
+    if(!keepAudio) {
+        const elAud = document.getElementById(`audio-${peerId}`);
+        if(elAud) elAud.remove();
+    }
     
     const stage = document.getElementById('stage-container');
-    if(stage.children.length === 0) stage.style.display = 'none';
+    if(stage && stage.children.length === 0) stage.style.display = 'none';
 }
 
 
 // ==========================================================
-// 9. LÓGICA DO TOUR DE ONBOARDING
+// 9. LÓGICA DO TOUR DE ONBOARDING E MENU LIVRE
 // ==========================================================
 const tourSteps = [
     { 
@@ -1370,9 +1418,7 @@ window.iniciarTour = function() {
     currentTourStep = 0;
     document.getElementById('config-menu').style.display = 'none';
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
-    
     document.getElementById('btn-colab').style.display = 'flex'; 
-
     document.getElementById('tour-overlay').style.display = 'block';
     window.renderizarStepTour();
 }

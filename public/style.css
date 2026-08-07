@@ -30,7 +30,7 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ff9b44 0%, #F58220 100%); }
 
-/* ================= BARRA LATERAL ================= */
+/* ================= BARRA LATERAL ESQUERDA ================= */
 #sidebar { 
     width: 280px; 
     background: rgba(22, 27, 34, 0.95); 
@@ -103,7 +103,6 @@ body {
 .lista-conversas { padding-left: 20px; margin-top: 2px; display: none; }
 .lista-conversas.aberta { display: block; }
 
-/* REGRAS DO DRAG AND DROP NA SIDEBAR */
 .conversa-item {
     padding: 8px 12px; margin-bottom: 2px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; color: #8b949e;
     display: flex; align-items: center; justify-content: space-between; position: relative;
@@ -212,9 +211,7 @@ header {
 #btn-historico:hover { color: #ffffff; border-color: #F58220; background: rgba(245, 130, 32, 0.1); }
 
 /* ENGINES PILLS NO MODAL PROJETO */
-.engine-tabs-container {
-    display: flex; gap: 10px; margin-bottom: 20px; width: 100%;
-}
+.engine-tabs-container { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; }
 .engine-pill {
     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); color: #8b949e;
     padding: 8px 0; border-radius: 20px; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 500;
@@ -225,16 +222,16 @@ header {
 
 /* ================= CHAT PRINCIPAL E VÍDEO STAGE ================= */
 #stage-container {
-    display: none; flex-direction: column; width: 100%; max-height: 60vh; border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: none; flex-direction: column; width: 100%; height: 45vh; border-bottom: 1px solid rgba(255,255,255,0.05);
     background: rgba(0,0,0,0.5); padding: 15px; overflow-y: auto; overflow-x: hidden; gap: 15px;
 }
 .video-wrapper {
-    position: relative; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,0.1);
+    position: relative; width: 100%; height: 100%; border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,0.1);
     background: #000; display: flex; align-items: center; justify-content: center;
 }
-.video-wrapper video { width: 100%; max-height: 55vh; object-fit: contain; }
+.video-wrapper video { width: 100%; height: 100%; object-fit: contain; }
 .video-wrapper:fullscreen { border: none; border-radius: 0; }
-.video-wrapper:fullscreen video { max-height: 100vh; }
+.video-wrapper:fullscreen video { height: 100vh; }
 
 .video-tag { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; backdrop-filter: blur(5px);}
 
@@ -248,9 +245,7 @@ header {
 
 .ctrl-btn { background: transparent; border: none; color: white; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; transition: 0.2s; border-radius: 6px;}
 .ctrl-btn:hover { background: rgba(255,255,255,0.1); color: #F58220; }
-.vol-slider { 
-    -webkit-appearance: none; background: transparent; width: 80px; margin: 0 10px;
-}
+.vol-slider { -webkit-appearance: none; background: transparent; width: 80px; margin: 0 10px; }
 .vol-slider::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; }
 .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: #F58220; margin-top: -5px; cursor: pointer; transition: transform 0.1s;}
 .vol-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
@@ -344,13 +339,16 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } 70% { box-shadow: 0 0 0 6px rgba(46, 160, 67, 0); } }
 .pulse-verde { animation: pulse-green 2s infinite; }
 
-/* ================= ABA LATERAL DIREITA (CHAT COLLAB) ================= */
+/* ================= ABA LATERAL DIREITA (CHAT COLLAB) QUE EMPURRA O CONTEUDO ================= */
 #sidebar-right {
-    width: 320px; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-    border-left: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; flex-shrink: 0;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(100%); position: absolute; right: 0; top: 0; height: 100%; z-index: 400;
+    width: 0; opacity: 0; overflow: hidden; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    display: flex; flex-direction: column; flex-shrink: 0; border-left: none;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s; 
 }
-#sidebar-right.open { transform: translateX(0); }
+#sidebar-right.open { width: 320px; opacity: 1; border-left: 1px solid rgba(255, 255, 255, 0.05); }
+
+/* Container fixo interno para os itens não se espremerem durante a animação */
+.colab-inner { width: 320px; display: flex; flex-direction: column; height: 100%; }
 
 .call-controls { display: flex; justify-content: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
 .call-btn { width: 44px; height: 44px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: white; background: rgba(255,255,255,0.1); }
@@ -429,7 +427,9 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     .engine-tabs-container { padding: 8px 12px; gap: 8px; }
     .engine-pill { padding: 4px 12px; font-size: 0.8rem; }
     
-    #sidebar-right { position: fixed; width: 85vw; max-width: 350px; z-index: 600; }
+    #sidebar-right { position: fixed; width: 85vw; max-width: 350px; z-index: 600; transform: translateX(100%); }
+    #sidebar-right.open { width: 85vw; transform: translateX(0); }
+    .colab-inner { width: 100%; }
 }
 
 /* --- ESTILOS PARA IMAGENS NO CHAT E UPLOADS --- */
