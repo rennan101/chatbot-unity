@@ -151,7 +151,6 @@ onAuthStateChanged(auth, async (user) => {
         iniciarEscutaConvites(user.email);
         iniciarEscutaNotificacoes(user.email);
         
-        // DISPARA O TOUR AUTOMÁTICO SE FOR A PRIMEIRA VEZ
         if (localStorage.getItem('comboboy_tour') !== 'true') {
             window.iniciarTour();
         }
@@ -703,7 +702,6 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -797,7 +795,6 @@ window.selecionarConversa = function(indexProj, indexConv) {
     
     document.getElementById('btn-historico').style.display = 'flex';
     
-    // Se estiver no Mobile, fechar a sidebar ao selecionar a conversa
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebar-backdrop').classList.remove('active');
@@ -809,14 +806,10 @@ window.selecionarConversa = function(indexProj, indexConv) {
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
-    const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
         document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
         menu.style.display = 'block'; 
-        menu.style.left = (btn.left + (btn.width / 2)) + 'px'; 
-        menu.style.transform = 'translateX(-50%)'; 
-        menu.style.top = (btn.bottom + 8) + 'px'; 
     }
 }
 
@@ -990,17 +983,42 @@ async function enviarMensagem() {
         window.renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
-
+window.enviarMensagem = enviarMensagem;
 
 // ==========================================================
-// 8. LÓGICA DO TOUR DE ONBOARDING
+// 8. LÓGICA DO TOUR DE ONBOARDING E MENU
 // ==========================================================
 const tourSteps = [
-    { target: null, title: "👋 Bem-vindo ao ComboBoy!", text: "Seu assistente IA especialista em Unity. Sincronize projetos, tire dúvidas com códigos otimizados e colabore em tempo real com sua equipe!" },
-    { target: "sidebar", title: "📁 Seus Projetos", text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem." },
-    { target: "main-input-wrapper", title: "⌨️ Área de Pesquisa", text: "Faça perguntas ou arraste imagens e scripts (.cs) diretamente para cá!" },
-    { target: "btn-config", title: "⚙️ Configurações", text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." },
-    { target: "btn-notificacoes", title: "🔔 Notificações", text: "Acompanhe convites de colaboração e interações da sua equipe por aqui." }
+    { 
+        target: null, 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+        title: "Bem-vindo ao ComboBoy!", 
+        text: "Seu assistente IA especialista em Unity. Sincronize projetos, tire dúvidas com códigos otimizados e colabore em tempo real com sua equipe!" 
+    },
+    { 
+        target: "sidebar", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+        title: "Seus Projetos", 
+        text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem." 
+    },
+    { 
+        target: "input-container", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+        title: "Área de Pesquisa", 
+        text: "Faça perguntas ou arraste imagens e scripts (.cs) diretamente para cá!" 
+    },
+    { 
+        target: "btn-config", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+        title: "Configurações", 
+        text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." 
+    },
+    { 
+        target: "btn-notificacoes", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+        title: "Notificações", 
+        text: "Acompanhe convites de colaboração e interações da sua equipe por aqui." 
+    }
 ];
 let currentTourStep = 0;
 
@@ -1014,18 +1032,29 @@ window.iniciarTour = function() {
 
 window.renderizarStepTour = function() {
     const step = tourSteps[currentTourStep];
+    
     document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.getElementById('sidebar').style.zIndex = '';
+    document.getElementById('chat-header').style.zIndex = '';
+    document.getElementById('input-container').style.zIndex = '';
     
     const card = document.getElementById('tour-card');
     card.style.display = 'block';
     
-    document.getElementById('tour-title').innerText = step.title;
+    document.getElementById('tour-title').innerHTML = `<span style="display:flex; align-items:center; justify-content:center; gap:8px;">${step.icon} ${step.title}</span>`;
     document.getElementById('tour-text').innerText = step.text;
     document.getElementById('tour-btn-next').innerText = currentTourStep === tourSteps.length - 1 ? "Finalizar" : "Avançar";
     
     if (step.target) {
         const targetEl = document.getElementById(step.target);
-        if(targetEl) targetEl.classList.add('tour-highlight');
+        if(targetEl) {
+            targetEl.classList.add('tour-highlight');
+            
+            // Eleva os containers pai para cima do overlay preto
+            if(targetEl.closest('aside')) document.getElementById('sidebar').style.zIndex = '3001';
+            if(targetEl.closest('header')) document.getElementById('chat-header').style.zIndex = '3001';
+            if(targetEl.closest('#input-container')) document.getElementById('input-container').style.zIndex = '3001';
+        }
     }
 }
 
@@ -1037,14 +1066,15 @@ window.avancarTour = function() {
 
 window.fecharTour = function() {
     document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.getElementById('sidebar').style.zIndex = '';
+    document.getElementById('chat-header').style.zIndex = '';
+    document.getElementById('input-container').style.zIndex = '';
     document.getElementById('tour-overlay').style.display = 'none';
     document.getElementById('tour-card').style.display = 'none';
     localStorage.setItem('comboboy_tour', 'true');
-    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); }
+    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('active');}
 }
 
-
-// Eventos Globais Livres
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
