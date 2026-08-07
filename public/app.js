@@ -34,7 +34,7 @@ let statusConversas = {};
 let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
-let loadingMemeInterval = null; // Controla o piscar do meme
+let loadingMemeInterval = null; 
 
 let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
 let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true';
@@ -250,10 +250,10 @@ window.salvarPerfil = async function() {
 }
 
 // ==========================================================
-// 4. LÓGICA DE ANEXOS
+// 4. LÓGICA DE ANEXOS E DRAG AND DROP
 // ==========================================================
-window.lidarComAnexo = function(event) {
-    const file = event.target.files[0];
+window.lidarComAnexo = function(eventOrFile) {
+    const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
     if (!file) return;
     document.getElementById('btn-anexo').style.opacity = '0.5';
     
@@ -279,17 +279,59 @@ window.lidarComAnexo = function(event) {
         reader.readAsText(file);
     }
 }
+
 function mostrarPreviewContainer() {
     document.getElementById('anexo-preview-container').style.display = 'flex';
     document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
     document.getElementById('btn-anexo').style.opacity = '1'; window.validarInput();
 }
+
 window.removerAnexo = function() {
     anexoImagemBase64 = null; anexoImagemMimeType = null; anexoTextoConteudo = null; anexoTextoNome = null;
     document.getElementById('input-anexo').value = '';
     document.getElementById('anexo-preview-container').style.display = 'none';
     document.getElementById('main-input-wrapper').style.borderRadius = '16px'; window.validarInput();
 }
+
+const dropZone = document.getElementById('main-input-wrapper');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (idProjetoAtivo !== null && idConversaAtiva !== null) {
+            dropZone.classList.add('drag-over');
+        }
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        dropZone.classList.remove('drag-over');
+
+        if (idProjetoAtivo === null || idConversaAtiva === null) {
+            mostrarToast("Selecione uma conversa primeiro!", 'rgba(245, 130, 32, 0.9)', SVG_WARN);
+            return;
+        }
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            const validExtensions = ['.cs', '.txt', '.js', '.json'];
+            const fileName = file.name.toLowerCase();
+            const isValidExt = validExtensions.some(ext => fileName.endsWith(ext));
+            const isValidType = file.type.startsWith('image/');
+
+            if (isValidType || isValidExt) {
+                window.lidarComAnexo(file);
+            } else {
+                mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
+            }
+        }
+    });
+}
+
 
 // ==========================================================
 // 5. FIREBASE REALTIME & NOTIFICAÇÕES
@@ -537,7 +579,7 @@ window.abrirProfileMenu = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('notifications-menu').style.display = 'none';
         document.getElementById('historico-menu').style.display = 'none';
-        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = 'auto'; menu.style.bottom = (window.innerHeight - btn.top + 10) + 'px';
+        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
     }
 }
 
@@ -734,17 +776,21 @@ window.selecionarConversa = function(indexProj, indexConv) {
     renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
+// LÓGICA ATUALIZADA DO MENU HISTÓRICO NO TOPO CENTRAL
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
     const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
-        document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
+        document.getElementById('config-menu').style.display = 'none'; 
+        document.getElementById('profile-menu').style.display = 'none'; 
+        document.getElementById('notifications-menu').style.display = 'none';
+        
         menu.style.display = 'block'; 
         menu.style.left = (btn.left + (btn.width / 2)) + 'px'; 
         menu.style.transform = 'translateX(-50%)'; 
-        menu.style.top = (btn.bottom + 8) + 'px';
+        menu.style.top = (btn.bottom + 8) + 'px'; // Desce um pouquinho
     }
 }
 
@@ -895,8 +941,8 @@ async function enviarMensagem() {
         renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
-window.enviarMensagem = enviarMensagem;
 
+// Eventos Globais Livres
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
