@@ -7,6 +7,9 @@ import {
     getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo
 } from './utils.js';
 
+// ==========================================================
+// 1. CONFIGURAÇÕES & ESTADO GERAL
+// ==========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
@@ -49,15 +52,16 @@ let anexoTextoConteudo = null;
 let anexoTextoNome = null;
 let userApiKey = '';
 
+// ==========================================================
+// 2. PRESENÇA EM TEMPO REAL BLINDADA E SYNC DE NOMES
+// ==========================================================
 async function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
         const proj = window.projetos[idProjetoAtivo];
-        if(proj.presenca) {
+        if(proj.presenca && proj.presenca[usuarioAtual.email] !== undefined) {
             delete proj.presenca[usuarioAtual.email];
-            try {
-                await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField());
-            } catch(e) { console.log(e); }
+            try { await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField()); } catch(e) {}
         }
     }
 }
@@ -76,6 +80,7 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') removerPresencaLocal();
     else adicionarPresencaLocal();
 });
+window.addEventListener('pagehide', removerPresencaLocal);
 window.addEventListener('beforeunload', removerPresencaLocal);
 
 function iniciarEscutaUsuarios() {
@@ -90,6 +95,9 @@ function iniciarEscutaUsuarios() {
     });
 }
 
+// ==========================================================
+// 3. AUTH E GESTÃO DE PERFIL
+// ==========================================================
 window.atualizarBotaoPerfilGlobal = function() {
     if(!usuarioAtual) return;
     const userEmail = usuarioAtual.email;
@@ -138,9 +146,7 @@ onAuthStateChanged(auth, async (user) => {
         iniciarEscutaConvites(user.email);
         iniciarEscutaNotificacoes(user.email);
         
-        if (localStorage.getItem('comboboy_tour') !== 'true') {
-            window.iniciarTour();
-        }
+        if (localStorage.getItem('comboboy_tour') !== 'true') window.iniciarTour();
 
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
@@ -201,6 +207,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
+        await new Promise(r => setTimeout(r, 600)); // Aguarda confirmação do DB
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -272,7 +279,7 @@ window.abrirModalApoio = function() { document.getElementById('modal-apoio').sty
 window.fecharModalApoio = function() { document.getElementById('modal-apoio').style.display = 'none'; }
 
 // ==========================================================
-// 4. LÓGICA DE ANEXOS E DRAG AND DROP
+// 4. LÓGICA DE ANEXOS E DRAG AND DROP (CHAT)
 // ==========================================================
 window.lidarComAnexo = function(eventOrFile) {
     const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
@@ -467,7 +474,7 @@ window.apagarNotificacao = async function(event, notifId) {
 }
 
 // ==========================================================
-// 6. UI DA BARRA LATERAL E MODAIS
+// 6. UI DA BARRA LATERAL E MODAIS (DRAG & DROP CONVERSAS)
 // ==========================================================
 window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); window.alvoMenu = { tipo, indexProj, indexConv };
@@ -522,6 +529,7 @@ window.renderizarSidebar = function() {
         container.appendChild(projetoDiv);
 
         const containerConversas = document.getElementById(`conversas-${indexProj}`);
+        
         proj.conversas.forEach((conv, indexConv) => {
             const estaProcessando = conv.processando === true;
             const estaAtiva = (idProjetoAtivo === indexProj && idConversaAtiva === indexConv);
@@ -559,11 +567,57 @@ window.renderizarSidebar = function() {
             convDiv.id = `conv-${indexProj}-${indexConv}`;
             convDiv.className = `conversa-item ${estaAtiva ? 'ativa' : ''} ${estaProcessando ? 'processando' : ''}`;
             convDiv.innerHTML = `
-                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 50px);">${conv.nome}</span>
-                <span style="display:flex; align-items:center; flex-shrink:0;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: calc(100% - 50px); pointer-events: none;">${conv.nome}</span>
+                <span style="display:flex; align-items:center; flex-shrink:0; pointer-events: none;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
+            
+            // ================= DRAG AND DROP CONVERSAS =================
+            convDiv.setAttribute('draggable', 'true');
+            
+            convDiv.ondragstart = (e) => {
+                e.dataTransfer.setData('application/json', JSON.stringify({ p: indexProj, c: indexConv }));
+                convDiv.classList.add('dragging');
+            };
+            convDiv.ondragend = () => convDiv.classList.remove('dragging');
+            
+            convDiv.ondragover = (e) => { 
+                e.preventDefault(); 
+                convDiv.classList.add('drag-over-conv'); 
+            };
+            convDiv.ondragleave = () => convDiv.classList.remove('drag-over-conv');
+            
+            convDiv.ondrop = (e) => {
+                e.preventDefault();
+                convDiv.classList.remove('drag-over-conv');
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                    // Permite reordenar apenas no mesmo projeto
+                    if (data.p === indexProj && data.c !== indexConv) {
+                        const project = window.projetos[indexProj];
+                        const itemMovido = project.conversas.splice(data.c, 1)[0];
+                        project.conversas.splice(indexConv, 0, itemMovido);
+                        
+                        // Corrige a conversa ativa para o usuário que arrastou
+                        if (idProjetoAtivo === indexProj) {
+                            if (idConversaAtiva === data.c) idConversaAtiva = indexConv;
+                            else if (data.c < idConversaAtiva && indexConv >= idConversaAtiva) idConversaAtiva--;
+                            else if (data.c > idConversaAtiva && indexConv <= idConversaAtiva) idConversaAtiva++;
+                        }
+                        
+                        // Atualiza a presença no Firebase com o novo Index
+                        if (project.presenca && project.presenca[usuarioAtual?.email] !== undefined) {
+                            project.presenca[usuarioAtual.email] = idConversaAtiva;
+                        }
+                        
+                        window.salvarDadosAtuais(indexProj);
+                        window.renderizarSidebar();
+                    }
+                } catch(err) {}
+            };
+            
             convDiv.onclick = () => window.selecionarConversa(indexProj, indexConv);
             convDiv.oncontextmenu = (e) => window.abrirMenuContexto(e, 'conversa', indexProj, indexConv);
+            
             containerConversas.appendChild(convDiv);
         });
     });
@@ -762,6 +816,7 @@ window.resetarVisualizacaoChat = function() {
     removerPresencaLocal(); 
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
+    document.getElementById('engine-tabs').style.display = 'none';
     
     // TELA DE BOAS VINDAS DO COMBOBOY CORRIGIDA COM OS NOMES JUNTOS
     document.getElementById('chat').innerHTML = `
@@ -769,7 +824,6 @@ window.resetarVisualizacaoChat = function() {
             <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 200px; height: 200px; margin-bottom: 10px; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5));">
             <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:8px;">
                 <div><span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span></div> 
-                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; color: #8b949e; font-style: normal; font-weight: 500; margin-top: 12px;">Online!</span>
             </h2>
             <p style="color: #c9d1d9; font-size: 1rem; line-height: 1.5; margin: 0 0 15px 0;">
                 Sou um pesquisador de game engines. Por enquanto, meu conhecimento é focado inteiramente no <b>Unity</b>.
@@ -799,6 +853,7 @@ window.selecionarConversa = function(indexProj, indexConv) {
     document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
+    document.getElementById('engine-tabs').style.display = 'flex';
     
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('open');
@@ -808,6 +863,7 @@ window.selecionarConversa = function(indexProj, indexConv) {
     window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
+// POSICIONAMENTO CENTRALIZADO DO MENU DE HISTÓRICO
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
