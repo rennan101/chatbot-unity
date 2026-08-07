@@ -579,7 +579,7 @@ window.abrirProfileMenu = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('notifications-menu').style.display = 'none';
         document.getElementById('historico-menu').style.display = 'none';
-        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
+        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = 'auto'; menu.style.bottom = (window.innerHeight - btn.top + 10) + 'px';
     }
 }
 
@@ -689,8 +689,8 @@ window.abrirConfigMenu = function(e) {
         document.getElementById('historico-menu').style.display = 'none';
         menu.style.display = 'block'; 
         menu.style.left = (btn.left + 10) + 'px'; 
-        menu.style.top = 'auto'; // Limpa o ancoramento superior
-        menu.style.bottom = (window.innerHeight - btn.top + 10) + 'px'; // Ancoragem perfeita pela base
+        menu.style.top = 'auto'; 
+        menu.style.bottom = (window.innerHeight - btn.top + 10) + 'px'; 
     } 
 }
 
@@ -737,11 +737,11 @@ window.salvarApiKey = async () => {
 }
 
 let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false'; document.getElementById('toggle-ask-save').checked = configAskToSave;
-window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast('Salvo', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
+window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT E ÍNDICE DE PERGUNTAS
+// 7. SISTEMA DE CHAT, NOMES E ÍNDICE DE PERGUNTAS
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
@@ -776,31 +776,30 @@ window.selecionarConversa = function(indexProj, indexConv) {
     renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
-// LÓGICA ATUALIZADA DO MENU HISTÓRICO NO TOPO CENTRAL
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
     const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
-        document.getElementById('config-menu').style.display = 'none'; 
-        document.getElementById('profile-menu').style.display = 'none'; 
-        document.getElementById('notifications-menu').style.display = 'none';
-        
+        document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
         menu.style.display = 'block'; 
         menu.style.left = (btn.left + (btn.width / 2)) + 'px'; 
         menu.style.transform = 'translateX(-50%)'; 
-        menu.style.top = (btn.bottom + 8) + 'px'; // Desce um pouquinho
+        menu.style.top = (btn.bottom + 8) + 'px'; 
     }
 }
 
 window.irParaMensagem = function(idx) {
-    const el = document.getElementById(`msg-${idx}`);
+    const el = document.getElementById(`msg-wrapper-${idx}`);
     if(el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const oldBoxShadow = el.style.boxShadow;
-        el.style.boxShadow = '0 0 0 3px #F58220';
-        setTimeout(() => { el.style.boxShadow = oldBoxShadow; }, 1500);
+        const bubble = el.querySelector('.balao');
+        if(bubble) {
+            const oldBoxShadow = bubble.style.boxShadow;
+            bubble.style.boxShadow = '0 0 0 3px #F58220';
+            setTimeout(() => { bubble.style.boxShadow = oldBoxShadow; }, 1500);
+        }
         document.getElementById('historico-menu').style.display = 'none';
     }
 }
@@ -814,10 +813,25 @@ function renderizarChat() {
 
     conversa.mensagens.forEach((msg, idx) => {
         if (msg.papel === 'system') { 
-            chatBox.innerHTML += `<div id="msg-${idx}" class="system-msg">${msg.texto}</div>`; 
+            chatBox.innerHTML += `<div id="msg-wrapper-${idx}" class="system-msg">${msg.texto}</div>`; 
         } else {
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
-            chatBox.innerHTML += `<div id="msg-${idx}" class="balao ${msg.papel}">${imgHtml}${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
+            
+            // Renderiza o NOME DO AUTOR DA MENSAGEM em cima do balão
+            if (msg.papel === 'aluno') {
+                const nomeAutor = msg.autor || 'Colaborador';
+                chatBox.innerHTML += `
+                <div id="msg-wrapper-${idx}" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
+                    <span style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-right: 12px; font-weight: 500;">${nomeAutor}</span>
+                    <div class="balao aluno" style="align-self: flex-end; max-width: 100%; margin: 0;">${imgHtml}${msg.texto.replace(/\n/g, '<br>')}</div>
+                </div>`;
+            } else {
+                chatBox.innerHTML += `
+                <div id="msg-wrapper-${idx}" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
+                    <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px;">ComboBoy</span>
+                    <div class="balao bot" style="margin: 0;">${imgHtml}${marked.parse(msg.texto)}</div>
+                </div>`;
+            }
         }
 
         if(msg.papel === 'aluno') {
@@ -831,9 +845,12 @@ function renderizarChat() {
 
     if (conversa.processando) {
         chatBox.innerHTML += `
-        <div class="balao bot typing-container">
-            <span id="loading-meme-text" class="meme-text">${getMeme('loading')}</span>
-            <div class="typing-indicator" style="height: auto; padding: 0;"><span></span><span></span><span></span></div>
+        <div style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
+            <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px;">ComboBoy</span>
+            <div class="balao bot typing-container" style="margin: 0;">
+                <span id="loading-meme-text" class="meme-text">${getMeme('loading')}</span>
+                <div class="typing-indicator" style="height: auto; padding: 0;"><span></span><span></span><span></span></div>
+            </div>
         </div>`;
         
         if(loadingMemeInterval) clearInterval(loadingMemeInterval);
@@ -902,7 +919,11 @@ async function enviarMensagem() {
     const imgBase64 = anexoImagemBase64; const imgMime = anexoImagemMimeType;
     if(!textoFinal && !imgBase64) return;
 
-    const novaMsg = { papel: 'aluno', texto: textoFinal }; if (imgBase64) novaMsg.imagem_url = imgBase64; 
+    // GRAVA O NOME DO AUTOR DA MENSAGEM
+    const autorNome = usuarioAtual ? (usuarioAtual.displayName || window.formatarNomeUsuario(usuarioAtual.email)) : 'Visitante';
+    const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome }; 
+    if (imgBase64) novaMsg.imagem_url = imgBase64; 
+    
     proj.conversas[cIdx].mensagens.push(novaMsg);
     
     if (proj.conversas[cIdx].mensagens.length === 2) {
@@ -941,6 +962,7 @@ async function enviarMensagem() {
         renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
+window.enviarMensagem = enviarMensagem;
 
 // Eventos Globais Livres
 document.addEventListener('click', (e) => { 
