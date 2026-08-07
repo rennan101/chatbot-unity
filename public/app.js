@@ -52,6 +52,13 @@ let anexoTextoConteudo = null;
 let anexoTextoNome = null;
 let userApiKey = '';
 
+// ESTADO WEBRTC P2P E CHAT LATERAL
+let meuPeer = null;
+let streamLocalAudio = null;
+let streamLocalVideo = null;
+let chamadasAtivas = {};
+let peerConfigurado = false;
+
 // ==========================================================
 // 2. PRESENÇA EM TEMPO REAL BLINDADA E SYNC DE NOMES
 // ==========================================================
@@ -59,6 +66,12 @@ async function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
         const proj = window.projetos[idProjetoAtivo];
+        
+        // Remove peer ID se estiver na chamada
+        if(meuPeer && meuPeer.id && proj.conversas && proj.conversas[idConversaAtiva] && proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
+             window.sairDaChamada(true); 
+        }
+
         if(proj.presenca && proj.presenca[usuarioAtual.email] !== undefined) {
             delete proj.presenca[usuarioAtual.email];
             try { await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField()); } catch(e) {}
@@ -91,7 +104,10 @@ function iniciarEscutaUsuarios() {
         });
         if (window.atualizarBotaoPerfilGlobal) window.atualizarBotaoPerfilGlobal();
         if (window.renderizarSidebar) window.renderizarSidebar();
-        if (idProjetoAtivo !== null && idConversaAtiva !== null) window.renderizarChat();
+        if (idProjetoAtivo !== null && idConversaAtiva !== null) {
+            window.renderizarChat();
+            window.renderizarChatLateral();
+        }
     });
 }
 
@@ -207,7 +223,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
-        await new Promise(r => setTimeout(r, 500)); // Aguarda confirmação do DB antes de matar o token
+        await new Promise(r => setTimeout(r, 500)); 
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -279,7 +295,7 @@ window.abrirModalApoio = function() { document.getElementById('modal-apoio').sty
 window.fecharModalApoio = function() { document.getElementById('modal-apoio').style.display = 'none'; }
 
 // ==========================================================
-// 4. LÓGICA DE ANEXOS E DRAG AND DROP (CHAT INPUT)
+// 4. LÓGICA DE ANEXOS E DRAG AND DROP (CHAT)
 // ==========================================================
 window.lidarComAnexo = function(eventOrFile) {
     const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
@@ -347,7 +363,7 @@ if (dropZone) {
 
 
 // ==========================================================
-// 5. FIREBASE REALTIME & NOTIFICAÇÕES
+// 5. FIREBASE REALTIME, NOTIFICAÇÕES & COLLAB SYNC
 // ==========================================================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
@@ -367,7 +383,11 @@ function iniciarEscutaProjetosNuvem(email) {
             }
         }
         window.renderizarSidebar();
-        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) window.renderizarChat();
+        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) {
+            window.renderizarChat();
+            window.renderizarChatLateral();
+            window.verificarNovosPeers();
+        }
     });
 }
 
@@ -737,9 +757,9 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES
-window.abrirConfigMenu = function(event) { 
-    event.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
+// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
+window.abrirConfigMenu = function(e) { 
+    e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else { 
         document.getElementById('profile-menu').style.display = 'none'; 
@@ -753,7 +773,7 @@ window.abrirConfigMenu = function(event) {
 }
 
 window.togglePersonalizar = function(event) {
-    if (event) event.stopPropagation(); // Evita fechamento acidental
+    if (event) event.stopPropagation();
     const content = document.getElementById('accordion-personalizar');
     const chevron = document.getElementById('icon-chevron-personalizar');
     if (content.style.display === 'none' || content.style.display === '') {
@@ -771,7 +791,7 @@ window.ajustarFonte = function(tipo, valor) {
     if (tipo === 'chat') { prefChatFs = Math.max(0.7, Math.min(1.5, prefChatFs + valor)); document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2); } 
     else { prefCodeFs = Math.max(0.7, Math.min(1.5, prefCodeFs + valor)); document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2); }
     window.salvarPersonalizacao();
-    window.aplicarTamanhosFonte();
+    window.aplicarTamanhosFonte(prefChatFs, prefCodeFs);
 }
 
 window.mudarTamanhoResposta = function(detalhado, start = false) {
@@ -800,7 +820,7 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT E TELA INICIAL
+// 7. SISTEMA DE CHAT, NOMES E ÍNDICE DE PERGUNTAS
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
@@ -808,12 +828,14 @@ window.resetarVisualizacaoChat = function() {
     removerPresencaLocal(); 
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
+    document.getElementById('btn-colab').style.display = 'none';
     
+    // TELA DE BOAS VINDAS
     document.getElementById('chat').innerHTML = `
         <div id="sem-conversa-msg" style="margin: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.9; text-align: center; max-width: 500px; padding: 20px;">
             <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 200px; height: 200px; margin-bottom: 10px; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5));">
-            <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:8px;">
-                <div><span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span></div> 
+            <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 3rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:0px; line-height: 1;">
+                <span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span>
             </h2>
             <p style="color: #c9d1d9; font-size: 1rem; line-height: 1.5; margin: 0 0 15px 0;">
                 Sou um pesquisador de game engines. Por enquanto, meu conhecimento é focado inteiramente no <b>Unity</b>.
@@ -822,6 +844,7 @@ window.resetarVisualizacaoChat = function() {
         </div>`; 
         
     const btnIndice = document.getElementById('btn-historico'); if (btnIndice) btnIndice.style.display = 'none';
+    window.fecharSidebarColab();
     window.renderizarSidebar();
 }
 
@@ -843,15 +866,20 @@ window.selecionarConversa = function(indexProj, indexConv) {
     document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
+    document.getElementById('btn-colab').style.display = 'flex';
     
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebar-backdrop').classList.remove('active');
     }
 
-    window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
+    window.renderizarChat(); 
+    window.renderizarChatLateral();
+    window.atualizarEstadoBotaoEnvio(); 
+    window.validarInput();
 }
 
+// POSICIONAMENTO CENTRALIZADO DO MENU DE HISTÓRICO
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
@@ -1038,7 +1066,235 @@ async function enviarMensagem() {
 }
 
 // ==========================================================
-// 8. LÓGICA DO TOUR DE ONBOARDING
+// 8. INFRAESTRUTURA WEBRTC P2P & CHAT LATERAL
+// ==========================================================
+window.toggleSidebarColab = function() {
+    const sidebarR = document.getElementById('sidebar-right');
+    sidebarR.classList.toggle('open');
+    if(sidebarR.classList.contains('open')) window.renderizarChatLateral();
+}
+window.fecharSidebarColab = function() {
+    document.getElementById('sidebar-right').classList.remove('open');
+}
+
+window.renderizarChatLateral = function() {
+    if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) return;
+    const container = document.getElementById('chat-lateral-msgs');
+    const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
+    if (!conv.chatLateral) conv.chatLateral = [];
+    
+    container.innerHTML = '';
+    if(conv.chatLateral.length === 0) {
+        container.innerHTML = `<div style="text-align:center; color:#8b949e; font-size:0.8rem; margin-top: 20px;">Nenhuma mensagem na equipe.</div>`;
+        return;
+    }
+
+    conv.chatLateral.forEach(msg => {
+        const souEu = usuarioAtual && msg.email === usuarioAtual.email;
+        container.innerHTML += `
+            <div style="display:flex; flex-direction:column; gap:2px; ${souEu ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
+                <span style="font-size:0.65rem; color:#8b949e; padding: 0 4px;">${window.formatarNomeUsuario(msg.email)}</span>
+                <div class="balao-lateral ${souEu ? 'eu' : 'outro'}">${msg.texto}</div>
+            </div>`;
+    });
+    container.scrollTop = container.scrollHeight;
+}
+
+window.enviarMensagemLateral = function() {
+    if (!usuarioAtual || idProjetoAtivo === null || idConversaAtiva === null) return;
+    const input = document.getElementById('input-lateral');
+    const texto = input.value.trim();
+    if(!texto) return;
+
+    const proj = window.projetos[idProjetoAtivo];
+    if (!proj.conversas[idConversaAtiva].chatLateral) proj.conversas[idConversaAtiva].chatLateral = [];
+    
+    proj.conversas[idConversaAtiva].chatLateral.push({
+        email: usuarioAtual.email, texto: texto, timestamp: Date.now()
+    });
+
+    window.salvarDadosAtuais(idProjetoAtivo);
+    input.value = '';
+    window.renderizarChatLateral();
+}
+
+// INICIALIZAÇÃO DO PEER (WEBRTC)
+function inicializarPeer() {
+    if(meuPeer) return;
+    // Utiliza o servidor P2P gratuito padrão do PeerJS (Conecta com Google STUNs automaticamente)
+    meuPeer = new Peer();
+    
+    meuPeer.on('open', (id) => {
+        peerConfigurado = true;
+        document.getElementById('btn-call-mic').disabled = false;
+        document.getElementById('btn-call-screen').disabled = false;
+        document.getElementById('btn-call-join').classList.add('danger');
+        document.getElementById('btn-call-join').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>`;
+        
+        // Registra meu peerId no Firebase para que os outros me liguem
+        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
+            const proj = window.projetos[idProjetoAtivo];
+            proj.conversas[idConversaAtiva].chamada = proj.conversas[idConversaAtiva].chamada || {};
+            proj.conversas[idConversaAtiva].chamada[usuarioAtual.email] = id;
+            window.salvarDadosAtuais(idProjetoAtivo);
+        }
+        window.verificarNovosPeers();
+    });
+
+    meuPeer.on('call', (call) => {
+        // Alguém ligou para mim. Eu atendo passando meu áudio/vídeo (se tiver)
+        call.answer(streamLocalAudio || streamLocalVideo); 
+        chamadasAtivas[call.peer] = call;
+        call.on('stream', (streamRemoto) => {
+            adicionarVideoRemoto(streamRemoto, call.peer);
+        });
+        call.on('close', () => removerVideoRemoto(call.peer));
+    });
+}
+
+window.toggleChamada = async function() {
+    if (!usuarioAtual) return;
+    if (peerConfigurado) {
+        window.sairDaChamada(false);
+    } else {
+        try {
+            // Pede microfone ao entrar na sala
+            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('btn-call-mic').classList.add('active');
+            inicializarPeer();
+        } catch(e) {
+            mostrarToast("Permissão de microfone negada.", 'rgba(218, 54, 51, 0.9)', SVG_WARN);
+        }
+    }
+}
+
+window.sairDaChamada = function(force = false) {
+    if (streamLocalAudio) streamLocalAudio.getTracks().forEach(t => t.stop());
+    if (streamLocalVideo) streamLocalVideo.getTracks().forEach(t => t.stop());
+    streamLocalAudio = null; streamLocalVideo = null;
+    
+    Object.values(chamadasAtivas).forEach(call => call.close());
+    chamadasAtivas = {};
+    
+    if(meuPeer) meuPeer.destroy();
+    meuPeer = null; peerConfigurado = false;
+    document.getElementById('stage-container').style.display = 'none';
+    document.getElementById('stage-container').innerHTML = '';
+    
+    document.getElementById('btn-call-mic').disabled = true;
+    document.getElementById('btn-call-screen').disabled = true;
+    document.getElementById('btn-call-mic').classList.remove('active');
+    document.getElementById('btn-call-screen').classList.remove('active');
+    document.getElementById('btn-call-join').classList.remove('danger');
+    document.getElementById('btn-call-join').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
+
+    // Remove do Firebase
+    if (!force && idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
+        const proj = window.projetos[idProjetoAtivo];
+        if (proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
+            delete proj.conversas[idConversaAtiva].chamada[usuarioAtual.email];
+            window.salvarDadosAtuais(idProjetoAtivo);
+        }
+    }
+}
+
+window.toggleAudio = function() {
+    if (!streamLocalAudio) return;
+    const audioTrack = streamLocalAudio.getAudioTracks()[0];
+    if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        const btn = document.getElementById('btn-call-mic');
+        if (audioTrack.enabled) {
+            btn.classList.add('active'); btn.classList.remove('danger');
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+        } else {
+            btn.classList.remove('active'); btn.classList.add('danger');
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 1.67M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+        }
+    }
+}
+
+window.compartilharTela = async function() {
+    if (!peerConfigurado) return;
+    try {
+        if (!streamLocalVideo) {
+            streamLocalVideo = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            document.getElementById('btn-call-screen').classList.add('active');
+            adicionarVideoRemoto(streamLocalVideo, meuPeer.id, true);
+            
+            // Substitui as tracks nas chamadas ativas
+            const videoTrack = streamLocalVideo.getVideoTracks()[0];
+            Object.values(chamadasAtivas).forEach(call => {
+                const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                if(sender) sender.replaceTrack(videoTrack);
+            });
+
+            // Se o usuário fechar a tela pela UI do navegador
+            videoTrack.onended = () => window.compartilharTela();
+        } else {
+            streamLocalVideo.getTracks().forEach(t => t.stop());
+            streamLocalVideo = null;
+            document.getElementById('btn-call-screen').classList.remove('active');
+            removerVideoRemoto(meuPeer.id);
+        }
+    } catch(e) { console.log("Compartilhamento de tela cancelado", e); }
+}
+
+// Verifica na "Memória" do Firebase se há alguém novo na sala para ligar
+window.verificarNovosPeers = function() {
+    if (!peerConfigurado || idProjetoAtivo === null) return;
+    const proj = window.projetos[idProjetoAtivo];
+    const chamadaAtiva = proj.conversas[idConversaAtiva].chamada || {};
+    
+    Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
+        if (email !== usuarioAtual.email && !chamadasAtivas[peerIdRemoto]) {
+            // Liga para o novo Peer passando meu áudio/video
+            const call = meuPeer.call(peerIdRemoto, streamLocalVideo || streamLocalAudio);
+            if (call) {
+                chamadasAtivas[peerIdRemoto] = call;
+                call.on('stream', (streamRemoto) => adicionarVideoRemoto(streamRemoto, peerIdRemoto));
+                call.on('close', () => removerVideoRemoto(peerIdRemoto));
+            }
+        }
+    });
+}
+
+function adicionarVideoRemoto(stream, peerId, isLocal = false) {
+    const stage = document.getElementById('stage-container');
+    stage.style.display = 'flex';
+    
+    if(!document.getElementById(`video-${peerId}`)) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'video-wrapper';
+        wrapper.id = `video-${peerId}`;
+        
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        if(isLocal) video.muted = true; // Não ouvir a própria voz
+        
+        const tag = document.createElement('div');
+        tag.className = 'video-tag';
+        tag.innerText = isLocal ? 'Você (Transmitindo)' : 'Colaborador';
+        
+        wrapper.appendChild(video);
+        wrapper.appendChild(tag);
+        stage.appendChild(wrapper);
+    }
+}
+
+function removerVideoRemoto(peerId) {
+    const el = document.getElementById(`video-${peerId}`);
+    if(el) el.remove();
+    
+    const stage = document.getElementById('stage-container');
+    if(stage.children.length === 0) stage.style.display = 'none';
+}
+
+
+// ==========================================================
+// 9. LÓGICA DO TOUR DE ONBOARDING
 // ==========================================================
 const tourSteps = [
     { 
@@ -1051,7 +1307,7 @@ const tourSteps = [
         target: "sidebar", 
         icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
         title: "Seus Projetos", 
-        text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem." 
+        text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem. Você também pode arrastar e soltar conversas!" 
     },
     { 
         target: "input-container", 
@@ -1066,10 +1322,10 @@ const tourSteps = [
         text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." 
     },
     { 
-        target: "btn-notificacoes", 
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
-        title: "Notificações", 
-        text: "Acompanhe convites de colaboração e interações da sua equipe por aqui." 
+        target: "btn-colab", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+        title: "Área de Colaboração", 
+        text: "Compartilhe tela, faça chat de voz e de texto diretamente com seus colaboradores, sem latência!" 
     }
 ];
 let currentTourStep = 0;
@@ -1078,6 +1334,10 @@ window.iniciarTour = function() {
     currentTourStep = 0;
     document.getElementById('config-menu').style.display = 'none';
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
+    
+    // Força abrir uma conversa mock para o botão de collab existir
+    document.getElementById('btn-colab').style.display = 'flex'; 
+
     document.getElementById('tour-overlay').style.display = 'block';
     window.renderizarStepTour();
 }
@@ -1119,6 +1379,7 @@ window.fecharTour = function() {
     document.getElementById('tour-card').style.display = 'none';
     localStorage.setItem('comboboy_tour', 'true');
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('active');}
+    if(idProjetoAtivo === null) document.getElementById('btn-colab').style.display = 'none';
 }
 
 document.addEventListener('click', (e) => { 
