@@ -2,11 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove, deleteField, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-import { 
-    SVG_CHECK, SVG_SETTINGS, SVG_DOWNLOAD, SVG_FOLDER, SVG_SAVE, SVG_EDIT, SVG_ARCHIVE, SVG_FILE, SVG_TRASH, SVG_WARN, SVG_CLOCK, SVG_SPINNER, SVG_COPY, SVG_SHARE,
-    getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo
-} from './utils.js';
-
 // ==========================================================
 // 1. CONFIGURAÇÕES & ESTADO GERAL
 // ==========================================================
@@ -34,12 +29,12 @@ let statusConversas = {};
 let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
+let loadingMemeInterval = null; // Controla o piscar do meme
 
 let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
 let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true';
 let prefChatFs = parseFloat(localStorage.getItem('unity_pref_chat_fs')) || 0.95;
 let prefCodeFs = parseFloat(localStorage.getItem('unity_pref_code_fs')) || 1.05;
-aplicarTamanhosFonte(prefChatFs, prefCodeFs);
 
 let perfilGlobalData = { profissao: "", tags: [] };
 let tagsSelecionadas = [];
@@ -51,7 +46,88 @@ let anexoTextoNome = null;
 let userApiKey = '';
 
 // ==========================================================
-// 2. PRESENÇA EM TEMPO REAL BLINDADA
+// 2. UTILITÁRIOS E ÍCONES SVG GLOBAIS
+// ==========================================================
+const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
+const SVG_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+const SVG_ARCHIVE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+const SVG_FILE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+const SVG_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+const SVG_WARN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+
+const memesLoading = ["Farmando aura...", "Consultando o ancião...", "Esfregando a lâmpada...", "Calculando a física do Unity...", "Procurando o ponto e vírgula perdido...", "Compilando os shaders...", "Perguntando pro StackOverflow...", "Mineirando redstone para ligar o servidor...", "Carregando a barra de mana...", "Treinando a rede neural com café...", "Girando a manivela do backend...", "Invocando os deuses do C#...", "Dando um git pull na sabedoria...", "Baixando mais RAM...", "Refatorando o universo..."];
+const memesSucesso = ["GG WP! Tudo salvo.", "É TETRA! Operação concluída.", "Dropou o loot lendário!", "Missão Cumprida (+100 XP).", "Vitória Royale!", "Código buildado com zero warnings.", "Receba! Tudo certo por aqui.", "Mais liso que rodar a 144fps.", "Pode ir pro abraço, tá salvo!", "Famoso 'toca pro pai'.", "Novo membro na party!", "CTRL+C perfeito, patrão.", "Tá no pente!", "Deu bom! Pode favoritar.", "Sincronizado perfeitamente."];
+const memesErro = ["O servidor foi de base... F no chat.", "Tankou não. Tente novamente.", "Deu tela azul aqui, chefe.", "Erro 404: Vontade de trabalhar sumiu.", "Eita, o Unity crashou (de novo).", "Fomos nerfados! Limite atingido.", "Faltou poção de mana pra essa ação.", "Alguém tropeçou no cabo do servidor.", "NullReferenceException na vida real.", "O estagiário apagou o banco de dados."];
+const memesAviso = ["Calma lá emocionade, digita algo!", "Vai mandar o vazio pro além?", "Você não tem level suficiente pra isso.", "Opa, tá tentando bugar a Matrix?", "Segura a emoção, o parceiro tá digitando...", "Miss click? Ação cancelada.", "Inventário cheio! Limite atingido.", "Permissão negada. Você não é o dono!", "Esqueceu a chave da API em casa?", "Hackerman detectado!"];
+
+function getMeme(tipo) {
+    let lista = [];
+    if(tipo === 'loading') lista = memesLoading;
+    else if(tipo === 'sucesso') lista = memesSucesso;
+    else if(tipo === 'erro') lista = memesErro;
+    else if(tipo === 'aviso') lista = memesAviso;
+    return lista[Math.floor(Math.random() * lista.length)];
+}
+
+function formatarNomeUsuario(emailOrName) {
+    if (!emailOrName) return 'Visitante';
+    const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+}
+window.formatarNomeUsuario = formatarNomeUsuario;
+
+function formatarDataHora(timestamp) {
+    if (!timestamp) return "";
+    const data = new Date(timestamp);
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const hora = String(data.getHours()).padStart(2, '0');
+    const min = String(data.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes} às ${hora}:${min}`;
+}
+
+function mostrarToast(msg, cor, icone) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    document.getElementById('toast-msg').innerText = msg;
+    document.getElementById('toast-icon').innerHTML = icone || '';
+    toast.style.background = cor || 'rgba(245, 130, 32, 0.9)';
+    toast.classList.add('mostrar');
+    setTimeout(() => toast.classList.remove('mostrar'), 3000);
+}
+window.mostrarToast = mostrarToast;
+
+function aplicarTamanhosFonte() {
+    document.documentElement.style.setProperty('--chat-fs', prefChatFs + 'rem');
+    document.documentElement.style.setProperty('--code-fs', prefCodeFs + 'rem');
+}
+window.aplicarTamanhosFonte = aplicarTamanhosFonte;
+aplicarTamanhosFonte();
+
+function atualizarIndicadorApiKey(apiKeyAtiva) {
+    const btn = document.getElementById('config-btn-apikey');
+    if (btn) {
+        if (apiKeyAtiva) {
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Chave Própria (Ativa) <span class="pulse-verde" style="background:#2ea043; width:8px; height:8px; border-radius:50%; display:inline-block; margin-left:5px;"></span>`;
+            btn.style.color = "#2ea043";
+        } else {
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Inserir Própria API Key`;
+            btn.style.color = "#F58220";
+        }
+    }
+}
+window.atualizarIndicadorApiKey = atualizarIndicadorApiKey;
+
+// ==========================================================
+// 3. PRESENÇA EM TEMPO REAL BLINDADA
 // ==========================================================
 function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
@@ -82,7 +158,7 @@ window.addEventListener('beforeunload', removerPresencaLocal);
 
 
 // ==========================================================
-// 3. AUTH E GESTÃO DE PERFIL
+// 4. AUTH E GESTÃO DE PERFIL
 // ==========================================================
 onAuthStateChanged(auth, async (user) => {
     if(window.fecharModalAuth) window.fecharModalAuth();
@@ -144,8 +220,8 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-window.abrirModalAuth = () => { document.getElementById('auth-error-msg').innerText = ''; document.getElementById('modal-auth').style.display = 'flex'; }
-window.fecharModalAuth = () => { const m = document.getElementById('modal-auth'); if(m) m.style.display = 'none'; }
+window.abrirModalAuth = function() { document.getElementById('auth-error-msg').innerText = ''; document.getElementById('modal-auth').style.display = 'flex'; }
+window.fecharModalAuth = function() { const m = document.getElementById('modal-auth'); if(m) m.style.display = 'none'; }
 function tratarErroAuth(erroCode) {
     switch(erroCode) {
         case 'auth/email-already-in-use': return 'E-mail já cadastrado.';
@@ -179,18 +255,14 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         removerPresencaLocal(); 
-        
-        // FORÇA O CHAT A APAGAR IMEDIATAMENTE (BLOQUEIO DE ACESSO AO LOGOUT)
         window.resetarVisualizacaoChat();
         window.projetos = [];
         renderizarSidebar();
-        
         signOut(auth);
         document.getElementById('profile-menu').style.display = 'none';
     }
 }
 
-// PERFIL MODAL E TAGS
 const TAGS_DISPONIVEIS = [
     "Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", 
     "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", 
@@ -250,48 +322,6 @@ window.salvarPerfil = async function() {
     } catch(e) {
         mostrarToast(getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN);
     }
-}
-
-// ==========================================================
-// 4. LÓGICA DE ANEXOS (JS)
-// ==========================================================
-window.lidarComAnexo = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    document.getElementById('btn-anexo').style.opacity = '0.5';
-    
-    if (file.type.startsWith('image/')) {
-        anexoTextoConteudo = null; 
-        redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
-            anexoImagemBase64 = base64Data; anexoImagemMimeType = mimeType;
-            document.getElementById('file-preview').style.display = 'none';
-            document.getElementById('image-preview').src = anexoImagemBase64;
-            document.getElementById('image-preview').style.display = 'block';
-            mostrarPreviewContainer();
-        });
-    } else {
-        anexoImagemBase64 = null; 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            anexoTextoConteudo = e.target.result; anexoTextoNome = file.name;
-            document.getElementById('image-preview').style.display = 'none';
-            document.getElementById('file-name').innerText = anexoTextoNome;
-            document.getElementById('file-preview').style.display = 'flex';
-            mostrarPreviewContainer();
-        };
-        reader.readAsText(file);
-    }
-}
-function mostrarPreviewContainer() {
-    document.getElementById('anexo-preview-container').style.display = 'flex';
-    document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
-    document.getElementById('btn-anexo').style.opacity = '1'; window.validarInput();
-}
-window.removerAnexo = function() {
-    anexoImagemBase64 = null; anexoImagemMimeType = null; anexoTextoConteudo = null; anexoTextoNome = null;
-    document.getElementById('input-anexo').value = '';
-    document.getElementById('anexo-preview-container').style.display = 'none';
-    document.getElementById('main-input-wrapper').style.borderRadius = '16px'; window.validarInput();
 }
 
 // ==========================================================
@@ -394,7 +424,7 @@ window.abrirMenuNotificacoes = function(event) {
     else {
         document.getElementById('config-menu').style.display = 'none'; 
         document.getElementById('profile-menu').style.display = 'none';
-        document.getElementById('indice-menu').style.display = 'none';
+        document.getElementById('historico-menu').style.display = 'none';
         menu.style.display = 'block'; menu.style.right = '20px'; menu.style.top = (btn.bottom + 10) + 'px';
     }
 }
@@ -425,7 +455,7 @@ window.apagarNotificacao = async function(event, notifId) {
 }
 
 // ==========================================================
-// 6. UI DA BARRA LATERAL E MODAIS
+// 6. GESTÃO DE MODAIS E UI
 // ==========================================================
 window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); window.alvoMenu = { tipo, indexProj, indexConv };
@@ -539,7 +569,7 @@ window.abrirProfileMenu = function(event) {
     else {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('notifications-menu').style.display = 'none';
-        document.getElementById('indice-menu').style.display = 'none';
+        document.getElementById('historico-menu').style.display = 'none';
         menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
     }
 }
@@ -571,8 +601,7 @@ window.fecharModalRenomear = () => document.getElementById('modal-renomear').sty
 
 window.confirmarProjeto = async function() {
     const nome = document.getElementById('input-nome-projeto').value.trim(); const genero = document.getElementById('input-genero-projeto').value.trim(); const descricao = document.getElementById('input-desc-projeto').value.trim();
-    if (!nome) return;
-    window.fecharModal(); 
+    if (!nome) return; window.fecharModal(); 
     if (usuarioAtual) {
         await addDoc(collection(db, "projetos"), { nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {} });
         mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
@@ -582,8 +611,7 @@ window.confirmarProjeto = async function() {
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     window.projetos[indexProj].conversas.push({ 
-        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false,
-        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
+        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false, mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
     });
     window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
@@ -641,35 +669,56 @@ window.deletarProjeto = async function() {
     }
 }
 
+
+// ACORDEÃO E CONFIGURAÇÕES
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else { 
         document.getElementById('profile-menu').style.display = 'none'; 
         document.getElementById('notifications-menu').style.display = 'none'; 
-        document.getElementById('indice-menu').style.display = 'none';
+        document.getElementById('historico-menu').style.display = 'none';
         menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; 
     } 
 }
 
-window.abrirModalPersonalizar = function() {
-    document.getElementById('config-menu').style.display = 'none';
-    document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2); document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2);
-    document.getElementById('check-pref-comentado').checked = prefComentado; document.getElementById('select-pref-detalhe').value = prefDetalhado.toString();
-    document.getElementById('modal-personalizar').style.display = 'flex';
+window.togglePersonalizar = function() {
+    const content = document.getElementById('accordion-personalizar');
+    const chevron = document.getElementById('icon-chevron-personalizar');
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'flex'; chevron.style.transform = 'rotate(180deg)';
+        document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2);
+        document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2);
+        document.getElementById('check-pref-comentado').checked = prefComentado;
+        window.mudarTamanhoResposta(prefDetalhado, true);
+    } else {
+        content.style.display = 'none'; chevron.style.transform = 'rotate(0deg)';
+    }
 }
-window.fecharModalPersonalizar = () => document.getElementById('modal-personalizar').style.display = 'none';
+
+window.ajustarFonte = function(tipo, valor) {
+    if (tipo === 'chat') { prefChatFs = Math.max(0.7, Math.min(1.5, prefChatFs + valor)); document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2); } 
+    else { prefCodeFs = Math.max(0.7, Math.min(1.5, prefCodeFs + valor)); document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2); }
+    window.salvarPersonalizacao();
+    aplicarTamanhosFonte(prefChatFs, prefCodeFs);
+}
+
+window.mudarTamanhoResposta = function(detalhado, start = false) {
+    prefDetalhado = detalhado;
+    document.getElementById('label-resp-size').innerText = prefDetalhado ? "Detalhadas" : "Curtas";
+    document.getElementById('btn-resp-prev').disabled = !prefDetalhado;
+    document.getElementById('btn-resp-next').disabled = prefDetalhado;
+    if (!start) window.salvarPersonalizacao();
+}
 
 window.salvarPersonalizacao = function() {
-    prefComentado = document.getElementById('check-pref-comentado').checked; prefDetalhado = document.getElementById('select-pref-detalhe').value === "true";
+    prefComentado = document.getElementById('check-pref-comentado').checked;
     localStorage.setItem('unity_pref_chat_fs', prefChatFs); localStorage.setItem('unity_pref_code_fs', prefCodeFs); localStorage.setItem('unity_pref_comentado', prefComentado); localStorage.setItem('unity_pref_detalhado', prefDetalhado);
-    window.fecharModalPersonalizar(); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS);
 }
 
 window.abrirModalApiKey = () => { document.getElementById('config-menu').style.display = 'none'; document.getElementById('modal-apikey').style.display = 'flex'; }
 window.salvarApiKey = async () => { 
-    userApiKey = document.getElementById('input-api-key').value.trim(); 
-    localStorage.setItem('unity_google_api_key', userApiKey); 
+    userApiKey = document.getElementById('input-api-key').value.trim(); localStorage.setItem('unity_google_api_key', userApiKey); 
     if (usuarioAtual) { try { await setDoc(doc(db, "usuarios", usuarioAtual.uid), { googleApiKey: userApiKey }, { merge: true }); } catch(e) {} }
     document.getElementById('modal-apikey').style.display = 'none'; atualizarIndicadorApiKey(userApiKey); mostrarToast('Chave salva!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
 }
@@ -688,17 +737,14 @@ window.resetarVisualizacaoChat = function() {
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
-    const btnIndice = document.getElementById('btn-indice');
-    if (btnIndice) btnIndice.style.display = 'none';
+    const btnIndice = document.getElementById('btn-historico'); if (btnIndice) btnIndice.style.display = 'none';
     renderizarSidebar();
 }
 
 window.selecionarConversa = function(indexProj, indexConv) {
-    if (idProjetoAtivo !== null && idProjetoAtivo !== indexProj) {
-        removerPresencaLocal(); 
-    }
-
+    if (idProjetoAtivo !== null && idProjetoAtivo !== indexProj) { removerPresencaLocal(); }
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
+    
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj]; proj.presenca = proj.presenca || {}; proj.presenca[usuarioAtual.email] = indexConv;
         renderizarSidebar(); 
@@ -712,23 +758,19 @@ window.selecionarConversa = function(indexProj, indexConv) {
     const autorEmail = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
     document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
     
-    document.getElementById('btn-indice').style.display = 'flex';
+    document.getElementById('btn-historico').style.display = 'flex';
     
     renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
-window.abrirMenuIndice = function(event) {
+window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
-    const menu = document.getElementById('indice-menu');
-    const btn = document.getElementById('btn-indice').getBoundingClientRect();
+    const menu = document.getElementById('historico-menu');
+    const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
-        document.getElementById('config-menu').style.display = 'none';
-        document.getElementById('profile-menu').style.display = 'none';
-        document.getElementById('notifications-menu').style.display = 'none';
-        menu.style.display = 'block';
-        menu.style.right = '20px';
-        menu.style.top = (btn.bottom + 10) + 'px';
+        document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
+        menu.style.display = 'block'; menu.style.left = '50%'; menu.style.transform = 'translateX(-50%)'; menu.style.top = (btn.bottom + 5) + 'px';
     }
 }
 
@@ -739,7 +781,7 @@ window.irParaMensagem = function(idx) {
         const oldBoxShadow = el.style.boxShadow;
         el.style.boxShadow = '0 0 0 3px #F58220';
         setTimeout(() => { el.style.boxShadow = oldBoxShadow; }, 1500);
-        document.getElementById('indice-menu').style.display = 'none';
+        document.getElementById('historico-menu').style.display = 'none';
     }
 }
 
@@ -758,24 +800,36 @@ function renderizarChat() {
             chatBox.innerHTML += `<div id="msg-${idx}" class="balao ${msg.papel}">${imgHtml}${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
         }
 
-        // Constrói o Índice de Perguntas em tempo real
         if(msg.papel === 'aluno') {
             const textoCurto = msg.texto.length > 40 ? msg.texto.substring(0, 40) + '...' : msg.texto;
             indiceHTML += `<div onclick="window.irParaMensagem(${idx})" style="padding: 8px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: #c9d1d9; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onmouseover="this.style.borderColor='#F58220'" onmouseout="this.style.borderColor='transparent'">${textoCurto || 'Imagem Anexada'}</div>`;
         }
     });
     
-    // Renderiza a lista no HTML
-    const listaIndice = document.getElementById('lista-indice-popup');
+    const listaIndice = document.getElementById('lista-historico-popup');
     listaIndice.innerHTML = indiceHTML || `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma pergunta nesta conversa.</div>`;
 
     if (conversa.processando) {
         chatBox.innerHTML += `
-        <div class="balao bot" style="display: flex; flex-direction: column; gap: 8px;">
-            <div class="typing-indicator"><span></span><span></span><span></span></div>
-            <span style="font-size: 0.75rem; color: #8b949e; font-style: italic;">${getMeme('loading')}</span>
+        <div class="balao bot typing-container">
+            <span id="loading-meme-text" class="meme-text">${getMeme('loading')}</span>
+            <div class="typing-indicator" style="height: auto; padding: 0;"><span></span><span></span><span></span></div>
         </div>`;
+        
+        // Ativa o meme dinâmico
+        if(loadingMemeInterval) clearInterval(loadingMemeInterval);
+        loadingMemeInterval = setInterval(() => {
+            const el = document.getElementById('loading-meme-text');
+            if(el) {
+                el.style.opacity = 0;
+                setTimeout(() => { el.innerText = getMeme('loading'); el.style.opacity = 1; }, 300);
+            } else { clearInterval(loadingMemeInterval); }
+        }, 3500);
+
+    } else {
+        if(loadingMemeInterval) clearInterval(loadingMemeInterval);
     }
+    
     window.formatarBlocosDeCodigo(); chatBox.scrollTop = chatBox.scrollHeight;
 }
 window.renderizarChat = renderizarChat;
@@ -869,14 +923,12 @@ async function enviarMensagem() {
         renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
-window.enviarMensagem = enviarMensagem;
 
-// Eventos Globais Livres
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
     if (!e.target.closest('#notifications-menu') && !e.target.closest('#btn-notificacoes')) document.getElementById('notifications-menu').style.display = 'none'; 
-    if (!e.target.closest('#indice-menu') && !e.target.closest('#btn-indice')) document.getElementById('indice-menu').style.display = 'none'; 
+    if (!e.target.closest('#historico-menu') && !e.target.closest('#btn-historico')) document.getElementById('historico-menu').style.display = 'none'; 
     if (!e.target.closest('#context-menu') && !e.target.closest('.projeto-header') && !e.target.closest('.conversa-item')) document.getElementById('context-menu').style.display = 'none'; 
 });
 
