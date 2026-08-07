@@ -49,6 +49,12 @@ class Mensagem(BaseModel):
     mime_type: str = None      
     detalhado: bool = True     
     codigo_comentado: bool = False
+    profissao: str = ""
+    tags: list = []
+    # NOVOS CAMPOS PARA CONTEXTO DO PROJETO
+    projeto_nome: str = ""
+    projeto_genero: str = ""
+    projeto_descricao: str = ""
 
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -74,12 +80,28 @@ def chat(
     try:
         client = genai.Client(api_key=chave_final)
         
-        # Aplica as preferências do usuário no prompt do sistema
         instrucoes_dinamicas = SYSTEM_INSTRUCTION
+        
+        # INJETA O CONTEXTO DO PROJETO NA MENTE DA IA
+        if msg.projeto_nome:
+            instrucoes_dinamicas += f"\n- CONTEXTO DO PROJETO ATUAL: O usuário está trabalhando em um projeto chamado '{msg.projeto_nome}'."
+        if msg.projeto_genero:
+            instrucoes_dinamicas += f" É um jogo do gênero: '{msg.projeto_genero}'."
+        if msg.projeto_descricao:
+            instrucoes_dinamicas += f" Descrição do projeto: '{msg.projeto_descricao}'."
+
+        # INJETA O PERFIL DO USUÁRIO
+        if msg.profissao:
+            instrucoes_dinamicas += f"\n- PERFIL DO USUÁRIO: O usuário atua como '{msg.profissao}'."
+        if msg.tags:
+            tags_str = ", ".join(msg.tags)
+            instrucoes_dinamicas += f"\n- ESPECIALIDADES DO USUÁRIO: {tags_str}. Adapte a linguagem para esse nível de conhecimento."
+
+        # PREFERÊNCIAS DE CÓDIGO E TAMANHO
         if msg.codigo_comentado:
-            instrucoes_dinamicas += "\n8. OBRIGATÓRIO: Comente TODAS as linhas de código minuciosamente em português."
+            instrucoes_dinamicas += "\n- OBRIGATÓRIO: Comente TODAS as linhas de código minuciosamente em português."
         if not msg.detalhado:
-            instrucoes_dinamicas += "\n9. OBRIGATÓRIO: Seja EXTREMAMENTE BREVE e CURTO em suas explicações. Foque apenas no código e no que é estritamente necessário."
+            instrucoes_dinamicas += "\n- OBRIGATÓRIO: Seja EXTREMAMENTE BREVE e CURTO nas explicações. Foque no código e no estritamente necessário."
 
         conteudos = []
         if msg.imagem_base64 and msg.mime_type:
