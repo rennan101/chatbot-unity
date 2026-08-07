@@ -55,19 +55,25 @@ let userApiKey = '';
 // ==========================================================
 // 2. PRESENÇA EM TEMPO REAL BLINDADA E SYNC DE NOMES
 // ==========================================================
-// Transformado em Async/Await para garantir o Firebase apague a presença antes do logout
 async function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
-        try {
-            await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField());
-        } catch(e) { console.log(e); }
+        const proj = window.projetos[idProjetoAtivo];
+        if(proj.presenca) {
+            delete proj.presenca[usuarioAtual.email];
+            try {
+                await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField());
+            } catch(e) { console.log(e); }
+        }
     }
 }
 
 function adicionarPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && idConversaAtiva !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
+        const proj = window.projetos[idProjetoAtivo];
+        proj.presenca = proj.presenca || {};
+        proj.presenca[usuarioAtual.email] = idConversaAtiva;
         updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), idConversaAtiva).catch(e=>console.log(e));
     }
 }
@@ -203,7 +209,6 @@ document.getElementById('btn-login-google').onclick = async () => {
     try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { document.getElementById('auth-error-msg').innerText = tratarErroAuth(e.code); }
 };
 
-// O logout agora aguarda a saída ser finalizada e confirmada no Banco de Dados
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
@@ -797,13 +802,17 @@ window.selecionarConversa = function(indexProj, indexConv) {
     window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
+// POSICIONAMENTO CENTRALIZADO DO MENU DE HISTÓRICO
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
     const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
-        document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
+        document.getElementById('config-menu').style.display = 'none'; 
+        document.getElementById('profile-menu').style.display = 'none'; 
+        document.getElementById('notifications-menu').style.display = 'none';
+        
         menu.style.display = 'block'; 
         menu.style.left = (btn.left + (btn.width / 2)) + 'px'; 
         menu.style.transform = 'translateX(-50%)'; 
@@ -981,9 +990,10 @@ async function enviarMensagem() {
         window.renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
+window.enviarMensagem = enviarMensagem;
 
 // ==========================================================
-// 8. LÓGICA DO TOUR DE ONBOARDING (SEM EMOJIS, ILUMINADO)
+// 8. LÓGICA DO TOUR DE ONBOARDING
 // ==========================================================
 const tourSteps = [
     { 
@@ -1044,8 +1054,6 @@ window.renderizarStepTour = function() {
         const targetEl = document.getElementById(step.target);
         if(targetEl) {
             targetEl.classList.add('tour-highlight');
-            
-            // Eleva os elementos pai acima da camada preta para não esconder o conteúdo real
             if(targetEl.closest('aside')) targetEl.closest('aside').classList.add('tour-highlight-parent');
             if(targetEl.closest('header')) targetEl.closest('header').classList.add('tour-highlight-parent');
             if(targetEl.id === 'input-container') targetEl.classList.add('tour-highlight-parent');
