@@ -211,22 +211,19 @@ header {
 }
 #btn-historico:hover { color: #ffffff; border-color: #F58220; background: rgba(245, 130, 32, 0.1); }
 
-/* ENGINES PILLS */
+/* ENGINES PILLS (AGORA DENTRO DO MODAL NOVO PROJETO) */
 .engine-tabs-container {
-    display: flex; justify-content: center; align-items: center; gap: 12px; 
-    padding: 10px 20px; background: rgba(13, 17, 23, 0.5); 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03); z-index: 5;
+    display: flex; gap: 10px; margin-bottom: 20px; width: 100%;
 }
 .engine-pill {
     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); color: #8b949e;
-    padding: 6px 18px; border-radius: 20px; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 500;
-    cursor: pointer; transition: all 0.2s;
+    padding: 8px 0; border-radius: 20px; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; flex: 1; text-align: center;
 }
 .engine-pill.active { background: rgba(245, 130, 32, 0.15); border-color: #F58220; color: #F58220; }
 .engine-pill.disabled { opacity: 0.4; cursor: not-allowed; }
 
 #chat { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth; }
-#sem-conversa-msg { margin: auto; color: #8b949e; text-align: center; font-size: 1.1rem; opacity: 0.7; padding: 20px;}
 
 .balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: var(--chat-fs); box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; transition: box-shadow 0.3s; word-break: break-word;}
 .aluno { 

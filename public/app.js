@@ -207,7 +207,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
-        await new Promise(r => setTimeout(r, 600)); // Aguarda confirmação do DB
+        await new Promise(r => setTimeout(r, 500)); // Aguarda confirmação do DB antes de matar o token
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -279,7 +279,7 @@ window.abrirModalApoio = function() { document.getElementById('modal-apoio').sty
 window.fecharModalApoio = function() { document.getElementById('modal-apoio').style.display = 'none'; }
 
 // ==========================================================
-// 4. LÓGICA DE ANEXOS E DRAG AND DROP (CHAT)
+// 4. LÓGICA DE ANEXOS E DRAG AND DROP (CHAT INPUT)
 // ==========================================================
 window.lidarComAnexo = function(eventOrFile) {
     const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
@@ -474,7 +474,7 @@ window.apagarNotificacao = async function(event, notifId) {
 }
 
 // ==========================================================
-// 6. UI DA BARRA LATERAL E MODAIS (DRAG & DROP CONVERSAS)
+// 6. UI DA BARRA LATERAL, MODAIS E DRAG & DROP DE CONVERSAS
 // ==========================================================
 window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); window.alvoMenu = { tipo, indexProj, indexConv };
@@ -571,19 +571,14 @@ window.renderizarSidebar = function() {
                 <span style="display:flex; align-items:center; flex-shrink:0; pointer-events: none;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
             
-            // ================= DRAG AND DROP CONVERSAS =================
+            // Drag and Drop (Conversas)
             convDiv.setAttribute('draggable', 'true');
-            
             convDiv.ondragstart = (e) => {
                 e.dataTransfer.setData('application/json', JSON.stringify({ p: indexProj, c: indexConv }));
                 convDiv.classList.add('dragging');
             };
             convDiv.ondragend = () => convDiv.classList.remove('dragging');
-            
-            convDiv.ondragover = (e) => { 
-                e.preventDefault(); 
-                convDiv.classList.add('drag-over-conv'); 
-            };
+            convDiv.ondragover = (e) => { e.preventDefault(); convDiv.classList.add('drag-over-conv'); };
             convDiv.ondragleave = () => convDiv.classList.remove('drag-over-conv');
             
             convDiv.ondrop = (e) => {
@@ -591,24 +586,20 @@ window.renderizarSidebar = function() {
                 convDiv.classList.remove('drag-over-conv');
                 try {
                     const data = JSON.parse(e.dataTransfer.getData('application/json'));
-                    // Permite reordenar apenas no mesmo projeto
                     if (data.p === indexProj && data.c !== indexConv) {
                         const project = window.projetos[indexProj];
                         const itemMovido = project.conversas.splice(data.c, 1)[0];
                         project.conversas.splice(indexConv, 0, itemMovido);
                         
-                        // Corrige a conversa ativa para o usuário que arrastou
                         if (idProjetoAtivo === indexProj) {
                             if (idConversaAtiva === data.c) idConversaAtiva = indexConv;
                             else if (data.c < idConversaAtiva && indexConv >= idConversaAtiva) idConversaAtiva--;
                             else if (data.c > idConversaAtiva && indexConv <= idConversaAtiva) idConversaAtiva++;
                         }
                         
-                        // Atualiza a presença no Firebase com o novo Index
                         if (project.presenca && project.presenca[usuarioAtual?.email] !== undefined) {
                             project.presenca[usuarioAtual.email] = idConversaAtiva;
                         }
-                        
                         window.salvarDadosAtuais(indexProj);
                         window.renderizarSidebar();
                     }
@@ -746,9 +737,9 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
-window.abrirConfigMenu = function(e) { 
-    e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
+// ACORDEÃO E CONFIGURAÇÕES
+window.abrirConfigMenu = function(event) { 
+    event.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else { 
         document.getElementById('profile-menu').style.display = 'none'; 
@@ -761,7 +752,8 @@ window.abrirConfigMenu = function(e) {
     } 
 }
 
-window.togglePersonalizar = function() {
+window.togglePersonalizar = function(event) {
+    if (event) event.stopPropagation(); // Evita fechamento acidental
     const content = document.getElementById('accordion-personalizar');
     const chevron = document.getElementById('icon-chevron-personalizar');
     if (content.style.display === 'none' || content.style.display === '') {
@@ -779,7 +771,7 @@ window.ajustarFonte = function(tipo, valor) {
     if (tipo === 'chat') { prefChatFs = Math.max(0.7, Math.min(1.5, prefChatFs + valor)); document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2); } 
     else { prefCodeFs = Math.max(0.7, Math.min(1.5, prefCodeFs + valor)); document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2); }
     window.salvarPersonalizacao();
-    aplicarTamanhosFonte(prefChatFs, prefCodeFs);
+    window.aplicarTamanhosFonte();
 }
 
 window.mudarTamanhoResposta = function(detalhado, start = false) {
@@ -800,7 +792,7 @@ window.salvarApiKey = async () => {
     userApiKey = document.getElementById('input-api-key').value.trim(); 
     localStorage.setItem('unity_google_api_key', userApiKey); 
     if (usuarioAtual) { try { await setDoc(doc(db, "usuarios", usuarioAtual.uid), { googleApiKey: userApiKey }, { merge: true }); } catch(e) {} }
-    document.getElementById('modal-apikey').style.display = 'none'; atualizarIndicadorApiKey(userApiKey); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
+    document.getElementById('modal-apikey').style.display = 'none'; window.atualizarIndicadorApiKey(userApiKey); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
 }
 
 let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false'; document.getElementById('toggle-ask-save').checked = configAskToSave;
@@ -808,7 +800,7 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT, NOMES E ÍNDICE DE PERGUNTAS
+// 7. SISTEMA DE CHAT E TELA INICIAL
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
@@ -816,9 +808,7 @@ window.resetarVisualizacaoChat = function() {
     removerPresencaLocal(); 
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
-    document.getElementById('engine-tabs').style.display = 'none';
     
-    // TELA DE BOAS VINDAS DO COMBOBOY CORRIGIDA COM OS NOMES JUNTOS
     document.getElementById('chat').innerHTML = `
         <div id="sem-conversa-msg" style="margin: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.9; text-align: center; max-width: 500px; padding: 20px;">
             <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 200px; height: 200px; margin-bottom: 10px; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5));">
@@ -853,7 +843,6 @@ window.selecionarConversa = function(indexProj, indexConv) {
     document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
-    document.getElementById('engine-tabs').style.display = 'flex';
     
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('open');
@@ -863,7 +852,6 @@ window.selecionarConversa = function(indexProj, indexConv) {
     window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
-// POSICIONAMENTO CENTRALIZADO DO MENU DE HISTÓRICO
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');

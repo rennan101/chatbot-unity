@@ -30,6 +30,7 @@
         <button onclick="window.fecharModalAuth()" class="btn-fechar-modal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
+        <!-- LOGO ATUALIZADA NA TELA DE LOGIN -->
         <div style="font-family: 'Alumni Sans SC', sans-serif; font-size: 3.5rem; line-height: 1; margin-bottom: 5px;">
             <span style="color: #F58220; font-weight: 700; font-style: italic;">COMBO</span><span style="color: #FFFFFF; font-weight: 700;">BOY</span>
         </div>
@@ -61,6 +62,7 @@
     <aside id="sidebar">
         <div class="sidebar-top">
             
+            <!-- HEADER DA BARRA LATERAL COM A LOGO CORRIGIDA -->
             <div style="display: flex; align-items: center; gap: 8px;" id="brand-header">
                 <img src="/assets/icons/combogo_icon.svg" alt="Logo" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;">
                 <div style="font-family: 'Alumni Sans SC', sans-serif; font-size: 1.6rem; line-height: 1; padding-top: 4px;">
@@ -93,8 +95,8 @@
             </button>
             
             <div class="btn-apoio" onclick="window.abrirModalApoio()" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: -2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                <span class="texto-btn" style="font-size: 1.05rem; color: #8b949e; font-weight: 500;">Apoie o Projeto</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: -2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <span class="texto-btn" style="font-size: 0.95rem; color: #8b949e; font-weight: 500;">Apoie o Projeto</span>
             </div>
         </div>
     </aside>
@@ -112,10 +114,10 @@
                 </div>
             </div>
 
-            <!-- BOTÃO HISTÓRICO INTEGRADO EM FORMATO PÍLULA NO CABEÇALHO -->
             <div style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; align-items: center; z-index: 10;">
                 <button id="btn-historico" onclick="window.abrirMenuHistorico(event)" title="Histórico de Perguntas">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Histórico</span>
                 </button>
             </div>
 
@@ -127,14 +129,7 @@
             </div>
         </header>
 
-        <!-- PÍLULAS DAS ENGINES (NO TOPO DA ÁREA DO CHAT) -->
-        <div class="engine-tabs-container" id="engine-tabs" style="display: none;">
-            <button class="engine-pill active">Unity</button>
-            <button class="engine-pill disabled" title="Em breve">Unreal</button>
-            <button class="engine-pill disabled" title="Em breve">Godot</button>
-        </div>
-
-        <div id="chat"><div id="sem-conversa-msg"></div></div>
+        <div id="chat"><div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div></div>
         
         <div id="input-container" style="flex-direction: column; align-items: stretch; gap: 0;">
             <div id="anexo-preview-container" style="display: none; padding: 12px 24px; background: rgba(13, 17, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-bottom: none; border-radius: 16px 16px 0 0; position: relative; align-items: center;">
@@ -281,9 +276,34 @@
     </div>
     
     <!-- OUTROS MODAIS -->
-    <div class="modal-overlay" id="modal-projeto"><div class="modal-content" style="width: 400px;">
-        <button onclick="window.fecharModal()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-        <h3>Novo Projeto Unity</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div><input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div><input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div><textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea><div class="modal-acoes"><button class="btn-cancelar" onclick="window.fecharModal()">Cancelar</button><button class="btn-confirmar" onclick="window.confirmarProjeto()">Criar Projeto</button></div></div></div>
+    <div class="modal-overlay" id="modal-projeto">
+        <div class="modal-content" style="width: 400px;">
+            <button onclick="window.fecharModal()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <h3>Novo Projeto Unity</h3>
+            
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div>
+            <input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;">
+            
+            <!-- PÍLULAS DAS ENGINES (AGORA DENTRO DO MODAL) -->
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Motor Gráfico (Engine):</div>
+            <div class="engine-tabs-container">
+                <button class="engine-pill active">Unity</button>
+                <button class="engine-pill disabled" title="Em breve">Unreal</button>
+                <button class="engine-pill disabled" title="Em breve">Godot</button>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div>
+            <input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;">
+            
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div>
+            <textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea>
+            
+            <div class="modal-acoes">
+                <button class="btn-cancelar" onclick="window.fecharModal()">Cancelar</button>
+                <button class="btn-confirmar" onclick="window.confirmarProjeto()">Criar Projeto</button>
+            </div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="modal-compartilhar"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colab</h3><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div><div style="display: flex; gap: 8px; margin-bottom: 20px;"><input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;"><button class="btn-confirmar" onclick="window.confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button></div><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div><div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div></div></div>
 
@@ -297,7 +317,7 @@
     <div class="modal-overlay" id="modal-apoio">
         <div class="modal-content" style="width: 400px; text-align: center;">
             <button onclick="window.fecharModalApoio()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <h3 style="color: #F58220; margin-bottom: 10px; line-height: 1.4; display: inline-block; padding-right: 15px;">Alimente os devs com um café ☕</h3>
+            <h3 style="color: #F58220; margin-bottom: 10px; line-height: 1.4;">Alimente os devs<br>com um café ☕</h3>
             
             <img src="assets/icons/pix.png" alt="QR Code PIX" style="width: 200px; height: 200px; border-radius: 12px; margin: 15px auto; display: block; background: white; padding: 10px;">
 

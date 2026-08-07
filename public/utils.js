@@ -66,16 +66,12 @@ export function getMeme(tipo) {
 // ==========================================================
 // FORMATADORES E MEMÓRIA CACHE (Sync Global de Nomes)
 // ==========================================================
-window.mapUsuarios = {}; // Memória viva dos nomes de todos os usuários!
+window.mapUsuarios = {}; 
 
 export function formatarNomeUsuario(emailOrName) {
     if (!emailOrName) return 'Visitante';
     if (emailOrName.includes('@')) {
-        // Se já temos o nome oficial desse e-mail no cache, usa ele na hora!
-        if (window.mapUsuarios && window.mapUsuarios[emailOrName]) {
-            return window.mapUsuarios[emailOrName];
-        }
-        // Fallback: Corta o e-mail
+        if (window.mapUsuarios && window.mapUsuarios[emailOrName]) return window.mapUsuarios[emailOrName];
         const base = emailOrName.split('@')[0];
         return base.charAt(0).toUpperCase() + base.slice(1);
     }
@@ -143,8 +139,37 @@ export function redimensionarEComprimirImagem(file, maxSize, callback) {
 }
 
 // ==========================================================
-// PARSERS DE CÓDIGO E EXPORTADORES
+// PARSERS DE CÓDIGO E GERENCIADOR CENTRAL DE DOWNLOADS
 // ==========================================================
+export async function salvarArquivoNativo(blob, sugeridoNome) {
+    const configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false';
+    
+    // Se o usuário deseja ser perguntado e o navegador suportar a API de acesso ao sistema de arquivos (como Chrome Desktop)
+    if (configAskToSave && window.showSaveFilePicker) { 
+        try { 
+            const handle = await window.showSaveFilePicker({ suggestedName: sugeridoNome }); 
+            const writable = await handle.createWritable(); 
+            await writable.write(blob); 
+            await writable.close(); 
+            mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SAVE); 
+            return; 
+        } 
+        catch (e) { return; } // Cancela silenciosamente se o usuário fechar a janela
+    } 
+    
+    // Fallback: Se o usuário destivou a pergunta OU se o navegador for Safari/Mobile (que não suporta showSaveFilePicker)
+    const a = document.createElement('a'); 
+    const url = URL.createObjectURL(blob);
+    a.href = url; 
+    a.download = sugeridoNome; 
+    document.body.appendChild(a);
+    a.click(); 
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_DOWNLOAD); 
+}
+window.salvarArquivoNativo = salvarArquivoNativo;
+
 export function formatarBlocosDeCodigo() {
     document.querySelectorAll('.bot pre').forEach(pre => {
         if (pre.parentElement.classList.contains('code-wrapper')) return;
@@ -170,13 +195,8 @@ window.copiar = copiar;
 export async function baixarCodigo(texto, linguagem) {
     const ext = { 'csharp':'cs', 'cs':'cs', 'javascript':'js', 'js':'js', 'python':'py', 'html':'html', 'css':'css', 'json':'json', 'cpp':'cpp' }[linguagem] || 'txt';
     let nome = `script.${ext}`; const match = texto.match(/(?:class|interface|struct|enum)\s+([A-Za-z0-9_]+)/); if(match) nome = `${match[1]}.${ext}`;
-    const configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false';
-    if (configAskToSave && window.showSaveFilePicker) { 
-        try { const handle = await window.showSaveFilePicker({ suggestedName: nome }); const w = await handle.createWritable(); await w.write(texto); await w.close(); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SAVE); return; } 
-        catch (e) { return; } 
-    } 
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([texto])); a.download = nome; a.click(); 
-    mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_DOWNLOAD); 
+    
+    await salvarArquivoNativo(new Blob([texto]), nome);
 }
 window.baixarCodigo = baixarCodigo;
 
@@ -192,17 +212,21 @@ export function gerarMarkdownDaConversa(nomeProj, conv) {
 }
 window.gerarMarkdownDaConversa = gerarMarkdownDaConversa;
 
-export function exportarConversaMD() { 
+export async function exportarConversaMD() { 
     const proj = window.projetos[window.alvoMenu.indexProj]; const conv = proj.conversas[window.alvoMenu.indexConv]; 
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([gerarMarkdownDaConversa(proj.nome, conv)])); 
-    a.download = `Unity_${conv.nome.replace(/[^a-z0-9]/gi, '_')}.md`; a.click(); 
+    const mdTexto = gerarMarkdownDaConversa(proj.nome, conv);
+    const nomeArquivo = `Unity_${conv.nome.replace(/[^a-z0-9]/gi, '_')}.md`;
+    
+    await salvarArquivoNativo(new Blob([mdTexto]), nomeArquivo);
 }
 window.exportarConversaMD = exportarConversaMD;
 
 export async function exportarProjetoZip() { 
     const proj = window.projetos[window.alvoMenu.indexProj]; const zip = new JSZip(); 
     proj.conversas.forEach((c, i) => zip.file(`${c.nome.replace(/[^a-z0-9]/gi, '_')}_${i}.md`, gerarMarkdownDaConversa(proj.nome, c))); 
-    const blob = await zip.generateAsync({type:"blob"}); const a = document.createElement('a'); 
-    a.href = URL.createObjectURL(blob); a.download = `Proj_${proj.nome.replace(/[^a-z0-9]/gi, '_')}.zip`; a.click(); 
+    const blob = await zip.generateAsync({type:"blob"}); 
+    const nomeArquivo = `Proj_${proj.nome.replace(/[^a-z0-9]/gi, '_')}.zip`;
+    
+    await salvarArquivoNativo(blob, nomeArquivo);
 }
 window.exportarProjetoZip = exportarProjetoZip;
