@@ -19,10 +19,40 @@ export const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="
 // ==========================================================
 // BANCO DE FEEDBACKS GAMERS (MEMES)
 // ==========================================================
-export const memesLoading = ["Farmando aura...", "Consultando o ancião...", "Esfregando a lâmpada...", "Calculando a física do Unity...", "Procurando o ponto e vírgula perdido...", "Compilando os shaders...", "Perguntando pro StackOverflow...", "Mineirando redstone para ligar o servidor...", "Carregando a barra de mana...", "Treinando a rede neural com café...", "Girando a manivela do backend...", "Invocando os deuses do C#...", "Dando um git pull na sabedoria...", "Baixando mais RAM...", "Refatorando o universo..."];
-export const memesSucesso = ["GG WP! Tudo salvo.", "É TETRA! Operação concluída.", "Dropou o loot lendário!", "Missão Cumprida (+100 XP).", "Vitória Royale!", "Código buildado com zero warnings.", "Receba! Tudo certo por aqui.", "Mais liso que rodar a 144fps.", "Pode ir pro abraço, tá salvo!", "Famoso 'toca pro pai'.", "Novo membro na party!", "CTRL+C perfeito, patrão.", "Tá no pente!", "Deu bom! Pode favoritar.", "Sincronizado perfeitamente."];
-export const memesErro = ["O servidor foi de base... F no chat.", "Tankou não. Tente novamente.", "Deu tela azul aqui, chefe.", "Erro 404: Vontade de trabalhar sumiu.", "Eita, o Unity crashou (de novo).", "Fomos nerfados! Limite atingido.", "Faltou poção de mana pra essa ação.", "Alguém tropeçou no cabo do servidor.", "NullReferenceException na vida real.", "O estagiário apagou o banco de dados."];
-export const memesAviso = ["Calma lá emocionade, digita algo!", "Vai mandar o vazio pro além?", "Você não tem level suficiente pra isso.", "Opa, tá tentando bugar a Matrix?", "Segura a emoção, o parceiro tá digitando...", "Miss click? Ação cancelada.", "Inventário cheio! Limite atingido.", "Permissão negada. Você não é o dono!", "Esqueceu a chave da API em casa?", "Hackerman detectado!"];
+export const memesLoading = [
+    "Farmando aura...", "Consultando o ancião...", "Esfregando a lâmpada...", "Calculando a física do Unity...", 
+    "Procurando o ponto e vírgula perdido...", "Compilando os shaders...", "Perguntando pro StackOverflow...", 
+    "Mineirando redstone para ligar o servidor...", "Carregando a barra de mana...", "Treinando a rede neural com café...", 
+    "Girando a manivela do backend...", "Invocando os deuses do C#...", "Dando um git pull na sabedoria...", 
+    "Baixando mais RAM...", "Refatorando o universo...", "Carregando novo isekai...", "Alimentando o tinhoso...", 
+    "Fugindo de gremlins...", "Arregaçando goblins...", "Procurando uma elfa curandeira...", 
+    "Entrando no Eva...", "Sincronizando com a Matrix...", "Ajustando o brilho dos óculos..."
+];
+export const memesSucesso = [
+    "GG WP! Tudo salvo.", "É TETRA! Operação concluída.", "Dropou o loot lendário!", "Missão Cumprida (+100 XP).", 
+    "Vitória Royale!", "Código buildado com zero warnings.", "Receba! Tudo certo por aqui.", 
+    "Mais liso que rodar a 144fps.", "Pode ir pro abraço, tá salvo!", "Famoso 'toca pro pai'.", 
+    "Novo membro na party!", "CTRL+C perfeito, patrão.", "Tá no pente!", "Deu bom! Pode favoritar.", 
+    "Sincronizado perfeitamente.", "S-Rank! Operação perfeita.", "Bankai! Sucesso absoluto.", 
+    "A Waifu notou você! Tudo certo.", "Conseguiu o final verdadeiro!", "Hackerman completou a ação.", 
+    "Nem precisou do poder da amizade para dar certo."
+];
+export const memesErro = [
+    "O servidor foi de base... F no chat.", "Tankou não. Tente novamente.", "Deu tela azul aqui, chefe.", 
+    "Erro 404: Vontade de trabalhar sumiu.", "Eita, o Unity crashou (de novo).", "Fomos nerfados! Limite atingido.", 
+    "Faltou poção de mana pra essa ação.", "Alguém tropeçou no cabo do servidor.", "NullReferenceException na vida real.", 
+    "O estagiário apagou o banco de dados.", "Uma van branca (Truck-kun) bateu em você, tente novamente mais tarde.", 
+    "Góticas no caminho de casa, a requisição falhou.", "Shinji não entrou no robô...", 
+    "Omedetou... falhou miseravelmente.", "O poder de luta foi menor que 8000.", "Você foi pego num Genjutsu de erro.", 
+    "Seu código foi de Isekai."
+];
+export const memesAviso = [
+    "Calma lá emocionade, digita algo!", "Vai mandar o vazio pro além?", "Você não tem level suficiente pra isso.", 
+    "Opa, tá tentando bugar a Matrix?", "Segura a emoção, o parceiro tá digitando...", "Miss click? Ação cancelada.", 
+    "Inventário cheio! Limite atingido.", "Permissão negada. Você não é o dono!", "Esqueceu a chave da API em casa?", 
+    "Hackerman detectado!", "B-baka! Faça direito!", "O sentido aranha está apitando... ação inválida.", 
+    "Você ativou minha carta armadilha! (Bloqueado)", "Apenas usuários com Stand podem fazer isso."
+];
 
 export function getMeme(tipo) {
     let lista = [];
