@@ -67,6 +67,7 @@ async function removerPresencaLocal() {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
         const proj = window.projetos[idProjetoAtivo];
         
+        // Remove peer ID se estiver na chamada
         if(meuPeer && meuPeer.id && proj.conversas && proj.conversas[idConversaAtiva] && proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
              window.sairDaChamada(true); 
         }
@@ -218,7 +219,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
-        await new Promise(r => setTimeout(r, 500)); 
+        await new Promise(r => setTimeout(r, 600)); 
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -752,7 +753,7 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES
+// ACORDEÃO E CONFIGURAÇÕES ANCORADOS
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -1136,7 +1137,7 @@ window.renderizarUsuariosNaChamada = function() {
 };
 
 // ----------------------------------------------------
-// MOTOR WEBRTC RECONSTRUÍDO (AUDIO INVISÍVEL VS TELA)
+// MOTOR WEBRTC RECONSTRUÍDO E APROVA DE FALHAS (DELAY STRATEGY)
 function inicializarPeer() {
     if(meuPeer) return;
     meuPeer = new Peer();
@@ -1240,7 +1241,7 @@ window.compartilharTela = async function() {
             streamLocalVideo.getTracks().forEach(t => t.stop());
             streamLocalVideo = null;
             document.getElementById('btn-call-screen').classList.remove('active');
-            window.limparMediaRemota(meuPeer.id);
+            window.limparMediaRemota(meuPeer.id, true);
             window.atualizarStreamsP2P();
         }
     } catch(e) {}
@@ -1260,12 +1261,16 @@ window.atualizarStreamsP2P = function() {
     Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
         if (email !== usuarioAtual.email) {
             if(chamadasAtivas[peerIdRemoto]) chamadasAtivas[peerIdRemoto].close();
-            const call = meuPeer.call(peerIdRemoto, combinedStream);
-            if (call) {
-                chamadasAtivas[peerIdRemoto] = call;
-                call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));
-                call.on('close', () => window.limparMediaRemota(peerIdRemoto));
-            }
+            
+            // DEBOUNCE: Aguarda 1 segundo para garantir que a rede fechou o túnel antigo antes de abrir outro
+            setTimeout(() => {
+                const call = meuPeer.call(peerIdRemoto, combinedStream);
+                if (call) {
+                    chamadasAtivas[peerIdRemoto] = call;
+                    call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));
+                    call.on('close', () => window.limparMediaRemota(peerIdRemoto));
+                }
+            }, 1000); 
         }
     });
 }
@@ -1294,7 +1299,7 @@ window.verificarNovosPeers = function() {
 window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
     const hasVideo = stream.getVideoTracks().length > 0;
     
-    // Áudio Invisível (Garante o fluxo de voz sem criar caixa preta)
+    // ÁUDIO INVISÍVEL (Sem caixa preta na tela)
     let audioEl = document.getElementById(`audio-${peerId}`);
     if (!audioEl) {
         audioEl = document.createElement('audio');
@@ -1305,7 +1310,7 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
     }
     audioEl.srcObject = stream;
 
-    // Vídeo (O Palco só aparece se a track de vídeo existir)
+    // VÍDEO (Aparece estritamente se houver track de câmera/tela)
     const stage = document.getElementById('stage-container');
     if (hasVideo) {
         stage.style.display = 'flex';
@@ -1317,7 +1322,12 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
             videoWrapper.id = `video-${peerId}`;
             
             const videoEl = document.createElement('video');
-            videoEl.autoplay = true; videoEl.playsInline = true; videoEl.muted = true;
+            videoEl.autoplay = true; 
+            videoEl.playsInline = true; 
+            videoEl.muted = true; // Mutado no vídeo, som sai na tag <audio> invisível
+            
+            // Força a leitura inicial (Garante que o PiP não fique preto)
+            videoEl.onloadedmetadata = () => { videoEl.play().catch(e=>console.log(e)); };
             
             const tag = document.createElement('div');
             tag.className = 'video-tag'; tag.innerText = isLocal ? 'Você (Transmitindo)' : 'Colaborador';
@@ -1344,17 +1354,19 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
             }
             controls.querySelector('.pip-btn').addEventListener('click', () => {
                 if (document.pictureInPictureElement) document.exitPictureInPicture();
-                else videoEl.requestPictureInPicture();
+                else videoEl.requestPictureInPicture().catch(err => console.log(err));
             });
             controls.querySelector('.fs-btn').addEventListener('click', () => {
-                if (!document.fullscreenElement) videoWrapper.requestFullscreen();
+                if (!document.fullscreenElement) videoWrapper.requestFullscreen().catch(err => console.log(err));
                 else document.exitFullscreen();
             });
             
             videoWrapper.appendChild(videoEl); videoWrapper.appendChild(tag); videoWrapper.appendChild(controls);
             stage.appendChild(videoWrapper);
         }
-        videoWrapper.querySelector('video').srcObject = stream;
+        const vEl = videoWrapper.querySelector('video');
+        if (vEl.srcObject !== stream) vEl.srcObject = stream;
+        
     } else {
         window.limparMediaRemota(peerId, true);
     }
@@ -1418,7 +1430,9 @@ window.iniciarTour = function() {
     currentTourStep = 0;
     document.getElementById('config-menu').style.display = 'none';
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
+    
     document.getElementById('btn-colab').style.display = 'flex'; 
+
     document.getElementById('tour-overlay').style.display = 'block';
     window.renderizarStepTour();
 }
