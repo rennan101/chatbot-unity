@@ -59,6 +59,10 @@ let streamLocalVideo = null;
 let chamadasAtivas = {};
 let peerConfigurado = false;
 
+window.chatScope = 'local';
+window.selectedAudioInput = '';
+window.selectedAudioOutput = '';
+
 // ==========================================================
 // 2. PRESENÇA EM TEMPO REAL BLINDADA E SYNC DE NOMES
 // ==========================================================
@@ -67,14 +71,24 @@ async function removerPresencaLocal() {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
         const proj = window.projetos[idProjetoAtivo];
         
-        // Remove peer ID se estiver na chamada
+        let updates = {};
+
         if(meuPeer && meuPeer.id && proj.conversas && proj.conversas[idConversaAtiva] && proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
              window.sairDaChamada(true); 
         }
 
         if(proj.presenca && proj.presenca[usuarioAtual.email] !== undefined) {
-            delete proj.presenca[usuarioAtual.email];
-            try { await updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField()); } catch(e) {}
+            updates[`presenca.${usuarioAtual.email}`] = deleteField();
+        }
+
+        // Tira o bloqueio de tela se eu estiver saindo
+        if (proj.conversas && proj.conversas[idConversaAtiva] && proj.conversas[idConversaAtiva].tela === usuarioAtual.email) {
+            proj.conversas[idConversaAtiva].tela = null;
+            updates[`conversas`] = proj.conversas;
+        }
+
+        if(Object.keys(updates).length > 0) {
+            try { await updateDoc(ref, updates); } catch(e) {}
         }
     }
 }
@@ -359,7 +373,7 @@ if (dropZone) {
 
 
 // ==========================================================
-// 5. FIREBASE REALTIME & NOTIFICAÇÕES
+// 5. FIREBASE REALTIME, NOTIFICAÇÕES & COLLAB SYNC
 // ==========================================================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
@@ -384,6 +398,7 @@ function iniciarEscutaProjetosNuvem(email) {
             window.renderizarChatLateral();
             window.verificarNovosPeers();
             window.renderizarUsuariosNaChamada();
+            window.atualizarBotoesChamada();
         }
     });
 }
@@ -491,7 +506,7 @@ window.apagarNotificacao = async function(event, notifId) {
 }
 
 // ==========================================================
-// 6. UI DA BARRA LATERAL E MODAIS
+// 6. UI DA BARRA LATERAL, MODAIS E DRAG & DROP DE CONVERSAS
 // ==========================================================
 window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); window.alvoMenu = { tipo, indexProj, indexConv };
@@ -588,6 +603,7 @@ window.renderizarSidebar = function() {
                 <span style="display:flex; align-items:center; flex-shrink:0; pointer-events: none;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
             
+            // Drag and Drop (Conversas)
             convDiv.setAttribute('draggable', 'true');
             convDiv.ondragstart = (e) => {
                 e.dataTransfer.setData('application/json', JSON.stringify({ p: indexProj, c: indexConv }));
@@ -873,6 +889,7 @@ window.selecionarConversa = function(indexProj, indexConv) {
     window.renderizarUsuariosNaChamada();
     window.atualizarEstadoBotaoEnvio(); 
     window.validarInput();
+    window.atualizarBotoesChamada();
 }
 
 window.abrirMenuHistorico = function(event) {
@@ -1072,6 +1089,21 @@ window.toggleSidebarColab = function() {
 
 window.fecharSidebarColab = function() { document.getElementById('sidebar-right').classList.remove('open'); }
 
+window.toggleChatScope = function() {
+    const btn = document.getElementById('btn-chat-scope');
+    if(window.chatScope === 'local') {
+        window.chatScope = 'global';
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+        btn.title = "Enviando para: Todas as Salas";
+        mostrarToast("Modo Global Ativado", "rgba(245, 130, 32, 0.9)", "");
+    } else {
+        window.chatScope = 'local';
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+        btn.title = "Enviando para: Sala Atual";
+        mostrarToast("Modo Sala Atual", "rgba(245, 130, 32, 0.9)", "");
+    }
+}
+
 window.renderizarChatLateral = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) return;
     const container = document.getElementById('chat-lateral-msgs');
@@ -1086,9 +1118,13 @@ window.renderizarChatLateral = function() {
 
     conv.chatLateral.forEach(msg => {
         const souEu = usuarioAtual && msg.email === usuarioAtual.email;
+        const badgeGlobal = msg.isGlobal ? `<span style="font-size:0.55rem; background:#F58220; color:white; padding:2px 4px; border-radius:4px; margin-left:4px;">GLOBAL</span>` : '';
+        
         container.innerHTML += `
             <div style="display:flex; flex-direction:column; gap:2px; ${souEu ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
-                <span style="font-size:0.65rem; color:#8b949e; padding: 0 4px;">${window.formatarNomeUsuario(msg.email)}</span>
+                <span style="font-size:0.65rem; color:#8b949e; padding: 0 4px; display:flex; align-items:center;">
+                    ${window.formatarNomeUsuario(msg.email)} ${badgeGlobal}
+                </span>
                 <div class="balao-lateral ${souEu ? 'eu' : 'outro'}">${msg.texto}</div>
             </div>`;
     });
@@ -1102,9 +1138,16 @@ window.enviarMensagemLateral = function() {
     if(!texto) return;
 
     const proj = window.projetos[idProjetoAtivo];
-    if (!proj.conversas[idConversaAtiva].chatLateral) proj.conversas[idConversaAtiva].chatLateral = [];
     
-    proj.conversas[idConversaAtiva].chatLateral.push({ email: usuarioAtual.email, texto: texto, timestamp: Date.now() });
+    if(window.chatScope === 'global') {
+        proj.conversas.forEach(c => {
+            if (!c.chatLateral) c.chatLateral = [];
+            c.chatLateral.push({ email: usuarioAtual.email, texto: texto, timestamp: Date.now(), isGlobal: true });
+        });
+    } else {
+        if (!proj.conversas[idConversaAtiva].chatLateral) proj.conversas[idConversaAtiva].chatLateral = [];
+        proj.conversas[idConversaAtiva].chatLateral.push({ email: usuarioAtual.email, texto: texto, timestamp: Date.now() });
+    }
 
     window.salvarDadosAtuais(idProjetoAtivo); input.value = ''; window.renderizarChatLateral();
 }
@@ -1134,10 +1177,88 @@ window.renderizarUsuariosNaChamada = function() {
                 </div>`;
         });
     } else { container.style.display = 'none'; }
-};
+}
 
-// ----------------------------------------------------
-// MOTOR WEBRTC RECONSTRUÍDO E APROVA DE FALHAS (DELAY STRATEGY)
+// ==========================================================
+// SELEÇÃO DE HARDWARE (MICROFONE/ALTO FALANTE)
+// ==========================================================
+window.abrirModalDevices = async function() {
+    try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const selInput = document.getElementById('select-mic');
+        const selOutput = document.getElementById('select-speaker');
+        selInput.innerHTML = ''; selOutput.innerHTML = '';
+        
+        devices.forEach(d => {
+            if(d.kind === 'audioinput') {
+                const opt = document.createElement('option');
+                opt.value = d.deviceId; opt.text = d.label || `Microfone ${selInput.length + 1}`;
+                if(d.deviceId === window.selectedAudioInput) opt.selected = true;
+                selInput.appendChild(opt);
+            } else if(d.kind === 'audiooutput') {
+                const opt = document.createElement('option');
+                opt.value = d.deviceId; opt.text = d.label || `Alto-falante ${selOutput.length + 1}`;
+                if(d.deviceId === window.selectedAudioOutput) opt.selected = true;
+                selOutput.appendChild(opt);
+            }
+        });
+        document.getElementById('modal-devices').style.display = 'flex';
+    } catch(e) {
+        mostrarToast("Permita o uso do microfone primeiro.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+    }
+}
+
+window.salvarDevices = async function() {
+    window.selectedAudioInput = document.getElementById('select-mic').value;
+    window.selectedAudioOutput = document.getElementById('select-speaker').value;
+    
+    const audios = document.querySelectorAll('audio');
+    audios.forEach(async a => {
+        if(a.setSinkId && window.selectedAudioOutput) {
+            try { await a.setSinkId(window.selectedAudioOutput); } catch(e){}
+        }
+    });
+    
+    if(streamLocalAudio) {
+        streamLocalAudio.getTracks().forEach(t => t.stop());
+        try {
+            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: window.selectedAudioInput ? { exact: window.selectedAudioInput } : undefined } });
+            const newAudioTrack = streamLocalAudio.getAudioTracks()[0];
+            if(!document.getElementById('btn-call-mic').classList.contains('active')) {
+                newAudioTrack.enabled = false;
+            }
+            Object.values(chamadasAtivas).forEach(call => {
+                const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
+                if(sender) sender.replaceTrack(newAudioTrack);
+            });
+        } catch(e){}
+    }
+    
+    document.getElementById('modal-devices').style.display = 'none';
+    mostrarToast("Dispositivos atualizados", "rgba(46, 204, 113, 0.9)", SVG_SETTINGS);
+}
+
+// ==========================================================
+// MOTOR WEBRTC (COM LOCK DE TELA E DEBOUNCE)
+// ==========================================================
+window.atualizarBotoesChamada = function() {
+    if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) return;
+    const proj = window.projetos[idProjetoAtivo];
+    const telaAtual = proj.conversas[idConversaAtiva].tela;
+    const btnScreen = document.getElementById('btn-call-screen');
+    
+    if (telaAtual && telaAtual !== usuarioAtual.email) {
+        btnScreen.disabled = true;
+        btnScreen.style.opacity = '0.4';
+        btnScreen.title = `Tela sendo compartilhada por ${window.formatarNomeUsuario(telaAtual)}`;
+    } else {
+        btnScreen.disabled = !peerConfigurado;
+        btnScreen.style.opacity = peerConfigurado ? '1' : '0.4';
+        btnScreen.title = "Compartilhar Tela";
+    }
+}
+
 function inicializarPeer() {
     if(meuPeer) return;
     meuPeer = new Peer();
@@ -1145,10 +1266,11 @@ function inicializarPeer() {
     meuPeer.on('open', (id) => {
         peerConfigurado = true;
         document.getElementById('btn-call-mic').disabled = false;
-        document.getElementById('btn-call-screen').disabled = false;
         document.getElementById('btn-call-join').classList.add('danger');
         document.getElementById('btn-call-join').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>`;
         
+        window.atualizarBotoesChamada();
+
         if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
             const proj = window.projetos[idProjetoAtivo];
             proj.conversas[idConversaAtiva].chamada = proj.conversas[idConversaAtiva].chamada || {};
@@ -1176,7 +1298,7 @@ window.toggleChamada = async function() {
         window.sairDaChamada(false);
     } else {
         try {
-            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: window.selectedAudioInput ? { deviceId: { exact: window.selectedAudioInput } } : true });
             document.getElementById('btn-call-mic').classList.add('active');
             inicializarPeer();
         } catch(e) { mostrarToast("Permissão de microfone negada.", 'rgba(218, 54, 51, 0.9)', SVG_WARN); }
@@ -1205,10 +1327,17 @@ window.sairDaChamada = function(force = false) {
 
     if (!force && idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
         const proj = window.projetos[idProjetoAtivo];
+        
+        // Remove a trava de tela se eu estiver saindo
+        if (proj.conversas[idConversaAtiva].tela === usuarioAtual.email) {
+            proj.conversas[idConversaAtiva].tela = null;
+        }
+
         if (proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
             delete proj.conversas[idConversaAtiva].chamada[usuarioAtual.email];
-            window.salvarDadosAtuais(idProjetoAtivo);
         }
+        window.salvarDadosAtuais(idProjetoAtivo);
+        window.atualizarBotoesChamada();
     }
 }
 
@@ -1230,17 +1359,32 @@ window.toggleAudio = function() {
 
 window.compartilharTela = async function() {
     if (!peerConfigurado) return;
+    const proj = window.projetos[idProjetoAtivo];
+    const telaAtual = proj.conversas[idConversaAtiva].tela;
+
     try {
         if (!streamLocalVideo) {
+            if(telaAtual && telaAtual !== usuarioAtual.email) {
+                mostrarToast("Outro usuário já está compartilhando.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+                return;
+            }
+
             streamLocalVideo = await navigator.mediaDevices.getDisplayMedia({ video: true });
             document.getElementById('btn-call-screen').classList.add('active');
             
+            proj.conversas[idConversaAtiva].tela = usuarioAtual.email;
+            window.salvarDadosAtuais(idProjetoAtivo);
+
             streamLocalVideo.getVideoTracks()[0].onended = () => window.compartilharTela();
             window.atualizarStreamsP2P();
         } else {
             streamLocalVideo.getTracks().forEach(t => t.stop());
             streamLocalVideo = null;
             document.getElementById('btn-call-screen').classList.remove('active');
+            
+            proj.conversas[idConversaAtiva].tela = null;
+            window.salvarDadosAtuais(idProjetoAtivo);
+
             window.limparMediaRemota(meuPeer.id, true);
             window.atualizarStreamsP2P();
         }
@@ -1262,7 +1406,7 @@ window.atualizarStreamsP2P = function() {
         if (email !== usuarioAtual.email) {
             if(chamadasAtivas[peerIdRemoto]) chamadasAtivas[peerIdRemoto].close();
             
-            // DEBOUNCE: Aguarda 1 segundo para garantir que a rede fechou o túnel antigo antes de abrir outro
+            // DEBOUNCE: Aguarda 1 segundo para garantir que a rede fechou o túnel antigo antes de abrir outro com vídeo
             setTimeout(() => {
                 const call = meuPeer.call(peerIdRemoto, combinedStream);
                 if (call) {
@@ -1299,18 +1443,17 @@ window.verificarNovosPeers = function() {
 window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
     const hasVideo = stream.getVideoTracks().length > 0;
     
-    // ÁUDIO INVISÍVEL (Sem caixa preta na tela)
     let audioEl = document.getElementById(`audio-${peerId}`);
     if (!audioEl) {
         audioEl = document.createElement('audio');
         audioEl.id = `audio-${peerId}`;
         audioEl.autoplay = true;
         if(isLocal) audioEl.muted = true;
+        if(window.selectedAudioOutput && audioEl.setSinkId) audioEl.setSinkId(window.selectedAudioOutput).catch(e=>{});
         document.body.appendChild(audioEl);
     }
     audioEl.srcObject = stream;
 
-    // VÍDEO (Aparece estritamente se houver track de câmera/tela)
     const stage = document.getElementById('stage-container');
     if (hasVideo) {
         stage.style.display = 'flex';
@@ -1324,9 +1467,8 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
             const videoEl = document.createElement('video');
             videoEl.autoplay = true; 
             videoEl.playsInline = true; 
-            videoEl.muted = true; // Mutado no vídeo, som sai na tag <audio> invisível
+            videoEl.muted = true; 
             
-            // Força a leitura inicial (Garante que o PiP não fique preto)
             videoEl.onloadedmetadata = () => { videoEl.play().catch(e=>console.log(e)); };
             
             const tag = document.createElement('div');
