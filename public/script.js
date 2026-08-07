@@ -47,8 +47,6 @@ const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
 const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
 
-let isCreatingAccount = false; 
-
 function formatarNomeUsuario(emailOrName) {
     if (!emailOrName) return 'Visitante';
     const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
@@ -67,7 +65,6 @@ function formatarDataHora(timestamp) {
 
 // ================= GESTÃO DE AUTH E CONVITES =================
 onAuthStateChanged(auth, async (user) => {
-    // CORREÇÃO: Usamos verificação direta no DOM para evitar o ReferenceError de Crash!
     const modalAuth = document.getElementById('modal-auth');
     if (modalAuth) modalAuth.style.display = 'none';
 
@@ -132,7 +129,6 @@ window.lidarComAnexo = function(event) {
     
     document.getElementById('btn-anexo').style.opacity = '0.5';
     
-    // Se for imagem
     if (file.type.startsWith('image/')) {
         anexoTextoConteudo = null; 
         redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
@@ -145,7 +141,6 @@ window.lidarComAnexo = function(event) {
             mostrarPreviewContainer();
         });
     } 
-    // Se for código/texto
     else {
         anexoImagemBase64 = null; 
         const reader = new FileReader();
@@ -559,6 +554,7 @@ window.novaConversa = function(indexProj, event) {
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
+// ==== COLABORAÇÃO, CONVITES E GESTÃO DE USUÁRIOS ====
 window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
@@ -735,7 +731,7 @@ window.validarInput = function() {
     if (!estaProcessando) {
         btn.disabled = input.value.trim().length === 0 && !anexoImagemBase64 && !anexoTextoConteudo;
     } else {
-        btn.disabled = true;
+        btn.disabled = false; // DEVE FICAR FALSE PARA O BOTAO DE STOP FUNCIONAR!
     }
 }
 
@@ -748,10 +744,10 @@ function atualizarEstadoBotaoEnvio() {
     if (estaProcessando) {
         btn.classList.remove('enviar');
         btn.classList.add('stop');
-        btn.disabled = true;
+        btn.disabled = false; // HABILITADO PARA CLICAR NO STOP
         iconSend.style.display = 'none';
         iconStop.style.display = 'block';
-        btn.title = "Aguardando resposta da IA...";
+        btn.title = "Cancelar Resposta";
     } else {
         btn.classList.remove('stop');
         btn.classList.add('enviar');
@@ -764,8 +760,16 @@ function atualizarEstadoBotaoEnvio() {
 
 window.lidarComAcao = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
+    const chave = getChaveConversa(idProjetoAtivo, idConversaAtiva);
     const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
-    if (!conv?.processando) {
+
+    if (conv?.processando) {
+        if (statusConversas[chave] && statusConversas[chave].controller) {
+            statusConversas[chave].controller.abort();
+        } else {
+            mostrarToast('Aguarde o outro colaborador terminar de perguntar.', 'rgba(245, 130, 32, 0.9)', SVG_WARN);
+        }
+    } else {
         enviarMensagem();
     }
 }
@@ -773,10 +777,9 @@ window.lidarComAcao = function() {
 async function enviarMensagem() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva;
-    const proj = window.projetos[pIdx];
-    const conversaAtual = proj.conversas[cIdx];
+    const chave = getChaveConversa(pIdx, cIdx);
     
-    if (conversaAtual.processando) return;
+    if (window.projetos[pIdx].conversas[cIdx].processando) return;
 
     const input = document.getElementById('mensagem'); 
     let textoDigitado = input.value.trim(); 
@@ -797,16 +800,16 @@ async function enviarMensagem() {
     const novaMsg = { papel: 'aluno', texto: textoFinal };
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
 
-    conversaAtual.mensagens.push(novaMsg);
+    window.projetos[pIdx].conversas[cIdx].mensagens.push(novaMsg);
     
-    if (conversaAtual.mensagens.length === 2) {
-        if (textoDigitado) conversaAtual.nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
-        else if (anexoTextoNome) conversaAtual.nome = `Análise: ${anexoTextoNome}`;
-        else conversaAtual.nome = "Análise de Imagem";
+    if (window.projetos[pIdx].conversas[cIdx].mensagens.length === 2) {
+        if (textoDigitado) window.projetos[pIdx].conversas[cIdx].nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
+        else if (anexoTextoNome) window.projetos[pIdx].conversas[cIdx].nome = `Análise: ${anexoTextoNome}`;
+        else window.projetos[pIdx].conversas[cIdx].nome = "Análise de Imagem";
     }
     
     window.removerAnexo(); 
-    conversaAtual.processando = true;
+    window.projetos[pIdx].conversas[cIdx].processando = true;
     salvarDadosAtuais(pIdx); 
     
     input.value = ''; input.style.height = 'auto';
@@ -816,7 +819,7 @@ async function enviarMensagem() {
         atualizarEstadoBotaoEnvio();
     }
 
-    const controller = new AbortController(); statusConversas[getChaveConversa(pIdx, cIdx)] = { ativa: true, controller: controller };
+    const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
 
     try {
         const headers = { 'Content-Type': 'application/json' };
@@ -833,19 +836,28 @@ async function enviarMensagem() {
 
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify(payload), signal: controller.signal });
         
+        // APÓS O AWAIT, GARANTIMOS O USO DA REFERENCIA ATUALIZADA
+        if (!window.projetos[pIdx] || !window.projetos[pIdx].conversas[cIdx]) return;
+
         if (res.status === 429) { 
-            conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
+            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
         } else if (!res.ok) {
             let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro);
         } else {
             const dados = await res.json();
-            conversaAtual.mensagens.push({ papel: 'bot', texto: dados.resposta });
+            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta });
         }
     } catch (e) {
-        conversaAtual.mensagens.push({ papel: 'system', texto: `${SVG_WARN} Erro de comunicação: ${e.message}` });
+        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) {
+            window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Cancelado pelo usuário.' : 'Erro de comunicação: ' + e.message}` });
+        }
     } finally {
-        conversaAtual.processando = false;
-        salvarDadosAtuais(pIdx);
+        if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) {
+            window.projetos[pIdx].conversas[cIdx].processando = false;
+            salvarDadosAtuais(pIdx);
+        }
+        if (statusConversas[chave]) statusConversas[chave].ativa = false;
+        
         renderizarSidebar(); 
         if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
             renderizarChat(); 
@@ -854,6 +866,7 @@ async function enviarMensagem() {
     }
 }
 
+// Fechar popups e menus ao clicar fora
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
