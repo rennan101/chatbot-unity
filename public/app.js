@@ -34,6 +34,7 @@ let statusConversas = {};
 let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
+let unsubscribeUsuarios = null;
 let loadingMemeInterval = null; 
 
 let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
@@ -52,7 +53,7 @@ let anexoTextoNome = null;
 let userApiKey = '';
 
 // ==========================================================
-// 2. PRESENÇA EM TEMPO REAL BLINDADA
+// 2. PRESENÇA EM TEMPO REAL BLINDADA E SYNC DE NOMES
 // ==========================================================
 function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
@@ -81,10 +82,39 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('beforeunload', removerPresencaLocal);
 
+function iniciarEscutaUsuarios() {
+    unsubscribeUsuarios = onSnapshot(collection(db, "usuarios"), (snapshot) => {
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if(data.email && data.nome) {
+                window.mapUsuarios[data.email] = data.nome;
+            }
+        });
+        
+        if (window.atualizarBotaoPerfilGlobal) window.atualizarBotaoPerfilGlobal();
+        if (window.renderizarSidebar) window.renderizarSidebar();
+        if (idProjetoAtivo !== null && idConversaAtiva !== null) {
+            window.renderizarChat();
+        }
+    });
+}
+
 
 // ==========================================================
 // 3. AUTH E GESTÃO DE PERFIL
 // ==========================================================
+window.atualizarBotaoPerfilGlobal = function() {
+    if(!usuarioAtual) return;
+    const userEmail = usuarioAtual.email;
+    const nomeAtual = window.mapUsuarios[userEmail] || usuarioAtual.displayName || window.formatarNomeUsuario(userEmail);
+    const photoUrl = usuarioAtual.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(nomeAtual)}&background=21262d&color=c9d1d9&rounded=true`;
+    
+    const btnProfile = document.getElementById('btn-profile');
+    if(btnProfile) {
+        btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nomeAtual}</span>`;
+    }
+}
+
 onAuthStateChanged(auth, async (user) => {
     if(window.fecharModalAuth) window.fecharModalAuth();
     const btnProfile = document.getElementById('btn-profile');
@@ -92,13 +122,7 @@ onAuthStateChanged(auth, async (user) => {
 
     if (user) {
         usuarioAtual = user;
-        const userEmail = user.email || 'Usuario';
-        const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${userEmail}&background=21262d&color=c9d1d9&rounded=true`;
-        const displayName = user.displayName || formatarNomeUsuario(userEmail);
-
-        btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</span>`;
         btnProfile.onclick = window.abrirProfileMenu;
-        
         document.getElementById('config-btn-apikey').style.display = 'flex';
         btnNotif.style.display = 'flex';
 
@@ -118,17 +142,28 @@ onAuthStateChanged(auth, async (user) => {
             } else {
                 userApiKey = localStorage.getItem('unity_google_api_key') || ''; document.getElementById('input-api-key').value = userApiKey;
             }
-        } catch(e) { console.error("Erro ao puxar dados do usuário", e); }
+        } catch(e) {}
         
+        iniciarEscutaUsuarios(); 
+        window.atualizarBotaoPerfilGlobal();
         atualizarIndicadorApiKey(userApiKey);
-        iniciarEscutaProjetosNuvem(userEmail);
-        iniciarEscutaConvites(userEmail);
-        iniciarEscutaNotificacoes(userEmail);
+        iniciarEscutaProjetosNuvem(user.email);
+        iniciarEscutaConvites(user.email);
+        iniciarEscutaNotificacoes(user.email);
+        
+        // DISPARA O TOUR AUTOMÁTICO SE FOR A PRIMEIRA VEZ
+        if (localStorage.getItem('comboboy_tour') !== 'true') {
+            window.iniciarTour();
+        }
+
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
         if (unsubscribeConvites) unsubscribeConvites();
         if (unsubscribeNotificacoes) unsubscribeNotificacoes();
+        if (unsubscribeUsuarios) unsubscribeUsuarios();
+        
         usuarioAtual = null;
+        window.mapUsuarios = {};
         perfilGlobalData = { profissao: "", tags: [] };
         
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
@@ -182,7 +217,7 @@ window.confirmarLogout = function() {
         removerPresencaLocal(); 
         window.resetarVisualizacaoChat();
         window.projetos = [];
-        renderizarSidebar();
+        window.renderizarSidebar();
         signOut(auth);
         document.getElementById('profile-menu').style.display = 'none';
     }
@@ -216,7 +251,7 @@ window.renderizarTags = renderizarTags;
 window.abrirModalPerfil = async function() {
     document.getElementById('profile-menu').style.display = 'none';
     if(!usuarioAtual) return;
-    document.getElementById('input-perfil-nome').value = usuarioAtual.displayName || formatarNomeUsuario(usuarioAtual.email);
+    document.getElementById('input-perfil-nome').value = window.mapUsuarios[usuarioAtual.email] || usuarioAtual.displayName || window.formatarNomeUsuario(usuarioAtual.email);
     document.getElementById('input-perfil-profissao').value = perfilGlobalData.profissao;
     tagsSelecionadas = [...perfilGlobalData.tags];
     renderizarTags();
@@ -232,8 +267,6 @@ window.salvarPerfil = async function() {
     try {
         if(nome && nome !== usuarioAtual.displayName) {
             await updateProfile(usuarioAtual, { displayName: nome });
-            const photoUrl = usuarioAtual.photoURL || `https://ui-avatars.com/api/?name=${usuarioAtual.email}&background=21262d&color=c9d1d9&rounded=true`;
-            document.getElementById('btn-profile').innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nome}</span>`;
         }
         await setDoc(doc(db, "usuarios", usuarioAtual.uid), {
             nome: nome, profissao: profissao, tags: tagsSelecionadas, email: usuarioAtual.email
@@ -297,37 +330,21 @@ const dropZone = document.getElementById('main-input-wrapper');
 if (dropZone) {
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault(); e.stopPropagation();
-        if (idProjetoAtivo !== null && idConversaAtiva !== null) {
-            dropZone.classList.add('drag-over');
-        }
+        if (idProjetoAtivo !== null && idConversaAtiva !== null) dropZone.classList.add('drag-over');
     });
-
     dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        dropZone.classList.remove('drag-over');
+        e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over');
     });
-
     dropZone.addEventListener('drop', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        dropZone.classList.remove('drag-over');
-
-        if (idProjetoAtivo === null || idConversaAtiva === null) {
-            mostrarToast("Selecione uma conversa primeiro!", 'rgba(245, 130, 32, 0.9)', SVG_WARN);
-            return;
-        }
+        e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over');
+        if (idProjetoAtivo === null || idConversaAtiva === null) { mostrarToast("Selecione uma conversa primeiro!", 'rgba(245, 130, 32, 0.9)', SVG_WARN); return; }
 
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             const validExtensions = ['.cs', '.txt', '.js', '.json'];
-            const fileName = file.name.toLowerCase();
-            const isValidExt = validExtensions.some(ext => fileName.endsWith(ext));
-            const isValidType = file.type.startsWith('image/');
-
-            if (isValidType || isValidExt) {
-                window.lidarComAnexo(file);
-            } else {
-                mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
-            }
+            const isValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+            if (file.type.startsWith('image/') || isValidExt) window.lidarComAnexo(file);
+            else mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
         }
     });
 }
@@ -353,11 +370,8 @@ function iniciarEscutaProjetosNuvem(email) {
                 window.resetarVisualizacaoChat();
             }
         }
-
-        renderizarSidebar();
-        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) {
-            renderizarChat();
-        }
+        window.renderizarSidebar();
+        if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) window.renderizarChat();
     });
 }
 
@@ -375,7 +389,7 @@ window.salvarDadosAtuais = function(indexProj = null) {
 function carregarProjetosLocais() {
     const salvo = localStorage.getItem('unity_projetos_locais');
     if (salvo) { window.projetos = JSON.parse(salvo); } else { window.projetos = []; }
-    renderizarSidebar();
+    window.renderizarSidebar();
 }
 
 let cacheConvites = [];
@@ -394,12 +408,12 @@ function atualizarPainelNotificacoesUnificado() {
     cacheConvites.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach((convite) => {
         listaNotif.innerHTML += `
             <div id="convite-${convite.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; border: 1px solid rgba(245, 130, 32, 0.2);">
-                <div style="color: #e6edf3; margin-bottom: 6px;"><b>${formatarNomeUsuario(convite.remetente)}</b> convidou você para <b>${convite.projetoNome}</b></div>
+                <div style="color: #e6edf3; margin-bottom: 6px;"><b>${window.formatarNomeUsuario(convite.remetente)}</b> convidou você para <b>${convite.projetoNome}</b></div>
                 <div style="display: flex; gap: 6px;">
                     <button onclick="window.responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', true)" style="flex:1; background:#2ea043; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Aceitar</button>
                     <button onclick="window.responderConvite('${convite.id}', '${convite.projetoId}', '${convite.remetente}', '${convite.projetoNome}', false)" style="flex:1; background:#da3633; color:white; border:none; padding:4px; border-radius:4px; cursor:pointer; font-weight:600;">Recusar</button>
                 </div>
-                <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 6px;">${formatarDataHora(convite.timestamp)}</div>
+                <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 6px;">${window.formatarDataHora(convite.timestamp)}</div>
             </div>`;
     });
 
@@ -410,7 +424,7 @@ function atualizarPainelNotificacoesUnificado() {
                     <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
                     <button onclick="window.apagarNotificacao(event, '${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;">✕</button>
                 </div>
-                <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 4px;">${formatarDataHora(notif.timestamp)}</div>
+                <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 4px;">${window.formatarDataHora(notif.timestamp)}</div>
             </div>`;
     });
 }
@@ -449,7 +463,7 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
             mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
         }
         await deleteDoc(doc(db, "convites", conviteId));
-        await addDoc(collection(db, "notificacoes"), { destinatario: remetente, mensagem: `<b>${formatarNomeUsuario(usuarioAtual.email)}</b> ${aceitar ? "aceitou" : "recusou"} seu convite para <b>${projetoNome}</b>.`, timestamp: Date.now() });
+        await addDoc(collection(db, "notificacoes"), { destinatario: remetente, mensagem: `<b>${window.formatarNomeUsuario(usuarioAtual.email)}</b> ${aceitar ? "aceitou" : "recusou"} seu convite para <b>${projetoNome}</b>.`, timestamp: Date.now() });
         document.getElementById('notifications-menu').style.display = 'none';
     } catch(e) {
         if(box) box.style.display = 'block'; mostrarToast(getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN);
@@ -492,7 +506,7 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     menu.innerHTML = menuHTML; menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
 }
 
-function renderizarSidebar() {
+window.renderizarSidebar = function() {
     const container = document.getElementById('lista-projetos');
     if(!container) return;
     container.innerHTML = ''; 
@@ -537,8 +551,8 @@ function renderizarSidebar() {
                 const maxAvatars = 2;
                 avataresPresencaHTML += `<div style="display:flex; align-items:center;">`;
                 emailsNaConversa.slice(0, maxAvatars).forEach((email, idx) => {
-                    const nome = formatarNomeUsuario(email);
-                    const avatar = `https://ui-avatars.com/api/?name=${email}&background=21262d&color=c9d1d9&rounded=true`;
+                    const nome = window.formatarNomeUsuario(email);
+                    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=21262d&color=c9d1d9&rounded=true`;
                     const margin = idx > 0 ? '-8px' : '0';
                     const zIndex = 10 - idx;
                     avataresPresencaHTML += `<img src="${avatar}" title="${nome}" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #161b22; object-fit: cover; margin-left: ${margin}; z-index: ${zIndex}; position: relative;">`;
@@ -546,7 +560,7 @@ function renderizarSidebar() {
 
                 if (emailsNaConversa.length > maxAvatars) {
                     const extrasCount = emailsNaConversa.length - maxAvatars;
-                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => formatarNomeUsuario(e)).join(', ');
+                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => window.formatarNomeUsuario(e)).join(', ');
                     avataresPresencaHTML += `<div onclick="event.stopPropagation(); window.mostrarToast('Também na sala: ${nomesOcultos}', 'rgba(245, 130, 32, 0.9)')" style="width: 20px; height: 20px; border-radius: 50%; background: #F58220; color: white; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #161b22; margin-left: -8px; position: relative; z-index: 0; cursor: pointer;" title="Mais colaboradores">+${extrasCount}</div>`;
                 }
                 avataresPresencaHTML += `</div>`;
@@ -567,8 +581,18 @@ function renderizarSidebar() {
     window.atualizarEstadoBotaoEnvio();
 }
 
-window.alternarSidebar = function() { document.getElementById('sidebar').classList.toggle('recolhido'); }
-window.alternarPasta = function(indexProj) { window.projetos[indexProj].aberto = !window.projetos[indexProj].aberto; window.salvarDadosAtuais(indexProj); renderizarSidebar(); }
+window.alternarSidebar = function() { 
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (window.innerWidth <= 768) {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('active');
+    } else {
+        sidebar.classList.toggle('recolhido');
+    }
+}
+
+window.alternarPasta = function(indexProj) { window.projetos[indexProj].aberto = !window.projetos[indexProj].aberto; window.salvarDadosAtuais(indexProj); window.renderizarSidebar(); }
 
 window.abrirProfileMenu = function(event) {
     event.stopPropagation();
@@ -594,7 +618,7 @@ window.abrirModalCompartilhar = () => {
         membros.forEach(email => {
             const row = document.createElement('div'); row.className = 'colaborador-row';
             const badgeDono = (email === membros[0]) ? ' <span style="font-size:0.75rem; background:rgba(245,130,32,0.2); color:#F58220; padding:1px 6px; border-radius:4px; margin-left:6px;">Dono</span>' : '';
-            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${formatarNomeUsuario(email)}${badgeDono}</span>`;
+            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${window.formatarNomeUsuario(email)}${badgeDono}</span>`;
             if (email !== membros[0]) {
                 const btnRemover = document.createElement('button'); btnRemover.className = 'btn-remover-collab'; btnRemover.innerText = 'Remover';
                 btnRemover.onclick = () => window.removerColaborador(email); row.appendChild(btnRemover);
@@ -614,7 +638,7 @@ window.confirmarProjeto = async function() {
     if (usuarioAtual) {
         await addDoc(collection(db, "projetos"), { nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {} });
         mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
-    } else { window.projetos.push({ nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [] }); window.salvarDadosAtuais(); renderizarSidebar(); }
+    } else { window.projetos.push({ nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [] }); window.salvarDadosAtuais(); window.renderizarSidebar(); }
 }
 
 window.novaConversa = function(indexProj, event) {
@@ -623,7 +647,7 @@ window.novaConversa = function(indexProj, event) {
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false,
         mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
     });
-    window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
+    window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); window.renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
 window.confirmarCompartilhamento = async () => {
@@ -636,7 +660,7 @@ window.confirmarCompartilhamento = async () => {
 }
 
 window.removerColaborador = async (email) => {
-    if (confirm(`Deseja remover ${formatarNomeUsuario(email)}?`)) {
+    if (confirm(`Deseja remover ${window.formatarNomeUsuario(email)}?`)) {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
             if (proj && proj.id) { 
@@ -653,7 +677,7 @@ window.removerColaborador = async (email) => {
 window.confirmarRenomear = function() {
     const novo = document.getElementById('input-nome-renomear').value.trim(); if (!novo) return;
     if (window.alvoMenu.tipo === 'projeto') window.projetos[window.alvoMenu.indexProj].nome = novo; else window.projetos[window.alvoMenu.indexProj].conversas[window.alvoMenu.indexConv].nome = novo;
-    window.salvarDadosAtuais(window.alvoMenu.indexProj); renderizarSidebar(); 
+    window.salvarDadosAtuais(window.alvoMenu.indexProj); window.renderizarSidebar(); 
     if (idProjetoAtivo !== null) document.getElementById('header-title').innerText = `${window.projetos[idProjetoAtivo].nome} / ${window.projetos[idProjetoAtivo].conversas[idConversaAtiva].nome}`;
     window.fecharModalRenomear();
 }
@@ -664,7 +688,7 @@ window.deletarConversa = function() {
         const pIdx = window.alvoMenu.indexProj; const cIdx = window.alvoMenu.indexConv;
         window.projetos[pIdx].conversas.splice(cIdx, 1);
         if (idProjetoAtivo === pIdx) { if (idConversaAtiva === cIdx) { idProjetoAtivo=null; idConversaAtiva=null; } else if (idConversaAtiva > cIdx) idConversaAtiva--; }
-        window.salvarDadosAtuais(pIdx); renderizarSidebar(); idProjetoAtivo===null ? window.resetarVisualizacaoChat() : renderizarChat();
+        window.salvarDadosAtuais(pIdx); window.renderizarSidebar(); idProjetoAtivo===null ? window.resetarVisualizacaoChat() : window.renderizarChat();
     }
 }
 
@@ -675,7 +699,7 @@ window.deletarProjeto = async function() {
         if (usuarioAtual && window.projetos[pIdx].id) await deleteDoc(doc(db, "projetos", window.projetos[pIdx].id));
         else { window.projetos.splice(pIdx, 1); window.salvarDadosAtuais(); }
         if (idProjetoAtivo === pIdx) { idProjetoAtivo=null; idConversaAtiva=null; } else if (idProjetoAtivo > pIdx) idProjetoAtivo--;
-        renderizarSidebar(); idProjetoAtivo===null ? window.resetarVisualizacaoChat() : renderizarChat();
+        window.renderizarSidebar(); idProjetoAtivo===null ? window.resetarVisualizacaoChat() : window.renderizarChat();
     }
 }
 
@@ -751,7 +775,7 @@ window.resetarVisualizacaoChat = function() {
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
     const btnIndice = document.getElementById('btn-historico'); if (btnIndice) btnIndice.style.display = 'none';
-    renderizarSidebar();
+    window.renderizarSidebar();
 }
 
 window.selecionarConversa = function(indexProj, indexConv) {
@@ -760,7 +784,7 @@ window.selecionarConversa = function(indexProj, indexConv) {
     
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj]; proj.presenca = proj.presenca || {}; proj.presenca[usuarioAtual.email] = indexConv;
-        renderizarSidebar(); 
+        window.renderizarSidebar(); 
         updateDoc(doc(db, "projetos", proj.id), new FieldPath('presenca', usuarioAtual.email), indexConv).catch(e=>console.log(e));
     }
     document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
@@ -769,11 +793,17 @@ window.selecionarConversa = function(indexProj, indexConv) {
     const proj = window.projetos[indexProj]; const conv = proj.conversas[indexConv];
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     const autorEmail = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
-    document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
+    document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
     
-    renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
+    // Se estiver no Mobile, fechar a sidebar ao selecionar a conversa
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-backdrop').classList.remove('active');
+    }
+
+    window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
 window.abrirMenuHistorico = function(event) {
@@ -804,7 +834,7 @@ window.irParaMensagem = function(idx) {
     }
 }
 
-function renderizarChat() {
+window.renderizarChat = function() {
     if (idProjetoAtivo === null || !window.projetos[idProjetoAtivo] || !window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) return;
     const chatBox = document.getElementById('chat'); chatBox.innerHTML = ''; 
     const conversa = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
@@ -817,13 +847,12 @@ function renderizarChat() {
         } else {
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
             
-            // Renderiza o NOME DO AUTOR DA MENSAGEM em cima do balão
             if (msg.papel === 'aluno') {
-                const nomeAutor = msg.autor || 'Colaborador';
+                const nomeAutor = msg.autorEmail ? window.formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
                 chatBox.innerHTML += `
-                <div id="msg-wrapper-${idx}" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; max-width: 80%;">
+                <div id="msg-wrapper-${idx}" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; max-width: 100%;">
                     <span style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-right: 12px; font-weight: 500;">${nomeAutor}</span>
-                    <div class="balao aluno" style="align-self: flex-end; max-width: 100%; margin: 0;">${imgHtml}${msg.texto.replace(/\n/g, '<br>')}</div>
+                    <div class="balao aluno" style="align-self: flex-end; margin: 0;">${imgHtml}${msg.texto.replace(/\n/g, '<br>')}</div>
                 </div>`;
             } else {
                 chatBox.innerHTML += `
@@ -867,7 +896,6 @@ function renderizarChat() {
     
     window.formatarBlocosDeCodigo(); chatBox.scrollTop = chatBox.scrollHeight;
 }
-window.renderizarChat = renderizarChat;
 
 window.validarInput = function() {
     const input = document.getElementById('mensagem'); const btn = document.getElementById('btn-acao');
@@ -897,7 +925,7 @@ window.lidarComAcao = function() {
 
     if (conv?.processando) {
         if (statusConversas[chave] && statusConversas[chave].controller) {
-            statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); renderizarChat(); window.atualizarEstadoBotaoEnvio();
+            statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); window.renderizarChat(); window.atualizarEstadoBotaoEnvio();
         } else { mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
     } else { enviarMensagem(); }
 }
@@ -919,9 +947,9 @@ async function enviarMensagem() {
     const imgBase64 = anexoImagemBase64; const imgMime = anexoImagemMimeType;
     if(!textoFinal && !imgBase64) return;
 
-    // GRAVA O NOME DO AUTOR DA MENSAGEM
     const autorNome = usuarioAtual ? (usuarioAtual.displayName || window.formatarNomeUsuario(usuarioAtual.email)) : 'Visitante';
-    const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome }; 
+    const autorEmail = usuarioAtual ? usuarioAtual.email : null;
+    const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome, autorEmail: autorEmail }; 
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
     
     proj.conversas[cIdx].mensagens.push(novaMsg);
@@ -933,8 +961,8 @@ async function enviarMensagem() {
     }
     
     window.removerAnexo(); proj.conversas[cIdx].processando = true; window.salvarDadosAtuais(pIdx); 
-    input.value = ''; input.style.height = 'auto'; renderizarSidebar(); 
-    if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
+    input.value = ''; input.style.height = 'auto'; window.renderizarSidebar(); 
+    if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
 
     const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
 
@@ -959,10 +987,62 @@ async function enviarMensagem() {
     } finally {
         if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); }
         if (statusConversas[chave]) statusConversas[chave].ativa = false;
-        renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
+        window.renderizarSidebar(); if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) { window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); }
     }
 }
-window.enviarMensagem = enviarMensagem;
+
+
+// ==========================================================
+// 8. LÓGICA DO TOUR DE ONBOARDING
+// ==========================================================
+const tourSteps = [
+    { target: null, title: "👋 Bem-vindo ao ComboBoy!", text: "Seu assistente IA especialista em Unity. Sincronize projetos, tire dúvidas com códigos otimizados e colabore em tempo real com sua equipe!" },
+    { target: "sidebar", title: "📁 Seus Projetos", text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem." },
+    { target: "main-input-wrapper", title: "⌨️ Área de Pesquisa", text: "Faça perguntas ou arraste imagens e scripts (.cs) diretamente para cá!" },
+    { target: "btn-config", title: "⚙️ Configurações", text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." },
+    { target: "btn-notificacoes", title: "🔔 Notificações", text: "Acompanhe convites de colaboração e interações da sua equipe por aqui." }
+];
+let currentTourStep = 0;
+
+window.iniciarTour = function() {
+    currentTourStep = 0;
+    document.getElementById('config-menu').style.display = 'none';
+    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
+    document.getElementById('tour-overlay').style.display = 'block';
+    window.renderizarStepTour();
+}
+
+window.renderizarStepTour = function() {
+    const step = tourSteps[currentTourStep];
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    
+    const card = document.getElementById('tour-card');
+    card.style.display = 'block';
+    
+    document.getElementById('tour-title').innerText = step.title;
+    document.getElementById('tour-text').innerText = step.text;
+    document.getElementById('tour-btn-next').innerText = currentTourStep === tourSteps.length - 1 ? "Finalizar" : "Avançar";
+    
+    if (step.target) {
+        const targetEl = document.getElementById(step.target);
+        if(targetEl) targetEl.classList.add('tour-highlight');
+    }
+}
+
+window.avancarTour = function() {
+    if (currentTourStep < tourSteps.length - 1) {
+        currentTourStep++; window.renderizarStepTour();
+    } else { window.fecharTour(); }
+}
+
+window.fecharTour = function() {
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.getElementById('tour-overlay').style.display = 'none';
+    document.getElementById('tour-card').style.display = 'none';
+    localStorage.setItem('comboboy_tour', 'true');
+    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); }
+}
+
 
 // Eventos Globais Livres
 document.addEventListener('click', (e) => { 

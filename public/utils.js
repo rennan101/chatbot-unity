@@ -64,12 +64,22 @@ export function getMeme(tipo) {
 }
 
 // ==========================================================
-// FORMATADORES E COMPRESSÃO
+// FORMATADORES E MEMÓRIA CACHE (Sync Global de Nomes)
 // ==========================================================
+window.mapUsuarios = {}; // Memória viva dos nomes de todos os usuários!
+
 export function formatarNomeUsuario(emailOrName) {
     if (!emailOrName) return 'Visitante';
-    const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
-    return base.charAt(0).toUpperCase() + base.slice(1);
+    if (emailOrName.includes('@')) {
+        // Se já temos o nome oficial desse e-mail no cache, usa ele na hora!
+        if (window.mapUsuarios && window.mapUsuarios[emailOrName]) {
+            return window.mapUsuarios[emailOrName];
+        }
+        // Fallback: Corta o e-mail
+        const base = emailOrName.split('@')[0];
+        return base.charAt(0).toUpperCase() + base.slice(1);
+    }
+    return emailOrName;
 }
 window.formatarNomeUsuario = formatarNomeUsuario;
 
@@ -171,7 +181,14 @@ export async function baixarCodigo(texto, linguagem) {
 window.baixarCodigo = baixarCodigo;
 
 export function gerarMarkdownDaConversa(nomeProj, conv) { 
-    return `# Projeto: ${nomeProj}\n## Conversa: ${conv.nome}\n\n---\n\n` + conv.mensagens.map(m => (m.papel === 'aluno' ? `**🧑‍💻 Você:**\n${m.texto}\n\n` : `**🤖 Professor Unity:**\n${m.texto}\n\n`) + `---\n\n`).join(''); 
+    return `# Projeto: ${nomeProj}\n## Conversa: ${conv.nome}\n\n---\n\n` + conv.mensagens.map(m => {
+        if (m.papel === 'aluno') {
+            const nomeAutor = m.autorEmail ? window.formatarNomeUsuario(m.autorEmail) : (m.autor || 'Colaborador');
+            return `**🧑‍💻 ${nomeAutor}:**\n${m.texto}\n\n---\n\n`;
+        } else {
+            return `**🤖 ComboBoy:**\n${m.texto}\n\n---\n\n`;
+        }
+    }).join(''); 
 }
 window.gerarMarkdownDaConversa = gerarMarkdownDaConversa;
 

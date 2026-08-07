@@ -27,15 +27,21 @@ body {
 /* ================= BARRA LATERAL ================= */
 #sidebar { 
     width: 280px; 
-    background: rgba(22, 27, 34, 0.7); 
+    background: rgba(22, 27, 34, 0.95); 
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border-right: 1px solid rgba(255, 255, 255, 0.05); 
     display: flex; flex-direction: column; flex-shrink: 0; user-select: none; 
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 500;
 }
 #sidebar.recolhido { width: 68px; }
 
-.sidebar-top { display: flex; justify-content: flex-end; padding: 12px 16px 0; }
+.sidebar-backdrop {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 400; backdrop-filter: blur(3px);
+}
+
+.sidebar-top { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
 #sidebar.recolhido .sidebar-top { justify-content: center; padding-left: 0; padding-right: 0; }
 #sidebar.recolhido #brand-header { display: none !important; }
 
@@ -117,6 +123,14 @@ body {
 #sidebar.recolhido .btn-config { padding: 10px 0; justify-content: center; }
 #sidebar.recolhido .btn-config .texto-btn { display: none; }
 
+/* CRÉDITOS EQUIPE */
+.sidebar-credits {
+    font-size: 0.65rem; color: #8b949e; text-align: center; margin-top: 15px; line-height: 1.5; transition: opacity 0.3s;
+}
+.sidebar-credits a { color: #F58220; text-decoration: none; font-weight: 600; transition: color 0.2s; }
+.sidebar-credits a:hover { color: #ff9b44; }
+#sidebar.recolhido .sidebar-credits { display: none; }
+
 /* ================= MENUS DE CONTEXTO E CONFIGURAÇÕES ================= */
 #context-menu, #config-menu, #profile-menu, #notifications-menu {
     position: absolute; background: rgba(22, 27, 34, 0.95); 
@@ -163,6 +177,10 @@ header {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10; letter-spacing: 0.5px;
     display: flex; justify-content: space-between; align-items: center;
 }
+.mobile-menu-btn {
+    display: none; background: transparent; border: none; color: #e6edf3; cursor: pointer; padding: 6px; border-radius: 6px;
+}
+
 #header-title-container { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
 #header-title { font-size: 1.1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.75rem; color: #8b949e; }
@@ -330,7 +348,6 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 .typing-indicator span { width: 6px; height: 6px; background-color: #8b949e; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
 .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
 .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-@keyframes bounce { 0%, 80%, 100% { transform: scale(0); opacity: 0.5;} 40% { transform: scale(1); opacity: 1;} }
 
 /* BOTÃO DE FECHAR (X) VERMELHO NOS MODAIS */
 .btn-fechar-modal {
@@ -352,13 +369,41 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     background: rgba(245, 130, 32, 0.2); border-color: #F58220; color: #F58220; font-weight: 500;
 }
 
-/* ================= RESPONSIVIDADE ================= */
-@media (max-width: 768px) {
-    #sidebar { position: absolute; height: 100%; z-index: 500; width: 240px; transform: translateX(-100%); }
-    #sidebar:not(.recolhido) { transform: translateX(0); }
-    #sidebar.recolhido { transform: translateX(0); width: 68px; }
-    .balao { max-width: 90%; }
+/* ================= TOUR GUIADO (ONBOARDING) ================= */
+#tour-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); z-index: 3000; display: none;
 }
+#tour-card {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(22, 27, 34, 1); border: 1px solid #F58220; border-radius: 16px;
+    padding: 30px; width: 400px; max-width: 90%; z-index: 3005; display: none;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 2px rgba(245, 130, 32, 0.2);
+    text-align: center;
+}
+.tour-highlight {
+    position: relative !important; z-index: 3001 !important;
+    box-shadow: 0 0 0 4px #F58220, 0 0 20px rgba(245, 130, 32, 0.5) !important;
+    background: rgba(22, 27, 34, 0.95) !important; border-radius: 8px !important;
+    pointer-events: none;
+}
+
+/* ================= RESPONSIVIDADE MOBILE ================= */
+@media (max-width: 768px) {
+    #sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 280px; transform: translateX(-100%); transition: transform 0.3s ease; }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar.recolhido { transform: translateX(-100%); width: 280px; }
+    #btn-toggle-sidebar { display: none !important; }
+    .sidebar-backdrop.active { display: block; }
+    
+    .mobile-menu-btn { display: flex !important; }
+    
+    #chat-header { padding: 12px 15px; }
+    #chat { padding: 15px; }
+    #input-container { padding: 15px; }
+    .balao { max-width: 95%; }
+}
+
 /* --- ESTILOS PARA IMAGENS NO CHAT E UPLOADS --- */
 #input-container { padding-bottom: 20px; }
 .balao-imagem { max-width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); display: block; }
