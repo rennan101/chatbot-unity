@@ -24,36 +24,6 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ff9b44 0%, #F58220 100%); }
 
-/* ATUALIZA O TAMANHO DA FONTE DOS BALÕES */
-.balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: var(--chat-fs); box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; }
-
-/* ATUALIZA O TAMANHO DA FONTE DO CÓDIGO */
-pre, code { 
-    font-family: 'Fira Code', 'Consolas', monospace; 
-    font-size: var(--code-fs); 
-    line-height: 1.6;
-}
-
-body { 
-    font-family: 'Space Grotesk', sans-serif; 
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-    color: #e6edf3; 
-    margin: 0; 
-    display: flex; 
-    height: 100vh; 
-    overflow: hidden; 
-}
-
-/* --- SCROLLBAR CIBERNÉTICA LARANJA --- */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
-::-webkit-scrollbar-thumb { 
-    background: linear-gradient(180deg, #F58220 0%, #D46913 100%); 
-    border-radius: 4px; 
-    box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
-}
-::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ff9b44 0%, #F58220 100%); }
-
 /* ================= BARRA LATERAL ================= */
 #sidebar { 
     width: 280px; 
@@ -158,7 +128,6 @@ body {
 #profile-menu { min-width: 160px; }
 #notifications-menu { width: 300px; padding: 12px; right: 20px; }
 
-/* CORREÇÃO DO HOVER PARA O TEXTO FICAR BRANCO */
 .context-item { padding: 10px 15px; color: #c9d1d9; cursor: pointer; border-radius: 6px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: background 0.2s;}
 .context-item:hover { background: #F58220; color: #ffffff !important; }
 .context-item:hover svg { stroke: #ffffff !important; }
@@ -191,7 +160,7 @@ header {
 #chat { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth; }
 #sem-conversa-msg { margin: auto; color: #8b949e; text-align: center; font-size: 1.1rem; opacity: 0.7;}
 
-.balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; }
+.balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: var(--chat-fs); box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; }
 .aluno { 
     align-self: flex-end; 
     background: linear-gradient(135deg, #e06c00 0%, #b35600 100%); 
@@ -217,7 +186,7 @@ header {
 /* ================= CÓDIGO E HIGHLIGHT.JS ================= */
 pre, code { 
     font-family: 'Fira Code', 'Consolas', monospace; 
-    font-size: 1.05rem; 
+    font-size: var(--code-fs); 
     line-height: 1.6;
 }
 code { background: rgba(0,0,0,0.3); padding: 3px 6px; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #F58220; }
@@ -319,14 +288,16 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 }
 .btn-remover-collab:hover { background: rgba(218, 54, 51, 0.4); }
 
+/* TOAST NO TOPO DA TELA */
 #toast {
-    position: fixed; bottom: -60px; right: 24px; background: rgba(245, 130, 32, 0.9); color: white;
+    position: fixed; top: -100px; left: 50%; transform: translateX(-50%); 
+    background: rgba(245, 130, 32, 0.9); color: white;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
     padding: 14px 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     font-weight: 500; font-size: 0.95rem; z-index: 9999; display: flex; align-items: center; gap: 10px;
-    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 }
-#toast.mostrar { bottom: 24px; }
+#toast.mostrar { top: 24px; }
 #toast-icon { display: flex; align-items: center;}
 
 .typing-indicator { display: flex; gap: 6px; align-items: center; height: 24px; padding: 4px 8px;}
@@ -342,6 +313,18 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 }
 .btn-fechar-modal:hover { color: #ffffff; background: rgba(255,255,255,0.1); }
 
+/* TAGS DO PERFIL */
+.tag-badge {
+    display: inline-block; padding: 6px 12px; margin: 4px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; font-size: 0.8rem; cursor: pointer; color: #8b949e;
+    transition: all 0.2s; user-select: none;
+}
+.tag-badge:hover { background: rgba(255,255,255,0.1); }
+.tag-badge.selected {
+    background: rgba(245, 130, 32, 0.2); border-color: #F58220; color: #F58220; font-weight: 500;
+}
+
 /* ================= RESPONSIVIDADE ================= */
 @media (max-width: 768px) {
     #sidebar { position: absolute; height: 100%; z-index: 500; width: 240px; transform: translateX(-100%); }
@@ -351,11 +334,5 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 }
 /* --- ESTILOS PARA IMAGENS NO CHAT E UPLOADS --- */
 #input-container { padding-bottom: 20px; }
-.balao-imagem { 
-    max-width: 100%; 
-    border-radius: 8px; 
-    margin-bottom: 10px; 
-    border: 1px solid rgba(255,255,255,0.1); 
-    display: block; 
-}
+.balao-imagem { max-width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); display: block; }
 .aluno .balao-imagem { border-color: rgba(255,255,255,0.3); }

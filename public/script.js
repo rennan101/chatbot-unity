@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -27,8 +27,8 @@ let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
 
 // ================= PREFERÊNCIAS DO USUÁRIO =================
-let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false'; // Padrão: true
-let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true'; // Padrão: false
+let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
+let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true';
 let prefChatFs = parseFloat(localStorage.getItem('unity_pref_chat_fs')) || 0.95;
 let prefCodeFs = parseFloat(localStorage.getItem('unity_pref_code_fs')) || 1.05;
 
@@ -36,16 +36,15 @@ function aplicarTamanhosFonte() {
     document.documentElement.style.setProperty('--chat-fs', prefChatFs + 'rem');
     document.documentElement.style.setProperty('--code-fs', prefCodeFs + 'rem');
 }
-aplicarTamanhosFonte(); // Aplica imediatamente no carregamento
+aplicarTamanhosFonte();
 
-// VARIÁVEIS GLOBAIS DE ANEXOS
 let anexoImagemBase64 = null;
 let anexoImagemMimeType = null;
 let anexoTextoConteudo = null;
 let anexoTextoNome = null;
 
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
 const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
 const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
@@ -114,6 +113,87 @@ onAuthStateChanged(auth, async (user) => {
         resetarVisualizacaoChat();
     }
 });
+
+// ================= PERFIL E TAGS =================
+const TAGS_DISPONIVEIS = [
+    "Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", 
+    "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", 
+    "VR/AR", "Game Design", "Sound Design", "Monetização", "Shader Graph", "Cinematics"
+];
+let tagsSelecionadas = [];
+
+function renderizarTags() {
+    const container = document.getElementById('container-tags');
+    container.innerHTML = '';
+    TAGS_DISPONIVEIS.forEach(tag => {
+        const isSelected = tagsSelecionadas.includes(tag);
+        const span = document.createElement('span');
+        span.className = `tag-badge ${isSelected ? 'selected' : ''}`;
+        span.innerText = tag;
+        span.onclick = () => {
+            if(tagsSelecionadas.includes(tag)) {
+                tagsSelecionadas = tagsSelecionadas.filter(t => t !== tag);
+            } else {
+                tagsSelecionadas.push(tag);
+            }
+            renderizarTags();
+        };
+        container.appendChild(span);
+    });
+}
+
+window.abrirModalPerfil = async function() {
+    document.getElementById('profile-menu').style.display = 'none';
+    if(!usuarioAtual) return;
+    
+    document.getElementById('input-perfil-nome').value = usuarioAtual.displayName || formatarNomeUsuario(usuarioAtual.email);
+    
+    try {
+        const docSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('input-perfil-profissao').value = data.profissao || "";
+            tagsSelecionadas = data.tags || [];
+        } else {
+            document.getElementById('input-perfil-profissao').value = "";
+            tagsSelecionadas = [];
+        }
+    } catch(e) { console.error("Erro ao puxar perfil", e); }
+    
+    renderizarTags();
+    document.getElementById('modal-perfil').style.display = 'flex';
+}
+
+window.fecharModalPerfil = function() {
+    document.getElementById('modal-perfil').style.display = 'none';
+}
+
+window.salvarPerfil = async function() {
+    if(!usuarioAtual) return;
+    const nome = document.getElementById('input-perfil-nome').value.trim();
+    const profissao = document.getElementById('input-perfil-profissao').value.trim();
+    
+    try {
+        if(nome && nome !== usuarioAtual.displayName) {
+            await updateProfile(usuarioAtual, { displayName: nome });
+            const photoUrl = usuarioAtual.photoURL || `https://ui-avatars.com/api/?name=${usuarioAtual.email}&background=21262d&color=c9d1d9&rounded=true`;
+            document.getElementById('btn-profile').innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nome}</span>`;
+        }
+
+        await setDoc(doc(db, "usuarios", usuarioAtual.uid), {
+            nome: nome,
+            profissao: profissao,
+            tags: tagsSelecionadas,
+            email: usuarioAtual.email
+        }, { merge: true });
+
+        fecharModalPerfil();
+        mostrarToast("Perfil atualizado!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+    } catch(e) {
+        console.error("Erro ao salvar perfil", e);
+        mostrarToast("Erro ao salvar.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+    }
+}
 
 // ================= GESTÃO DE ANEXOS (IMAGEM E CÓDIGO) =================
 function redimensionarEComprimirImagem(file, maxSize, callback) {
@@ -208,6 +288,9 @@ function iniciarEscutaProjetosNuvem(email) {
 }
 
 // ================= SISTEMA UNIFICADO DE NOTIFICAÇÕES =================
+let cacheConvites = [];
+let cacheNotifs = [];
+
 function atualizarBadgeGeral(temItens) {
     const badge = document.getElementById('badge-notificacao');
     badge.style.display = temItens ? 'block' : 'none';
@@ -243,7 +326,8 @@ function atualizarPainelNotificacoesUnificado() {
             <div id="notif-${notif.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
                 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
                     <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
-                    <button onclick="apagarNotificacao('${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;" title="Apagar notificação">✕</button>
+                    <!-- OTIMIZAÇÃO: IMPEDE QUE O MENU FECHE QUANDO CLICAR NO X -->
+                    <button onclick="apagarNotificacao(event, '${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;" title="Apagar notificação">✕</button>
                 </div>
                 <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 4px;">${formatarDataHora(notif.timestamp)}</div>
             </div>
@@ -314,15 +398,17 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
     }
 }
 
-window.apagarNotificacao = async function(notifId) {
+// AGORA O EVENTO É PRESO PARA NÃO FECHAR O MENU ACIDENTALMENTE
+window.apagarNotificacao = async function(event, notifId) {
+    event.stopPropagation();
     const box = document.getElementById(`notif-${notifId}`);
-    if(box) box.style.display = 'none';
+    if(box) box.style.display = 'none'; // Ocultação visual otimista e instantânea
     
     try {
-        await deleteDoc(doc(db, "notificacoes", notifId));
+        await deleteDoc(doc(db, "notificacoes", notifId)); // Apaga no servidor definitivamente
     } catch(e) {
-        console.error(e);
-        if(box) box.style.display = 'block'; 
+        console.error("Erro ao deletar notificação", e);
+        if(box) box.style.display = 'flex'; 
     }
 }
 
@@ -352,71 +438,6 @@ function carregarProjetosLocais() {
     if (salvo) { window.projetos = JSON.parse(salvo); } else { window.projetos = []; }
     renderizarSidebar();
 }
-
-// ================= MODAIS E AUTH =================
-window.abrirProfileMenu = function(event) {
-    event.stopPropagation();
-    const menu = document.getElementById('profile-menu');
-    const btn = document.getElementById('btn-profile').getBoundingClientRect();
-    if (menu.style.display === 'block') { menu.style.display = 'none'; } 
-    else {
-        document.getElementById('config-menu').style.display = 'none';
-        document.getElementById('notifications-menu').style.display = 'none';
-        menu.style.display = 'block';
-        menu.style.left = (btn.left + 10) + 'px';
-        menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
-    }
-}
-
-window.confirmarLogout = function() {
-    if (confirm("Tem certeza que deseja sair da sua conta?")) {
-        signOut(auth);
-        document.getElementById('profile-menu').style.display = 'none';
-    }
-}
-
-function tratarErroAuth(erroCode) {
-    switch(erroCode) {
-        case 'auth/email-already-in-use': return 'E-mail já cadastrado.';
-        case 'auth/invalid-email': return 'Digite um e-mail válido.';
-        case 'auth/weak-password': return 'Pelo menos 6 caracteres.';
-        case 'auth/invalid-credential': return 'Credenciais incorretas.';
-        default: return 'Erro ao autenticar. Tente novamente.';
-    }
-}
-
-window.abrirModalAuth = () => { document.getElementById('auth-error-msg').innerText = ''; document.getElementById('modal-auth').style.display = 'flex'; }
-window.fecharModalAuth = () => { document.getElementById('modal-auth').style.display = 'none'; }
-
-document.getElementById('btn-login-email').onclick = async () => {
-    const email = document.getElementById('email-input').value; const senha = document.getElementById('senha-input').value;
-    const errorMsg = document.getElementById('auth-error-msg');
-    if(!email || !senha) { errorMsg.innerText = "Preencha tudo."; return; }
-    errorMsg.innerText = "Conectando..."; errorMsg.style.color = "#c9d1d9";
-    try { await signInWithEmailAndPassword(auth, email, senha); } catch(e) { errorMsg.style.color = "#ff7b72"; errorMsg.innerText = tratarErroAuth(e.code); }
-};
-
-document.getElementById('btn-cadastro-email').onclick = async () => {
-    const email = document.getElementById('email-input').value; const senha = document.getElementById('senha-input').value;
-    const errorMsg = document.getElementById('auth-error-msg');
-    if(!email || senha.length < 6) { errorMsg.style.color = "#ff7b72"; errorMsg.innerText = "E-mail e Senha (>6)."; return; }
-    errorMsg.innerText = "Criando..."; errorMsg.style.color = "#c9d1d9";
-    try { isCreatingAccount = true; await createUserWithEmailAndPassword(auth, email, senha); } catch(e) { isCreatingAccount = false; errorMsg.style.color = "#ff7b72"; errorMsg.innerText = tratarErroAuth(e.code); }
-};
-
-document.getElementById('btn-login-google').onclick = async () => {
-    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { document.getElementById('auth-error-msg').innerText = tratarErroAuth(e.code); }
-};
-
-let userApiKey = localStorage.getItem('unity_google_api_key') || '';
-document.getElementById('input-api-key').value = userApiKey;
-window.abrirModalApiKey = () => { document.getElementById('config-menu').style.display = 'none'; document.getElementById('modal-apikey').style.display = 'flex'; }
-window.salvarApiKey = () => { userApiKey = document.getElementById('input-api-key').value.trim(); localStorage.setItem('unity_google_api_key', userApiKey); document.getElementById('modal-apikey').style.display = 'none'; mostrarToast('Chave salva!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
-
-let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false';
-document.getElementById('toggle-ask-save').checked = configAskToSave;
-window.abrirConfigMenu = function(e) { e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); if (menu.style.display === 'block') menu.style.display = 'none'; else { document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none'; menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; } }
-window.salvarPreferenciasConfig = function() { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
 // ================= MODAL DE PERSONALIZAÇÃO =================
 window.abrirModalPersonalizar = function() {
@@ -450,7 +471,7 @@ window.salvarPersonalizacao = function() {
     localStorage.setItem('unity_pref_detalhado', prefDetalhado);
     
     fecharModalPersonalizar();
-    mostrarToast('Preferências de IA atualizadas!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS);
+    mostrarToast('Preferências de IA atualizadas!', 'rgba(245, 130, 32, 0.9)', SVG_CHECK);
 }
 
 // ================= RENDERIZAÇÃO E PRESENÇA OTIMIZADA =================
@@ -585,7 +606,6 @@ window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     const emailCriador = usuarioAtual ? usuarioAtual.email : 'visitante';
     
-    // IA NUNCA SE APRESENTA. SÓ SE PREPARA PARA AJUDAR.
     window.projetos[indexProj].conversas.push({ 
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, 
         criador: emailCriador,
@@ -598,7 +618,7 @@ window.novaConversa = function(indexProj, event) {
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
-// ==== COLABORAÇÃO, CONVITES E GESTÃO DE USUÁRIOS ====
+// ==== COLABORAÇÃO E GESTÃO DE USUÁRIOS ====
 window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
@@ -775,7 +795,7 @@ window.validarInput = function() {
     if (!estaProcessando) {
         btn.disabled = input.value.trim().length === 0 && !anexoImagemBase64 && !anexoTextoConteudo;
     } else {
-        btn.disabled = false; // BOTÃO FICA HABILITADO PARA PERMITIR CANCELAR
+        btn.disabled = false;
     }
 }
 
@@ -812,8 +832,6 @@ window.lidarComAcao = function() {
     if (conv?.processando) {
         if (statusConversas[chave] && statusConversas[chave].controller) {
             statusConversas[chave].controller.abort();
-            
-            // OTIMISMO: Para imediatamente na interface do usuário local
             window.projetos[pIdx].conversas[cIdx].processando = false;
             salvarDadosAtuais(pIdx);
             renderizarChat();
@@ -829,10 +847,9 @@ window.lidarComAcao = function() {
 async function enviarMensagem() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva;
-    const proj = window.projetos[pIdx];
-    const conversaAtual = proj.conversas[cIdx];
+    const chave = getChaveConversa(pIdx, cIdx);
     
-    if (conversaAtual.processando) return;
+    if (window.projetos[pIdx].conversas[cIdx].processando) return;
 
     const input = document.getElementById('mensagem'); 
     let textoDigitado = input.value.trim(); 
@@ -853,16 +870,16 @@ async function enviarMensagem() {
     const novaMsg = { papel: 'aluno', texto: textoFinal };
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
 
-    conversaAtual.mensagens.push(novaMsg);
+    window.projetos[pIdx].conversas[cIdx].mensagens.push(novaMsg);
     
-    if (conversaAtual.mensagens.length === 2) {
-        if (textoDigitado) conversaAtual.nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
-        else if (anexoTextoNome) conversaAtual.nome = `Análise: ${anexoTextoNome}`;
-        else conversaAtual.nome = "Análise de Imagem";
+    if (window.projetos[pIdx].conversas[cIdx].mensagens.length === 2) {
+        if (textoDigitado) window.projetos[pIdx].conversas[cIdx].nome = textoDigitado.substring(0, 25) + (textoDigitado.length > 25 ? "..." : "");
+        else if (anexoTextoNome) window.projetos[pIdx].conversas[cIdx].nome = `Análise: ${anexoTextoNome}`;
+        else window.projetos[pIdx].conversas[cIdx].nome = "Análise de Imagem";
     }
     
     window.removerAnexo(); 
-    conversaAtual.processando = true;
+    window.projetos[pIdx].conversas[cIdx].processando = true;
     salvarDadosAtuais(pIdx); 
     
     input.value = ''; input.style.height = 'auto';
@@ -872,7 +889,7 @@ async function enviarMensagem() {
         atualizarEstadoBotaoEnvio();
     }
 
-    const controller = new AbortController(); statusConversas[getChaveConversa(pIdx, cIdx)] = { ativa: true, controller: controller };
+    const controller = new AbortController(); statusConversas[chave] = { ativa: true, controller: controller };
 
     try {
         const headers = { 'Content-Type': 'application/json' };
@@ -893,7 +910,7 @@ async function enviarMensagem() {
 
         const res = await fetch('https://chatbot-unity.onrender.com/api/chat', { method: 'POST', headers: headers, body: JSON.stringify(payload), signal: controller.signal });
         
-        if (!window.projetos[pIdx] || !window.projetos[pIdx].conversas[cIdx]) return; // Proteção se a conversa foi deletada
+        if (!window.projetos[pIdx] || !window.projetos[pIdx].conversas[cIdx]) return; 
 
         if (res.status === 429) { 
             window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Limite da IA atingido. Tente novamente em instantes.` });
@@ -912,6 +929,8 @@ async function enviarMensagem() {
             window.projetos[pIdx].conversas[cIdx].processando = false;
             salvarDadosAtuais(pIdx);
         }
+        if (statusConversas[chave]) statusConversas[chave].ativa = false;
+        
         renderizarSidebar(); 
         if (idProjetoAtivo === pIdx && idConversaAtiva === cIdx) {
             renderizarChat(); 
