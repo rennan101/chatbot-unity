@@ -13,7 +13,7 @@
 
 <!-- TELA DE LOGIN & CADASTRO -->
 <div id="modal-auth" class="modal-overlay" style="display: none; z-index: 2000;">
-    <div class="modal-content" style="text-align: center;">
+    <div class="modal-content" style="text-align: center; position: relative;">
         <button onclick="if(window.fecharModalAuth) window.fecharModalAuth()" class="btn-fechar-modal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -40,7 +40,6 @@
     </div>
 </div>
 
-<!-- Interface Principal -->
 <div id="app-interface" style="display: flex; width: 100%; height: 100%;">
     <aside id="sidebar">
         <div class="sidebar-top" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0;">
@@ -81,7 +80,12 @@
                 <span id="header-subtitle"></span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; position: relative; flex-shrink: 0;">
-                <button id="btn-notificacoes" onclick="abrirMenuNotificacoes(event)" title="Notificações" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; border-radius: 6px; position: relative; display: none; align-items: center; justify-content: center;">
+                <!-- BOTÃO DO ÍNDICE DE PERGUNTAS -->
+                <button id="btn-indice" onclick="window.abrirMenuIndice(event)" title="Índice de Perguntas" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; border-radius: 6px; display: none; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#8b949e'">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                </button>
+                
+                <button id="btn-notificacoes" onclick="abrirMenuNotificacoes(event)" title="Notificações" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; border-radius: 6px; position: relative; display: none; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#8b949e'">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                     <span id="badge-notificacao" style="position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #F58220; border-radius: 50%; display: none;"></span>
                 </button>
@@ -121,7 +125,6 @@
             
     <div id="context-menu"></div>
     
-    <!-- MENU DE PERFIL ATUALIZADO SEM EMOJI -->
     <div id="profile-menu">
         <div class="context-item" onclick="abrirModalPerfil()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -131,6 +134,14 @@
         <div class="context-item danger" onclick="confirmarLogout()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             Sair da Conta
+        </div>
+    </div>
+
+    <!-- MENU RETRÁTIL DO ÍNDICE DE PERGUNTAS -->
+    <div id="indice-menu" style="position: absolute; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 12px; width: 300px; display: none; z-index: 1000; right: 20px;">
+        <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; color: #F58220; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Índice de Perguntas</div>
+        <div id="lista-indice-popup" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+            <div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma pergunta nesta conversa.</div>
         </div>
     </div>
 
@@ -152,7 +163,6 @@
 
         <hr style="border-color: rgba(255,255,255,0.05); margin: 10px 0;">
 
-        <!-- BOTÃO PERSONALIZAR SEM EMOJI -->
         <div class="context-item" style="justify-content: center; background: rgba(255,255,255,0.05); color: #c9d1d9; font-weight: 500;" onclick="abrirModalPersonalizar()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
             Personalizar Experiência
@@ -164,7 +174,7 @@
         </div>
     </div>
 
-    <!-- MODAL MEU PERFIL SEM EMOJI -->
+    <!-- MODAL MEU PERFIL -->
     <div class="modal-overlay" id="modal-perfil">
         <div class="modal-content" style="width: 450px;">
             <button onclick="window.fecharModalPerfil()" class="btn-fechar-modal">
@@ -182,8 +192,7 @@
             <input type="text" id="input-perfil-profissao" placeholder="Ex: Desenvolvedor Indie" style="margin-bottom: 15px;">
             
             <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Especialidades (Tags):</div>
-            <div id="container-tags" style="display: flex; flex-wrap: wrap; margin-bottom: 25px; gap: 2px;">
-            </div>
+            <div id="container-tags" style="display: flex; flex-wrap: wrap; margin-bottom: 25px; gap: 2px;"></div>
             
             <div class="modal-acoes">
                 <button class="btn-cancelar" onclick="window.fecharModalPerfil()">Cancelar</button>
@@ -192,7 +201,7 @@
         </div>
     </div>
     
-    <!-- MODAL PERSONALIZAR VISUAL E IA SEM EMOJI -->
+    <!-- MODAL PERSONALIZAR -->
     <div class="modal-overlay" id="modal-personalizar">
         <div class="modal-content" style="width: 450px;">
             <button onclick="window.fecharModalPersonalizar()" class="btn-fechar-modal">
@@ -247,7 +256,7 @@
         <button onclick="window.fecharModal()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         <h3>Novo Projeto Unity</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div><input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div><input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div><textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea><div class="modal-acoes"><button class="btn-cancelar" onclick="window.fecharModal()">Cancelar</button><button class="btn-confirmar" onclick="window.confirmarProjeto()">Criar Projeto</button></div></div></div>
 
-    <div class="modal-overlay" id="modal-compartilhar"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colaboradores</h3><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div><div style="display: flex; gap: 8px; margin-bottom: 20px;"><input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;"><button class="btn-confirmar" onclick="window.confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button></div><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div><div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div></div></div>
+    <div class="modal-overlay" id="modal-compartilhar"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colab</h3><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div><div style="display: flex; gap: 8px; margin-bottom: 20px;"><input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;"><button class="btn-confirmar" onclick="window.confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button></div><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div><div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div></div></div>
 
     <div class="modal-overlay" id="modal-renomear"><div class="modal-content">
         <button onclick="window.fecharModalRenomear()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
@@ -261,8 +270,6 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-<!-- NOVO ARQUIVO PRINCIPAL DO APP -->
 <script type="module" src="app.js"></script>
 </body>
 </html>

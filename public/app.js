@@ -179,6 +179,12 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         removerPresencaLocal(); 
+        
+        // FORÇA O CHAT A APAGAR IMEDIATAMENTE (BLOQUEIO DE ACESSO AO LOGOUT)
+        window.resetarVisualizacaoChat();
+        window.projetos = [];
+        renderizarSidebar();
+        
         signOut(auth);
         document.getElementById('profile-menu').style.display = 'none';
     }
@@ -386,7 +392,9 @@ window.abrirMenuNotificacoes = function(event) {
     const btn = document.getElementById('btn-notificacoes').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else {
-        document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none';
+        document.getElementById('config-menu').style.display = 'none'; 
+        document.getElementById('profile-menu').style.display = 'none';
+        document.getElementById('indice-menu').style.display = 'none';
         menu.style.display = 'block'; menu.style.right = '20px'; menu.style.top = (btn.bottom + 10) + 'px';
     }
 }
@@ -529,7 +537,9 @@ window.abrirProfileMenu = function(event) {
     const btn = document.getElementById('btn-profile').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else {
-        document.getElementById('config-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
+        document.getElementById('config-menu').style.display = 'none';
+        document.getElementById('notifications-menu').style.display = 'none';
+        document.getElementById('indice-menu').style.display = 'none';
         menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
     }
 }
@@ -561,7 +571,8 @@ window.fecharModalRenomear = () => document.getElementById('modal-renomear').sty
 
 window.confirmarProjeto = async function() {
     const nome = document.getElementById('input-nome-projeto').value.trim(); const genero = document.getElementById('input-genero-projeto').value.trim(); const descricao = document.getElementById('input-desc-projeto').value.trim();
-    if (!nome) return; window.fecharModal(); 
+    if (!nome) return;
+    window.fecharModal(); 
     if (usuarioAtual) {
         await addDoc(collection(db, "projetos"), { nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {} });
         mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
@@ -571,7 +582,8 @@ window.confirmarProjeto = async function() {
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     window.projetos[indexProj].conversas.push({ 
-        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false, mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
+        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false,
+        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
     });
     window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
@@ -590,7 +602,10 @@ window.removerColaborador = async (email) => {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
             if (proj && proj.id) { 
-                await updateDoc(doc(db, "projetos", proj.id), "membros", arrayRemove(email), new FieldPath("presenca", email), deleteField());
+                await updateDoc(doc(db, "projetos", proj.id), 
+                    "membros", arrayRemove(email),
+                    new FieldPath("presenca", email), deleteField()
+                );
                 proj.membros = proj.membros.filter(m => m !== email); if(proj.presenca) delete proj.presenca[email]; window.abrirModalCompartilhar(); 
             }
         }
@@ -629,7 +644,12 @@ window.deletarProjeto = async function() {
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
-    else { document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none'; menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; } 
+    else { 
+        document.getElementById('profile-menu').style.display = 'none'; 
+        document.getElementById('notifications-menu').style.display = 'none'; 
+        document.getElementById('indice-menu').style.display = 'none';
+        menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; 
+    } 
 }
 
 window.abrirModalPersonalizar = function() {
@@ -639,11 +659,6 @@ window.abrirModalPersonalizar = function() {
     document.getElementById('modal-personalizar').style.display = 'flex';
 }
 window.fecharModalPersonalizar = () => document.getElementById('modal-personalizar').style.display = 'none';
-window.ajustarFonte = function(tipo, valor) {
-    if (tipo === 'chat') { prefChatFs = Math.max(0.7, Math.min(1.5, prefChatFs + valor)); document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2); } 
-    else { prefCodeFs = Math.max(0.7, Math.min(1.5, prefCodeFs + valor)); document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2); }
-    aplicarTamanhosFonte(prefChatFs, prefCodeFs);
-}
 
 window.salvarPersonalizacao = function() {
     prefComentado = document.getElementById('check-pref-comentado').checked; prefDetalhado = document.getElementById('select-pref-detalhe').value === "true";
@@ -653,7 +668,8 @@ window.salvarPersonalizacao = function() {
 
 window.abrirModalApiKey = () => { document.getElementById('config-menu').style.display = 'none'; document.getElementById('modal-apikey').style.display = 'flex'; }
 window.salvarApiKey = async () => { 
-    userApiKey = document.getElementById('input-api-key').value.trim(); localStorage.setItem('unity_google_api_key', userApiKey); 
+    userApiKey = document.getElementById('input-api-key').value.trim(); 
+    localStorage.setItem('unity_google_api_key', userApiKey); 
     if (usuarioAtual) { try { await setDoc(doc(db, "usuarios", usuarioAtual.uid), { googleApiKey: userApiKey }, { merge: true }); } catch(e) {} }
     document.getElementById('modal-apikey').style.display = 'none'; atualizarIndicadorApiKey(userApiKey); mostrarToast('Chave salva!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
 }
@@ -663,20 +679,21 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT, RESPOSTAS DA IA E MENSAGENS
+// 7. SISTEMA DE CHAT E ÍNDICE DE PERGUNTAS
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
 window.resetarVisualizacaoChat = function() { 
-    removerPresencaLocal(); // LIMPA PRESENÇA ANTES DE ANULAR VARIÁVEIS
+    removerPresencaLocal(); 
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
+    const btnIndice = document.getElementById('btn-indice');
+    if (btnIndice) btnIndice.style.display = 'none';
     renderizarSidebar();
 }
 
 window.selecionarConversa = function(indexProj, indexConv) {
-    // PROTEÇÃO MÚLTIPLOS PROJETOS: Limpa a presença do projeto anterior na nuvem antes de entrar no novo
     if (idProjetoAtivo !== null && idProjetoAtivo !== indexProj) {
         removerPresencaLocal(); 
     }
@@ -694,7 +711,36 @@ window.selecionarConversa = function(indexProj, indexConv) {
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     const autorEmail = conv.criador ? conv.criador : (usuarioAtual ? usuarioAtual.email : 'Visitante');
     document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
+    
+    document.getElementById('btn-indice').style.display = 'flex';
+    
     renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
+}
+
+window.abrirMenuIndice = function(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('indice-menu');
+    const btn = document.getElementById('btn-indice').getBoundingClientRect();
+    if (menu.style.display === 'block') { menu.style.display = 'none'; }
+    else {
+        document.getElementById('config-menu').style.display = 'none';
+        document.getElementById('profile-menu').style.display = 'none';
+        document.getElementById('notifications-menu').style.display = 'none';
+        menu.style.display = 'block';
+        menu.style.right = '20px';
+        menu.style.top = (btn.bottom + 10) + 'px';
+    }
+}
+
+window.irParaMensagem = function(idx) {
+    const el = document.getElementById(`msg-${idx}`);
+    if(el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const oldBoxShadow = el.style.boxShadow;
+        el.style.boxShadow = '0 0 0 3px #F58220';
+        setTimeout(() => { el.style.boxShadow = oldBoxShadow; }, 1500);
+        document.getElementById('indice-menu').style.display = 'none';
+    }
 }
 
 function renderizarChat() {
@@ -702,14 +748,27 @@ function renderizarChat() {
     const chatBox = document.getElementById('chat'); chatBox.innerHTML = ''; 
     const conversa = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
     
-    conversa.mensagens.forEach(msg => {
-        if (msg.papel === 'system') { chatBox.innerHTML += `<div class="system-msg">${msg.texto}</div>`; } 
-        else {
+    let indiceHTML = '';
+
+    conversa.mensagens.forEach((msg, idx) => {
+        if (msg.papel === 'system') { 
+            chatBox.innerHTML += `<div id="msg-${idx}" class="system-msg">${msg.texto}</div>`; 
+        } else {
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
-            chatBox.innerHTML += `<div class="balao ${msg.papel}">${imgHtml}${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
+            chatBox.innerHTML += `<div id="msg-${idx}" class="balao ${msg.papel}">${imgHtml}${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
+        }
+
+        // Constrói o Índice de Perguntas em tempo real
+        if(msg.papel === 'aluno') {
+            const textoCurto = msg.texto.length > 40 ? msg.texto.substring(0, 40) + '...' : msg.texto;
+            indiceHTML += `<div onclick="window.irParaMensagem(${idx})" style="padding: 8px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: #c9d1d9; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onmouseover="this.style.borderColor='#F58220'" onmouseout="this.style.borderColor='transparent'">${textoCurto || 'Imagem Anexada'}</div>`;
         }
     });
     
+    // Renderiza a lista no HTML
+    const listaIndice = document.getElementById('lista-indice-popup');
+    listaIndice.innerHTML = indiceHTML || `<div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma pergunta nesta conversa.</div>`;
+
     if (conversa.processando) {
         chatBox.innerHTML += `
         <div class="balao bot" style="display: flex; flex-direction: column; gap: 8px;">
@@ -817,6 +876,7 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
     if (!e.target.closest('#notifications-menu') && !e.target.closest('#btn-notificacoes')) document.getElementById('notifications-menu').style.display = 'none'; 
+    if (!e.target.closest('#indice-menu') && !e.target.closest('#btn-indice')) document.getElementById('indice-menu').style.display = 'none'; 
     if (!e.target.closest('#context-menu') && !e.target.closest('.projeto-header') && !e.target.closest('.conversa-item')) document.getElementById('context-menu').style.display = 'none'; 
 });
 
