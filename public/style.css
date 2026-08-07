@@ -253,6 +253,13 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     100% { box-shadow: 0 0 0 0 rgba(218, 54, 51, 0); }
 }
 
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(46, 160, 67, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); }
+}
+.pulse-verde { animation: pulse-green 2s infinite; }
+
 /* ================= MODAIS & TOAST ================= */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);}
 .modal-content { position: relative; background: rgba(22, 27, 34, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 350px; max-width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.5);}
