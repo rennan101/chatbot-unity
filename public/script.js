@@ -26,25 +26,9 @@ let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
 
-// ================= PREFERÊNCIAS DO USUÁRIO =================
-let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
-let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true';
-let prefChatFs = parseFloat(localStorage.getItem('unity_pref_chat_fs')) || 0.95;
-let prefCodeFs = parseFloat(localStorage.getItem('unity_pref_code_fs')) || 1.05;
-
-function aplicarTamanhosFonte() {
-    document.documentElement.style.setProperty('--chat-fs', prefChatFs + 'rem');
-    document.documentElement.style.setProperty('--code-fs', prefCodeFs + 'rem');
-}
-aplicarTamanhosFonte();
-
-let anexoImagemBase64 = null;
-let anexoImagemMimeType = null;
-let anexoTextoConteudo = null;
-let anexoTextoNome = null;
-
+// ================= CONSTANTES VISUAIS =================
 const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
 const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
 const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
@@ -58,11 +42,24 @@ const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
 const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
 
+// ================= FUNÇÕES UTILITÁRIAS =================
+function mostrarToast(msg, cor, icone) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    document.getElementById('toast-msg').innerText = msg;
+    document.getElementById('toast-icon').innerHTML = icone || '';
+    toast.style.background = cor || 'rgba(245, 130, 32, 0.9)';
+    toast.classList.add('mostrar');
+    setTimeout(() => toast.classList.remove('mostrar'), 3000);
+}
+window.mostrarToast = mostrarToast;
+
 function formatarNomeUsuario(emailOrName) {
     if (!emailOrName) return 'Visitante';
     const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
     return base.charAt(0).toUpperCase() + base.slice(1);
 }
+window.formatarNomeUsuario = formatarNomeUsuario;
 
 function formatarDataHora(timestamp) {
     if (!timestamp) return "";
@@ -73,11 +70,30 @@ function formatarDataHora(timestamp) {
     const min = String(data.getMinutes()).padStart(2, '0');
     return `${dia}/${mes} às ${hora}:${min}`;
 }
+window.formatarDataHora = formatarDataHora;
+
+// ================= PREFERÊNCIAS DO USUÁRIO =================
+let prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
+let prefComentado = localStorage.getItem('unity_pref_comentado') === 'true';
+let prefChatFs = parseFloat(localStorage.getItem('unity_pref_chat_fs')) || 0.95;
+let prefCodeFs = parseFloat(localStorage.getItem('unity_pref_code_fs')) || 1.05;
+
+function aplicarTamanhosFonte() {
+    document.documentElement.style.setProperty('--chat-fs', prefChatFs + 'rem');
+    document.documentElement.style.setProperty('--code-fs', prefCodeFs + 'rem');
+}
+window.aplicarTamanhosFonte = aplicarTamanhosFonte;
+aplicarTamanhosFonte();
+
+let anexoImagemBase64 = null;
+let anexoImagemMimeType = null;
+let anexoTextoConteudo = null;
+let anexoTextoNome = null;
+let isCreatingAccount = false; 
 
 // ================= GESTÃO DE AUTH E CONVITES =================
 onAuthStateChanged(auth, async (user) => {
-    const modalAuth = document.getElementById('modal-auth');
-    if (modalAuth) modalAuth.style.display = 'none';
+    fecharModalAuth(); // Chamada segura
 
     const btnProfile = document.getElementById('btn-profile');
     const btnNotif = document.getElementById('btn-notificacoes');
@@ -104,7 +120,7 @@ onAuthStateChanged(auth, async (user) => {
         usuarioAtual = null;
         
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
-        btnProfile.onclick = () => { if(window.abrirModalAuth) window.abrirModalAuth() };
+        btnProfile.onclick = abrirModalAuth;
         
         document.getElementById('config-btn-apikey').style.display = 'none';
         btnNotif.style.display = 'none';
@@ -113,87 +129,6 @@ onAuthStateChanged(auth, async (user) => {
         resetarVisualizacaoChat();
     }
 });
-
-// ================= PERFIL E TAGS =================
-const TAGS_DISPONIVEIS = [
-    "Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", 
-    "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", 
-    "VR/AR", "Game Design", "Sound Design", "Monetização", "Shader Graph", "Cinematics"
-];
-let tagsSelecionadas = [];
-
-function renderizarTags() {
-    const container = document.getElementById('container-tags');
-    container.innerHTML = '';
-    TAGS_DISPONIVEIS.forEach(tag => {
-        const isSelected = tagsSelecionadas.includes(tag);
-        const span = document.createElement('span');
-        span.className = `tag-badge ${isSelected ? 'selected' : ''}`;
-        span.innerText = tag;
-        span.onclick = () => {
-            if(tagsSelecionadas.includes(tag)) {
-                tagsSelecionadas = tagsSelecionadas.filter(t => t !== tag);
-            } else {
-                tagsSelecionadas.push(tag);
-            }
-            renderizarTags();
-        };
-        container.appendChild(span);
-    });
-}
-
-window.abrirModalPerfil = async function() {
-    document.getElementById('profile-menu').style.display = 'none';
-    if(!usuarioAtual) return;
-    
-    document.getElementById('input-perfil-nome').value = usuarioAtual.displayName || formatarNomeUsuario(usuarioAtual.email);
-    
-    try {
-        const docSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
-        if(docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('input-perfil-profissao').value = data.profissao || "";
-            tagsSelecionadas = data.tags || [];
-        } else {
-            document.getElementById('input-perfil-profissao').value = "";
-            tagsSelecionadas = [];
-        }
-    } catch(e) { console.error("Erro ao puxar perfil", e); }
-    
-    renderizarTags();
-    document.getElementById('modal-perfil').style.display = 'flex';
-}
-
-window.fecharModalPerfil = function() {
-    document.getElementById('modal-perfil').style.display = 'none';
-}
-
-window.salvarPerfil = async function() {
-    if(!usuarioAtual) return;
-    const nome = document.getElementById('input-perfil-nome').value.trim();
-    const profissao = document.getElementById('input-perfil-profissao').value.trim();
-    
-    try {
-        if(nome && nome !== usuarioAtual.displayName) {
-            await updateProfile(usuarioAtual, { displayName: nome });
-            const photoUrl = usuarioAtual.photoURL || `https://ui-avatars.com/api/?name=${usuarioAtual.email}&background=21262d&color=c9d1d9&rounded=true`;
-            document.getElementById('btn-profile').innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nome}</span>`;
-        }
-
-        await setDoc(doc(db, "usuarios", usuarioAtual.uid), {
-            nome: nome,
-            profissao: profissao,
-            tags: tagsSelecionadas,
-            email: usuarioAtual.email
-        }, { merge: true });
-
-        fecharModalPerfil();
-        mostrarToast("Perfil atualizado!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
-    } catch(e) {
-        console.error("Erro ao salvar perfil", e);
-        mostrarToast("Erro ao salvar.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
-    }
-}
 
 // ================= GESTÃO DE ANEXOS (IMAGEM E CÓDIGO) =================
 function redimensionarEComprimirImagem(file, maxSize, callback) {
@@ -215,7 +150,7 @@ function redimensionarEComprimirImagem(file, maxSize, callback) {
     reader.readAsDataURL(file);
 }
 
-window.lidarComAnexo = function(event) {
+function lidarComAnexo(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -226,20 +161,17 @@ window.lidarComAnexo = function(event) {
         redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
             anexoImagemBase64 = base64Data;
             anexoImagemMimeType = mimeType;
-            
             document.getElementById('file-preview').style.display = 'none';
             document.getElementById('image-preview').src = anexoImagemBase64;
             document.getElementById('image-preview').style.display = 'block';
             mostrarPreviewContainer();
         });
-    } 
-    else {
+    } else {
         anexoImagemBase64 = null; 
         const reader = new FileReader();
         reader.onload = function(e) {
             anexoTextoConteudo = e.target.result;
             anexoTextoNome = file.name;
-            
             document.getElementById('image-preview').style.display = 'none';
             document.getElementById('file-name').innerText = anexoTextoNome;
             document.getElementById('file-preview').style.display = 'flex';
@@ -248,15 +180,16 @@ window.lidarComAnexo = function(event) {
         reader.readAsText(file);
     }
 }
+window.lidarComAnexo = lidarComAnexo;
 
 function mostrarPreviewContainer() {
     document.getElementById('anexo-preview-container').style.display = 'flex';
     document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
     document.getElementById('btn-anexo').style.opacity = '1';
-    window.validarInput();
+    validarInput();
 }
 
-window.removerAnexo = function() {
+function removerAnexo() {
     anexoImagemBase64 = null;
     anexoImagemMimeType = null;
     anexoTextoConteudo = null;
@@ -264,9 +197,9 @@ window.removerAnexo = function() {
     document.getElementById('input-anexo').value = '';
     document.getElementById('anexo-preview-container').style.display = 'none';
     document.getElementById('main-input-wrapper').style.borderRadius = '16px';
-    window.validarInput();
+    validarInput();
 }
-
+window.removerAnexo = removerAnexo;
 
 // ================= SINCRONIZAÇÃO EM TEMPO REAL =================
 function iniciarEscutaProjetosNuvem(email) {
@@ -286,6 +219,7 @@ function iniciarEscutaProjetosNuvem(email) {
         }
     });
 }
+window.iniciarEscutaProjetosNuvem = iniciarEscutaProjetosNuvem;
 
 // ================= SISTEMA UNIFICADO DE NOTIFICAÇÕES =================
 let cacheConvites = [];
@@ -326,7 +260,6 @@ function atualizarPainelNotificacoesUnificado() {
             <div id="notif-${notif.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem;">
                 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
                     <span style="color: #e6edf3; flex: 1;">${notif.mensagem}</span>
-                    <!-- OTIMIZAÇÃO: IMPEDE QUE O MENU FECHE QUANDO CLICAR NO X -->
                     <button onclick="apagarNotificacao(event, '${notif.id}')" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 2px; font-weight: bold; line-height: 1;" title="Apagar notificação">✕</button>
                 </div>
                 <div style="font-size: 0.65rem; color: #8b949e; text-align: right; margin-top: 4px;">${formatarDataHora(notif.timestamp)}</div>
@@ -334,6 +267,7 @@ function atualizarPainelNotificacoesUnificado() {
         `;
     });
 }
+window.atualizarPainelNotificacoesUnificado = atualizarPainelNotificacoesUnificado;
 
 function iniciarEscutaConvites(email) {
     const q = query(collection(db, "convites"), where("destinatario", "==", email), where("status", "==", "pendente"));
@@ -353,7 +287,7 @@ function iniciarEscutaNotificacoes(email) {
     });
 }
 
-window.abrirMenuNotificacoes = function(event) {
+function abrirMenuNotificacoes(event) {
     event.stopPropagation();
     const menu = document.getElementById('notifications-menu');
     const btn = document.getElementById('btn-notificacoes').getBoundingClientRect();
@@ -367,8 +301,9 @@ window.abrirMenuNotificacoes = function(event) {
         menu.style.top = (btn.bottom + 10) + 'px';
     }
 }
+window.abrirMenuNotificacoes = abrirMenuNotificacoes;
 
-window.responderConvite = async function(conviteId, projetoId, remetente, projetoNome, aceitar) {
+async function responderConvite(conviteId, projetoId, remetente, projetoNome, aceitar) {
     const box = document.getElementById(`convite-${conviteId}`);
     if(box) box.style.display = 'none';
 
@@ -397,20 +332,21 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
         mostrarToast("Erro ao responder convite.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
     }
 }
+window.responderConvite = responderConvite;
 
-// AGORA O EVENTO É PRESO PARA NÃO FECHAR O MENU ACIDENTALMENTE
-window.apagarNotificacao = async function(event, notifId) {
+async function apagarNotificacao(event, notifId) {
     event.stopPropagation();
     const box = document.getElementById(`notif-${notifId}`);
-    if(box) box.style.display = 'none'; // Ocultação visual otimista e instantânea
+    if(box) box.style.display = 'none'; 
     
     try {
-        await deleteDoc(doc(db, "notificacoes", notifId)); // Apaga no servidor definitivamente
+        await deleteDoc(doc(db, "notificacoes", notifId)); 
     } catch(e) {
         console.error("Erro ao deletar notificação", e);
         if(box) box.style.display = 'flex'; 
     }
 }
+window.apagarNotificacao = apagarNotificacao;
 
 async function sincronizarProjetoNaNuvem(indexProj) {
     if (!usuarioAtual || !window.projetos[indexProj].id) return;
@@ -424,6 +360,7 @@ async function sincronizarProjetoNaNuvem(indexProj) {
         presenca: proj.presenca || {} 
     });
 }
+window.sincronizarProjetoNaNuvem = sincronizarProjetoNaNuvem;
 
 function salvarDadosAtuais(indexProj = null) {
     if (usuarioAtual && indexProj !== null) {
@@ -432,6 +369,7 @@ function salvarDadosAtuais(indexProj = null) {
         localStorage.setItem('unity_projetos_locais', JSON.stringify(window.projetos));
     }
 }
+window.salvarDadosAtuais = salvarDadosAtuais;
 
 function carregarProjetosLocais() {
     const salvo = localStorage.getItem('unity_projetos_locais');
@@ -439,8 +377,201 @@ function carregarProjetosLocais() {
     renderizarSidebar();
 }
 
-// ================= MODAL DE PERSONALIZAÇÃO =================
-window.abrirModalPersonalizar = function() {
+// ================= MODAIS E AUTH =================
+function abrirProfileMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('profile-menu');
+    const btn = document.getElementById('btn-profile').getBoundingClientRect();
+    if (menu.style.display === 'block') { menu.style.display = 'none'; } 
+    else {
+        document.getElementById('config-menu').style.display = 'none';
+        document.getElementById('notifications-menu').style.display = 'none';
+        menu.style.display = 'block';
+        menu.style.left = (btn.left + 10) + 'px';
+        menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
+    }
+}
+window.abrirProfileMenu = abrirProfileMenu;
+
+function confirmarLogout() {
+    if (confirm("Tem certeza que deseja sair da sua conta?")) {
+        signOut(auth);
+        document.getElementById('profile-menu').style.display = 'none';
+    }
+}
+window.confirmarLogout = confirmarLogout;
+
+function tratarErroAuth(erroCode) {
+    switch(erroCode) {
+        case 'auth/email-already-in-use': return 'E-mail já cadastrado.';
+        case 'auth/invalid-email': return 'Digite um e-mail válido.';
+        case 'auth/weak-password': return 'Pelo menos 6 caracteres.';
+        case 'auth/invalid-credential': return 'Credenciais incorretas.';
+        default: return 'Erro ao autenticar. Tente novamente.';
+    }
+}
+
+function abrirModalAuth() { 
+    document.getElementById('auth-error-msg').innerText = ''; 
+    document.getElementById('modal-auth').style.display = 'flex'; 
+}
+window.abrirModalAuth = abrirModalAuth;
+
+function fecharModalAuth() { 
+    const modal = document.getElementById('modal-auth');
+    if (modal) modal.style.display = 'none'; 
+}
+window.fecharModalAuth = fecharModalAuth;
+
+document.getElementById('btn-login-email').onclick = async () => {
+    const email = document.getElementById('email-input').value; const senha = document.getElementById('senha-input').value;
+    const errorMsg = document.getElementById('auth-error-msg');
+    if(!email || !senha) { errorMsg.innerText = "Preencha tudo."; return; }
+    errorMsg.innerText = "Conectando..."; errorMsg.style.color = "#c9d1d9";
+    try { await signInWithEmailAndPassword(auth, email, senha); } catch(e) { errorMsg.style.color = "#ff7b72"; errorMsg.innerText = tratarErroAuth(e.code); }
+};
+
+document.getElementById('btn-cadastro-email').onclick = async () => {
+    const email = document.getElementById('email-input').value; const senha = document.getElementById('senha-input').value;
+    const errorMsg = document.getElementById('auth-error-msg');
+    if(!email || senha.length < 6) { errorMsg.style.color = "#ff7b72"; errorMsg.innerText = "E-mail e Senha (>6)."; return; }
+    errorMsg.innerText = "Criando..."; errorMsg.style.color = "#c9d1d9";
+    try { isCreatingAccount = true; await createUserWithEmailAndPassword(auth, email, senha); } catch(e) { isCreatingAccount = false; errorMsg.style.color = "#ff7b72"; errorMsg.innerText = tratarErroAuth(e.code); }
+};
+
+document.getElementById('btn-login-google').onclick = async () => {
+    try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { document.getElementById('auth-error-msg').innerText = tratarErroAuth(e.code); }
+};
+
+// ================= PERFIL, CONFIG E TAGS =================
+const TAGS_DISPONIVEIS = [
+    "Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", 
+    "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", 
+    "VR/AR", "Game Design", "Sound Design", "Monetização", "Shader Graph", "Cinematics"
+];
+let tagsSelecionadas = [];
+
+function renderizarTags() {
+    const container = document.getElementById('container-tags');
+    if(!container) return;
+    container.innerHTML = '';
+    TAGS_DISPONIVEIS.forEach(tag => {
+        const isSelected = tagsSelecionadas.includes(tag);
+        const span = document.createElement('span');
+        span.className = `tag-badge ${isSelected ? 'selected' : ''}`;
+        span.innerText = tag;
+        span.onclick = () => {
+            if(tagsSelecionadas.includes(tag)) {
+                tagsSelecionadas = tagsSelecionadas.filter(t => t !== tag);
+            } else {
+                tagsSelecionadas.push(tag);
+            }
+            renderizarTags();
+        };
+        container.appendChild(span);
+    });
+}
+window.renderizarTags = renderizarTags;
+
+async function abrirModalPerfil() {
+    document.getElementById('profile-menu').style.display = 'none';
+    if(!usuarioAtual) return;
+    
+    document.getElementById('input-perfil-nome').value = usuarioAtual.displayName || formatarNomeUsuario(usuarioAtual.email);
+    
+    try {
+        const docSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('input-perfil-profissao').value = data.profissao || "";
+            tagsSelecionadas = data.tags || [];
+        } else {
+            document.getElementById('input-perfil-profissao').value = "";
+            tagsSelecionadas = [];
+        }
+    } catch(e) { console.error("Erro ao puxar perfil", e); }
+    
+    renderizarTags();
+    document.getElementById('modal-perfil').style.display = 'flex';
+}
+window.abrirModalPerfil = abrirModalPerfil;
+
+function fecharModalPerfil() {
+    document.getElementById('modal-perfil').style.display = 'none';
+}
+window.fecharModalPerfil = fecharModalPerfil;
+
+async function salvarPerfil() {
+    if(!usuarioAtual) return;
+    const nome = document.getElementById('input-perfil-nome').value.trim();
+    const profissao = document.getElementById('input-perfil-profissao').value.trim();
+    
+    try {
+        if(nome && nome !== usuarioAtual.displayName) {
+            await updateProfile(usuarioAtual, { displayName: nome });
+            const photoUrl = usuarioAtual.photoURL || `https://ui-avatars.com/api/?name=${usuarioAtual.email}&background=21262d&color=c9d1d9&rounded=true`;
+            document.getElementById('btn-profile').innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${nome}</span>`;
+        }
+
+        await setDoc(doc(db, "usuarios", usuarioAtual.uid), {
+            nome: nome,
+            profissao: profissao,
+            tags: tagsSelecionadas,
+            email: usuarioAtual.email
+        }, { merge: true });
+
+        fecharModalPerfil();
+        mostrarToast("Perfil atualizado!", "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+    } catch(e) {
+        console.error("Erro ao salvar perfil", e);
+        mostrarToast("Erro ao salvar.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
+    }
+}
+window.salvarPerfil = salvarPerfil;
+
+function abrirConfigMenu(e) { 
+    e.stopPropagation(); 
+    const menu = document.getElementById('config-menu'); 
+    const btn = document.getElementById('btn-config').getBoundingClientRect(); 
+    if (menu.style.display === 'block') { menu.style.display = 'none'; } 
+    else { 
+        document.getElementById('profile-menu').style.display = 'none'; 
+        document.getElementById('notifications-menu').style.display = 'none'; 
+        menu.style.display = 'block'; 
+        menu.style.left = (btn.left + 10) + 'px'; 
+        menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px'; 
+    } 
+}
+window.abrirConfigMenu = abrirConfigMenu;
+
+let userApiKey = localStorage.getItem('unity_google_api_key') || '';
+document.getElementById('input-api-key').value = userApiKey;
+
+function abrirModalApiKey() { 
+    document.getElementById('config-menu').style.display = 'none'; 
+    document.getElementById('modal-apikey').style.display = 'flex'; 
+}
+window.abrirModalApiKey = abrirModalApiKey;
+
+function salvarApiKey() { 
+    userApiKey = document.getElementById('input-api-key').value.trim(); 
+    localStorage.setItem('unity_google_api_key', userApiKey); 
+    document.getElementById('modal-apikey').style.display = 'none'; 
+    mostrarToast('Chave salva!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
+}
+window.salvarApiKey = salvarApiKey;
+
+let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false';
+document.getElementById('toggle-ask-save').checked = configAskToSave;
+
+function salvarPreferenciasConfig() { 
+    configAskToSave = document.getElementById('toggle-ask-save').checked; 
+    localStorage.setItem('unity_config_ask_save', configAskToSave); 
+    mostrarToast(configAskToSave ? 'Você escolherá onde salvar.' : 'Salvando na pasta padrão.', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
+}
+window.salvarPreferenciasConfig = salvarPreferenciasConfig;
+
+function abrirModalPersonalizar() {
     document.getElementById('config-menu').style.display = 'none';
     document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2);
     document.getElementById('label-code-fs').innerText = prefCodeFs.toFixed(2);
@@ -448,10 +579,14 @@ window.abrirModalPersonalizar = function() {
     document.getElementById('select-pref-detalhe').value = prefDetalhado.toString();
     document.getElementById('modal-personalizar').style.display = 'flex';
 }
-window.fecharModalPersonalizar = function() {
+window.abrirModalPersonalizar = abrirModalPersonalizar;
+
+function fecharModalPersonalizar() {
     document.getElementById('modal-personalizar').style.display = 'none';
 }
-window.ajustarFonte = function(tipo, valor) {
+window.fecharModalPersonalizar = fecharModalPersonalizar;
+
+function ajustarFonte(tipo, valor) {
     if (tipo === 'chat') {
         prefChatFs = Math.max(0.7, Math.min(1.5, prefChatFs + valor));
         document.getElementById('label-chat-fs').innerText = prefChatFs.toFixed(2);
@@ -461,7 +596,9 @@ window.ajustarFonte = function(tipo, valor) {
     }
     aplicarTamanhosFonte();
 }
-window.salvarPersonalizacao = function() {
+window.ajustarFonte = ajustarFonte;
+
+function salvarPersonalizacao() {
     prefComentado = document.getElementById('check-pref-comentado').checked;
     prefDetalhado = document.getElementById('select-pref-detalhe').value === "true";
     
@@ -473,10 +610,12 @@ window.salvarPersonalizacao = function() {
     fecharModalPersonalizar();
     mostrarToast('Preferências de IA atualizadas!', 'rgba(245, 130, 32, 0.9)', SVG_CHECK);
 }
+window.salvarPersonalizacao = salvarPersonalizacao;
 
-// ================= RENDERIZAÇÃO E PRESENÇA OTIMIZADA =================
+// ================= RENDERIZAÇÃO E MENUS =================
 function renderizarSidebar() {
     const container = document.getElementById('lista-projetos');
+    if(!container) return;
     container.innerHTML = ''; 
 
     window.projetos.forEach((proj, indexProj) => {
@@ -538,17 +677,20 @@ function renderizarSidebar() {
             `;
             
             convDiv.onclick = () => selecionarConversa(indexProj, indexConv);
-            convDiv.oncontextmenu = (e) => window.abrirMenuContexto(e, 'conversa', indexProj, indexConv);
+            convDiv.oncontextmenu = (e) => abrirMenuContexto(e, 'conversa', indexProj, indexConv);
             containerConversas.appendChild(convDiv);
         });
     });
     atualizarEstadoBotaoEnvio();
 }
 
-window.alternarSidebar = () => { document.getElementById('sidebar').classList.toggle('recolhido'); }
-window.alternarPasta = (indexProj) => { window.projetos[indexProj].aberto = !window.projetos[indexProj].aberto; salvarDadosAtuais(indexProj); renderizarSidebar(); }
+function alternarSidebar() { document.getElementById('sidebar').classList.toggle('recolhido'); }
+window.alternarSidebar = alternarSidebar;
 
-window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
+function alternarPasta(indexProj) { window.projetos[indexProj].aberto = !window.projetos[indexProj].aberto; salvarDadosAtuais(indexProj); renderizarSidebar(); }
+window.alternarPasta = alternarPasta;
+
+function abrirMenuContexto(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); alvoMenu = { tipo, indexProj, indexConv };
     const menu = document.getElementById('context-menu');
     let menuHTML = '';
@@ -570,24 +712,28 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     menu.innerHTML = menuHTML;
     menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
 }
+window.abrirMenuContexto = abrirMenuContexto;
 
 // ================= GESTÃO DOS PROJETOS E CONVERSAS =================
-window.abrirModal = () => { 
+function abrirModal() { 
     document.getElementById('modal-projeto').style.display = 'flex'; 
     document.getElementById('input-nome-projeto').value = ''; 
     document.getElementById('input-genero-projeto').value = ''; 
     document.getElementById('input-desc-projeto').value = ''; 
     document.getElementById('input-nome-projeto').focus(); 
 }
-window.fecharModal = () => document.getElementById('modal-projeto').style.display = 'none';
+window.abrirModal = abrirModal;
 
-window.confirmarProjeto = async function() {
+function fecharModal() { document.getElementById('modal-projeto').style.display = 'none'; }
+window.fecharModal = fecharModal;
+
+async function confirmarProjeto() {
     const nome = document.getElementById('input-nome-projeto').value.trim();
     const genero = document.getElementById('input-genero-projeto').value.trim();
     const descricao = document.getElementById('input-desc-projeto').value.trim();
 
     if (nome) { 
-        window.fecharModal(); 
+        fecharModal(); 
         if (usuarioAtual) {
             await addDoc(collection(db, "projetos"), {
                 nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {}
@@ -601,8 +747,9 @@ window.confirmarProjeto = async function() {
         }
     }
 }
+window.confirmarProjeto = confirmarProjeto;
 
-window.novaConversa = function(indexProj, event) {
+function novaConversa(indexProj, event) {
     event.stopPropagation();
     const emailCriador = usuarioAtual ? usuarioAtual.email : 'visitante';
     
@@ -617,9 +764,10 @@ window.novaConversa = function(indexProj, event) {
     renderizarSidebar(); 
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
+window.novaConversa = novaConversa;
 
 // ==== COLABORAÇÃO E GESTÃO DE USUÁRIOS ====
-window.abrirModalCompartilhar = () => {
+function abrirModalCompartilhar() {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
     
@@ -646,15 +794,14 @@ window.abrirModalCompartilhar = () => {
                 btnRemover.onclick = () => removerColaborador(email);
                 row.appendChild(btnRemover);
             }
-            
             container.appendChild(row);
         });
     }
-    
     document.getElementById('modal-compartilhar').style.display = 'flex';
 }
+window.abrirModalCompartilhar = abrirModalCompartilhar;
 
-window.confirmarCompartilhamento = async () => {
+async function confirmarCompartilhamento() {
     const email = document.getElementById('input-email-convite').value.trim();
     if (email && usuarioAtual && alvoMenu.indexProj !== null) {
         const proj = window.projetos[alvoMenu.indexProj];
@@ -671,8 +818,9 @@ window.confirmarCompartilhamento = async () => {
         mostrarToast('Convite enviado com sucesso!', 'rgba(46, 204, 113, 0.9)', SVG_SHARE);
     }
 }
+window.confirmarCompartilhamento = confirmarCompartilhamento;
 
-window.removerColaborador = async (email) => {
+async function removerColaborador(email) {
     if (confirm(`Deseja remover ${formatarNomeUsuario(email)} deste projeto?`)) {
         if (alvoMenu.indexProj !== null) {
             const proj = window.projetos[alvoMenu.indexProj];
@@ -686,10 +834,26 @@ window.removerColaborador = async (email) => {
         }
     }
 }
+window.removerColaborador = removerColaborador;
 
-window.abrirModalRenomear = () => { document.getElementById('context-menu').style.display='none'; const modal = document.getElementById('modal-renomear'); const input = document.getElementById('input-nome-renomear'); const titulo = document.getElementById('titulo-modal-renomear'); if (alvoMenu.tipo === 'projeto') { titulo.innerText = 'Renomear Projeto'; input.value = window.projetos[alvoMenu.indexProj].nome; } else { titulo.innerText = 'Renomear Conversa'; input.value = window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome; } modal.style.display = 'flex'; input.focus(); }
-window.fecharModalRenomear = () => document.getElementById('modal-renomear').style.display = 'none';
-window.confirmarRenomear = function() {
+function abrirModalRenomear() { 
+    document.getElementById('context-menu').style.display='none'; 
+    const modal = document.getElementById('modal-renomear'); 
+    const input = document.getElementById('input-nome-renomear'); 
+    const titulo = document.getElementById('titulo-modal-renomear'); 
+    if (alvoMenu.tipo === 'projeto') { 
+        titulo.innerText = 'Renomear Projeto'; input.value = window.projetos[alvoMenu.indexProj].nome; 
+    } else { 
+        titulo.innerText = 'Renomear Conversa'; input.value = window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome; 
+    } 
+    modal.style.display = 'flex'; input.focus(); 
+}
+window.abrirModalRenomear = abrirModalRenomear;
+
+function fecharModalRenomear() { document.getElementById('modal-renomear').style.display = 'none'; }
+window.fecharModalRenomear = fecharModalRenomear;
+
+function confirmarRenomear() {
     const novo = document.getElementById('input-nome-renomear').value.trim(); if (!novo) return;
     if (alvoMenu.tipo === 'projeto') window.projetos[alvoMenu.indexProj].nome = novo;
     else window.projetos[alvoMenu.indexProj].conversas[alvoMenu.indexConv].nome = novo;
@@ -699,10 +863,11 @@ window.confirmarRenomear = function() {
         const conv = proj.conversas[idConversaAtiva];
         document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     }
-    window.fecharModalRenomear();
+    fecharModalRenomear();
 }
+window.confirmarRenomear = confirmarRenomear;
 
-window.deletarConversa = function() {
+function deletarConversa() {
     if (confirm('Apagar esta conversa?')) {
         const pIdx = alvoMenu.indexProj; const cIdx = alvoMenu.indexConv;
         window.projetos[pIdx].conversas.splice(cIdx, 1);
@@ -710,8 +875,9 @@ window.deletarConversa = function() {
         salvarDadosAtuais(pIdx); renderizarSidebar(); idProjetoAtivo===null ? resetarVisualizacaoChat() : renderizarChat();
     }
 }
+window.deletarConversa = deletarConversa;
 
-window.deletarProjeto = async function() {
+async function deletarProjeto() {
     if (confirm('Apagar a pasta e todas as conversas permanentemente?')) {
         const pIdx = alvoMenu.indexProj;
         if (usuarioAtual && window.projetos[pIdx].id) {
@@ -724,6 +890,7 @@ window.deletarProjeto = async function() {
         renderizarSidebar(); idProjetoAtivo===null ? resetarVisualizacaoChat() : renderizarChat();
     }
 }
+window.deletarProjeto = deletarProjeto;
 
 // ================= LÓGICA DO CHAT E PRESENÇA =================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
@@ -736,6 +903,7 @@ function resetarVisualizacaoChat() {
     document.getElementById('header-subtitle').innerText = ''; 
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
 }
+window.resetarVisualizacaoChat = resetarVisualizacaoChat;
 
 async function selecionarConversa(indexProj, indexConv) {
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
@@ -763,6 +931,7 @@ async function selecionarConversa(indexProj, indexConv) {
 
     renderizarChat(); atualizarEstadoBotaoEnvio(); validarInput();
 }
+window.selecionarConversa = selecionarConversa;
 
 function renderizarChat() {
     if (idProjetoAtivo === null || !window.projetos[idProjetoAtivo] || !window.projetos[idProjetoAtivo].conversas[idConversaAtiva]) return;
@@ -786,7 +955,7 @@ function renderizarChat() {
     formatarBlocosDeCodigo(); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-window.validarInput = function() {
+function validarInput() {
     const input = document.getElementById('mensagem'); const btn = document.getElementById('btn-acao');
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const conv = window.projetos[idProjetoAtivo].conversas[idConversaAtiva];
@@ -798,6 +967,7 @@ window.validarInput = function() {
         btn.disabled = false;
     }
 }
+window.validarInput = validarInput;
 
 function atualizarEstadoBotaoEnvio() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
@@ -818,12 +988,11 @@ function atualizarEstadoBotaoEnvio() {
         iconStop.style.display = 'none';
         iconSend.style.display = 'block';
         btn.title = "Enviar";
-        window.validarInput();
+        validarInput();
     }
 }
 
-// CORREÇÃO: CANCELAMENTO OTIMISTA
-window.lidarComAcao = function() {
+function lidarComAcao() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
     const pIdx = idProjetoAtivo; const cIdx = idConversaAtiva;
     const chave = getChaveConversa(pIdx, cIdx);
@@ -843,6 +1012,7 @@ window.lidarComAcao = function() {
         enviarMensagem();
     }
 }
+window.lidarComAcao = lidarComAcao;
 
 async function enviarMensagem() {
     if (idProjetoAtivo === null || idConversaAtiva === null) return;
@@ -878,7 +1048,7 @@ async function enviarMensagem() {
         else window.projetos[pIdx].conversas[cIdx].nome = "Análise de Imagem";
     }
     
-    window.removerAnexo(); 
+    removerAnexo(); 
     window.projetos[pIdx].conversas[cIdx].processando = true;
     salvarDadosAtuais(pIdx); 
     
@@ -938,6 +1108,7 @@ async function enviarMensagem() {
         }
     }
 }
+window.enviarMensagem = enviarMensagem;
 
 // Fechar popups e menus ao clicar fora
 document.addEventListener('click', (e) => { 
@@ -947,10 +1118,14 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('#context-menu') && !e.target.closest('.projeto-header') && !e.target.closest('.conversa-item')) document.getElementById('context-menu').style.display = 'none'; 
 });
 
-window.ajustarAltura = (e) => { e.style.height = 'auto'; e.style.height = (e.scrollHeight) + 'px'; }
-window.lidarComTecla = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const btn = document.getElementById('btn-acao'); if (btn.classList.contains('enviar') && !btn.disabled) window.lidarComAcao(); } }
+function ajustarAltura(e) { e.style.height = 'auto'; e.style.height = (e.scrollHeight) + 'px'; }
+window.ajustarAltura = ajustarAltura;
+
+function lidarComTecla(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const btn = document.getElementById('btn-acao'); if (btn.classList.contains('enviar') && !btn.disabled) lidarComAcao(); } }
+window.lidarComTecla = lidarComTecla;
 
 marked.setOptions({ highlight: function(code, lang) { return hljs.highlight(code, { language: hljs.getLanguage(lang) ? lang : 'plaintext' }).value; }, langPrefix: 'hljs language-' });
+
 function formatarBlocosDeCodigo() {
     document.querySelectorAll('.bot pre').forEach(pre => {
         if (pre.parentElement.classList.contains('code-wrapper')) return;
@@ -962,13 +1137,22 @@ function formatarBlocosDeCodigo() {
         pre.parentNode.insertBefore(wrapper, pre); wrapper.appendChild(header); wrapper.appendChild(pre);
     });
 }
-window.copiar = (btn, texto) => { navigator.clipboard.writeText(texto).then(() => { btn.innerHTML = `${SVG_CHECK} Copiado`; btn.classList.add('copiado'); mostrarToast('Código copiado!', 'rgba(245, 130, 32, 0.9)', SVG_CHECK); setTimeout(() => { btn.innerHTML = `${SVG_COPY} Copiar`; btn.classList.remove('copiado'); }, 2000); }); }
-window.baixarCodigo = async (texto, linguagem) => {
+
+function copiar(btn, texto) { navigator.clipboard.writeText(texto).then(() => { btn.innerHTML = `${SVG_CHECK} Copiado`; btn.classList.add('copiado'); mostrarToast('Código copiado!', 'rgba(245, 130, 32, 0.9)', SVG_CHECK); setTimeout(() => { btn.innerHTML = `${SVG_COPY} Copiar`; btn.classList.remove('copiado'); }, 2000); }); }
+window.copiar = copiar;
+
+async function baixarCodigo(texto, linguagem) {
     const ext = { 'csharp':'cs', 'cs':'cs', 'javascript':'js', 'js':'js', 'python':'py', 'html':'html', 'css':'css', 'json':'json', 'cpp':'cpp' }[linguagem] || 'txt';
     let nome = `script.${ext}`; const match = texto.match(/(?:class|interface|struct|enum)\s+([A-Za-z0-9_]+)/); if(match) nome = `${match[1]}.${ext}`;
     if (configAskToSave && window.showSaveFilePicker) { try { const handle = await window.showSaveFilePicker({ suggestedName: nome }); const w = await handle.createWritable(); await w.write(texto); await w.close(); mostrarToast(`Salvo!`, 'rgba(245, 130, 32, 0.9)', SVG_SAVE); return; } catch (e) { return; } }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([texto])); a.download = nome; a.click(); mostrarToast(`Download!`, 'rgba(245, 130, 32, 0.9)', SVG_DOWNLOAD);
 }
-window.exportarConversaMD = () => { const proj = window.projetos[alvoMenu.indexProj]; const conv = proj.conversas[alvoMenu.indexConv]; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([gerarMarkdownDaConversa(proj.nome, conv)])); a.download = `Unity_${conv.nome.replace(/[^a-z0-9]/gi, '_')}.md`; a.click(); }
-window.exportarProjetoZip = async () => { const proj = window.projetos[alvoMenu.indexProj]; const zip = new JSZip(); proj.conversas.forEach((c, i) => zip.file(`${c.nome.replace(/[^a-z0-9]/gi, '_')}_${i}.md`, gerarMarkdownDaConversa(proj.nome, c))); const blob = await zip.generateAsync({type:"blob"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Proj_${proj.nome.replace(/[^a-z0-9]/gi, '_')}.zip`; a.click(); }
+window.baixarCodigo = baixarCodigo;
+
+function exportarConversaMD() { const proj = window.projetos[alvoMenu.indexProj]; const conv = proj.conversas[alvoMenu.indexConv]; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([gerarMarkdownDaConversa(proj.nome, conv)])); a.download = `Unity_${conv.nome.replace(/[^a-z0-9]/gi, '_')}.md`; a.click(); }
+window.exportarConversaMD = exportarConversaMD;
+
+async function exportarProjetoZip() { const proj = window.projetos[alvoMenu.indexProj]; const zip = new JSZip(); proj.conversas.forEach((c, i) => zip.file(`${c.nome.replace(/[^a-z0-9]/gi, '_')}_${i}.md`, gerarMarkdownDaConversa(proj.nome, c))); const blob = await zip.generateAsync({type:"blob"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Proj_${proj.nome.replace(/[^a-z0-9]/gi, '_')}.zip`; a.click(); }
+window.exportarProjetoZip = exportarProjetoZip;
+
 function gerarMarkdownDaConversa(nomeProj, conv) { return `# Projeto: ${nomeProj}\n## Conversa: ${conv.nome}\n\n---\n\n` + conv.mensagens.map(m => (m.papel === 'aluno' ? `**🧑‍💻 Você:**\n${m.texto}\n\n` : `**🤖 Professor Unity:**\n${m.texto}\n\n`) + `---\n\n`).join(''); }
