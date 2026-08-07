@@ -89,10 +89,7 @@ function adicionarPresencaLocal() {
     }
 }
 
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') removerPresencaLocal();
-    else adicionarPresencaLocal();
-});
+// REMOVIDO o visibilitychange. A presença agora só zera se fechar a aba ou atualizar (pagehide/beforeunload)
 window.addEventListener('pagehide', removerPresencaLocal);
 window.addEventListener('beforeunload', removerPresencaLocal);
 
@@ -100,8 +97,11 @@ function iniciarEscutaUsuarios() {
     unsubscribeUsuarios = onSnapshot(collection(db, "usuarios"), (snapshot) => {
         snapshot.forEach(doc => {
             const data = doc.data();
-            if(data.email && data.nome) window.mapUsuarios[data.email] = data.nome;
+            if(data.email && data.nome) {
+                window.mapUsuarios[data.email] = data.nome;
+            }
         });
+        
         if (window.atualizarBotaoPerfilGlobal) window.atualizarBotaoPerfilGlobal();
         if (window.renderizarSidebar) window.renderizarSidebar();
         if (idProjetoAtivo !== null && idConversaAtiva !== null) {
@@ -162,7 +162,9 @@ onAuthStateChanged(auth, async (user) => {
         iniciarEscutaConvites(user.email);
         iniciarEscutaNotificacoes(user.email);
         
-        if (localStorage.getItem('comboboy_tour') !== 'true') window.iniciarTour();
+        if (localStorage.getItem('comboboy_tour') !== 'true') {
+            window.iniciarTour();
+        }
 
     } else {
         if (unsubscribeProjetos) unsubscribeProjetos();
@@ -223,7 +225,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
-        await new Promise(r => setTimeout(r, 500)); 
+        await new Promise(r => setTimeout(r, 500)); // Aguarda confirmação
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -363,7 +365,7 @@ if (dropZone) {
 
 
 // ==========================================================
-// 5. FIREBASE REALTIME, NOTIFICAÇÕES & COLLAB SYNC
+// 5. FIREBASE REALTIME & NOTIFICAÇÕES
 // ==========================================================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
@@ -494,7 +496,7 @@ window.apagarNotificacao = async function(event, notifId) {
 }
 
 // ==========================================================
-// 6. UI DA BARRA LATERAL, MODAIS E DRAG & DROP DE CONVERSAS
+// 6. UI DA BARRA LATERAL E MODAIS
 // ==========================================================
 window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     event.preventDefault(); window.alvoMenu = { tipo, indexProj, indexConv };
@@ -1121,7 +1123,6 @@ window.enviarMensagemLateral = function() {
 // INICIALIZAÇÃO DO PEER (WEBRTC)
 function inicializarPeer() {
     if(meuPeer) return;
-    // Utiliza o servidor P2P gratuito padrão do PeerJS (Conecta com Google STUNs automaticamente)
     meuPeer = new Peer();
     
     meuPeer.on('open', (id) => {
@@ -1131,7 +1132,6 @@ function inicializarPeer() {
         document.getElementById('btn-call-join').classList.add('danger');
         document.getElementById('btn-call-join').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>`;
         
-        // Registra meu peerId no Firebase para que os outros me liguem
         if (idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
             const proj = window.projetos[idProjetoAtivo];
             proj.conversas[idConversaAtiva].chamada = proj.conversas[idConversaAtiva].chamada || {};
@@ -1142,12 +1142,9 @@ function inicializarPeer() {
     });
 
     meuPeer.on('call', (call) => {
-        // Alguém ligou para mim. Eu atendo passando meu áudio/vídeo (se tiver)
         call.answer(streamLocalAudio || streamLocalVideo); 
         chamadasAtivas[call.peer] = call;
-        call.on('stream', (streamRemoto) => {
-            adicionarVideoRemoto(streamRemoto, call.peer);
-        });
+        call.on('stream', (streamRemoto) => { adicionarVideoRemoto(streamRemoto, call.peer); });
         call.on('close', () => removerVideoRemoto(call.peer));
     });
 }
@@ -1158,13 +1155,10 @@ window.toggleChamada = async function() {
         window.sairDaChamada(false);
     } else {
         try {
-            // Pede microfone ao entrar na sala
             streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: true });
             document.getElementById('btn-call-mic').classList.add('active');
             inicializarPeer();
-        } catch(e) {
-            mostrarToast("Permissão de microfone negada.", 'rgba(218, 54, 51, 0.9)', SVG_WARN);
-        }
+        } catch(e) { mostrarToast("Permissão de microfone negada.", 'rgba(218, 54, 51, 0.9)', SVG_WARN); }
     }
 }
 
@@ -1188,7 +1182,6 @@ window.sairDaChamada = function(force = false) {
     document.getElementById('btn-call-join').classList.remove('danger');
     document.getElementById('btn-call-join').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
 
-    // Remove do Firebase
     if (!force && idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
         const proj = window.projetos[idProjetoAtivo];
         if (proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
@@ -1222,14 +1215,12 @@ window.compartilharTela = async function() {
             document.getElementById('btn-call-screen').classList.add('active');
             adicionarVideoRemoto(streamLocalVideo, meuPeer.id, true);
             
-            // Substitui as tracks nas chamadas ativas
             const videoTrack = streamLocalVideo.getVideoTracks()[0];
             Object.values(chamadasAtivas).forEach(call => {
                 const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
                 if(sender) sender.replaceTrack(videoTrack);
             });
 
-            // Se o usuário fechar a tela pela UI do navegador
             videoTrack.onended = () => window.compartilharTela();
         } else {
             streamLocalVideo.getTracks().forEach(t => t.stop());
@@ -1240,7 +1231,6 @@ window.compartilharTela = async function() {
     } catch(e) { console.log("Compartilhamento de tela cancelado", e); }
 }
 
-// Verifica na "Memória" do Firebase se há alguém novo na sala para ligar
 window.verificarNovosPeers = function() {
     if (!peerConfigurado || idProjetoAtivo === null) return;
     const proj = window.projetos[idProjetoAtivo];
@@ -1248,7 +1238,6 @@ window.verificarNovosPeers = function() {
     
     Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
         if (email !== usuarioAtual.email && !chamadasAtivas[peerIdRemoto]) {
-            // Liga para o novo Peer passando meu áudio/video
             const call = meuPeer.call(peerIdRemoto, streamLocalVideo || streamLocalAudio);
             if (call) {
                 chamadasAtivas[peerIdRemoto] = call;
@@ -1272,14 +1261,61 @@ function adicionarVideoRemoto(stream, peerId, isLocal = false) {
         video.srcObject = stream;
         video.autoplay = true;
         video.playsInline = true;
-        if(isLocal) video.muted = true; // Não ouvir a própria voz
+        if(isLocal) video.muted = true; 
         
         const tag = document.createElement('div');
         tag.className = 'video-tag';
         tag.innerText = isLocal ? 'Você (Transmitindo)' : 'Colaborador';
         
+        // Controles Avançados do Player de Vídeo (Volume, PiP, Fullscreen)
+        const controls = document.createElement('div');
+        controls.className = 'video-controls';
+        
+        let htmlControles = '';
+        if (!isLocal) {
+            htmlControles += `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:white; margin-left:8px;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                <input type="range" class="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume da Chamada">`;
+        }
+        htmlControles += `
+            <button class="ctrl-btn pip-btn" title="Miniatura (PiP)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="12" y="11" width="7" height="5" rx="1"></rect></svg>
+            </button>
+            <button class="ctrl-btn fs-btn" title="Tela Cheia">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            </button>
+        `;
+        controls.innerHTML = htmlControles;
+        
+        if (!isLocal) {
+            const slider = controls.querySelector('.vol-slider');
+            slider.addEventListener('input', (e) => { video.volume = e.target.value; });
+        }
+        
+        // Logica Picture-in-Picture
+        controls.querySelector('.pip-btn').addEventListener('click', () => {
+            if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            } else if (video.requestPictureInPicture) {
+                video.requestPictureInPicture();
+            } else if (video.webkitSetPresentationMode) {
+                video.webkitSetPresentationMode('picture-in-picture'); 
+            }
+        });
+        
+        // Logica de Fullscreen
+        controls.querySelector('.fs-btn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+                else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // Safari
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        });
+        
         wrapper.appendChild(video);
         wrapper.appendChild(tag);
+        wrapper.appendChild(controls);
         stage.appendChild(wrapper);
     }
 }
@@ -1335,7 +1371,6 @@ window.iniciarTour = function() {
     document.getElementById('config-menu').style.display = 'none';
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
     
-    // Força abrir uma conversa mock para o botão de collab existir
     document.getElementById('btn-colab').style.display = 'flex'; 
 
     document.getElementById('tour-overlay').style.display = 'block';
