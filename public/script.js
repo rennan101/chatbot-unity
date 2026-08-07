@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-
 const firebaseConfig = {
   apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
@@ -26,13 +25,86 @@ let statusConversas = {};
 let unsubscribeProjetos = null;
 let unsubscribeConvites = null;
 let unsubscribeNotificacoes = null;
-let imagemAtualBase64 = null;
-let imagemAtualMimeType = null;
+
 // VARIÁVEIS GLOBAIS DE ANEXOS
 let anexoImagemBase64 = null;
 let anexoImagemMimeType = null;
 let anexoTextoConteudo = null;
 let anexoTextoNome = null;
+
+const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
+const SVG_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+const SVG_ARCHIVE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+const SVG_FILE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+const SVG_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+const SVG_WARN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+
+let isCreatingAccount = false; 
+
+function formatarNomeUsuario(emailOrName) {
+    if (!emailOrName) return 'Visitante';
+    const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+function formatarDataHora(timestamp) {
+    if (!timestamp) return "";
+    const data = new Date(timestamp);
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const hora = String(data.getHours()).padStart(2, '0');
+    const min = String(data.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes} às ${hora}:${min}`;
+}
+
+// ================= GESTÃO DE AUTH E CONVITES =================
+onAuthStateChanged(auth, async (user) => {
+    // CORREÇÃO: Usamos verificação direta no DOM para evitar o ReferenceError de Crash!
+    const modalAuth = document.getElementById('modal-auth');
+    if (modalAuth) modalAuth.style.display = 'none';
+
+    const btnProfile = document.getElementById('btn-profile');
+    const btnNotif = document.getElementById('btn-notificacoes');
+
+    if (user) {
+        usuarioAtual = user;
+        const userEmail = user.email || 'Usuario';
+        const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${userEmail}&background=21262d&color=c9d1d9&rounded=true`;
+        const displayName = user.displayName || formatarNomeUsuario(userEmail);
+
+        btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</span>`;
+        btnProfile.onclick = abrirProfileMenu;
+        
+        document.getElementById('config-btn-apikey').style.display = 'flex';
+        btnNotif.style.display = 'flex';
+
+        iniciarEscutaProjetosNuvem(userEmail);
+        iniciarEscutaConvites(userEmail);
+        iniciarEscutaNotificacoes(userEmail);
+    } else {
+        if (unsubscribeProjetos) unsubscribeProjetos();
+        if (unsubscribeConvites) unsubscribeConvites();
+        if (unsubscribeNotificacoes) unsubscribeNotificacoes();
+        usuarioAtual = null;
+        
+        btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
+        btnProfile.onclick = () => { if(window.abrirModalAuth) window.abrirModalAuth() };
+        
+        document.getElementById('config-btn-apikey').style.display = 'none';
+        btnNotif.style.display = 'none';
+
+        carregarProjetosLocais();
+        resetarVisualizacaoChat();
+    }
+});
 
 // ================= GESTÃO DE ANEXOS (IMAGEM E CÓDIGO) =================
 function redimensionarEComprimirImagem(file, maxSize, callback) {
@@ -60,9 +132,9 @@ window.lidarComAnexo = function(event) {
     
     document.getElementById('btn-anexo').style.opacity = '0.5';
     
-    // Se for imagem (Print do Unity, erros, etc)
+    // Se for imagem
     if (file.type.startsWith('image/')) {
-        anexoTextoConteudo = null; // Limpa se tinha código antes
+        anexoTextoConteudo = null; 
         redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
             anexoImagemBase64 = base64Data;
             anexoImagemMimeType = mimeType;
@@ -73,9 +145,9 @@ window.lidarComAnexo = function(event) {
             mostrarPreviewContainer();
         });
     } 
-    // Se for um arquivo de texto/código (.cs, .txt)
+    // Se for código/texto
     else {
-        anexoImagemBase64 = null; // Limpa se tinha imagem antes
+        anexoImagemBase64 = null; 
         const reader = new FileReader();
         reader.onload = function(e) {
             anexoTextoConteudo = e.target.result;
@@ -108,77 +180,6 @@ window.removerAnexo = function() {
     window.validarInput();
 }
 
-const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-const SVG_SETTINGS = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
-const SVG_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
-const SVG_FOLDER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
-const SVG_SAVE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
-const SVG_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
-const SVG_ARCHIVE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
-const SVG_FILE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
-const SVG_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-const SVG_WARN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
-const SVG_CLOCK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
-const SVG_SPINNER = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
-const SVG_COPY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-const SVG_SHARE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>`;
-
-let isCreatingAccount = false; 
-
-function formatarNomeUsuario(emailOrName) {
-    if (!emailOrName) return 'Visitante';
-    const base = emailOrName.includes('@') ? emailOrName.split('@')[0] : emailOrName;
-    return base.charAt(0).toUpperCase() + base.slice(1);
-}
-
-// FORMATADOR DE TEMPO DISCRETO
-function formatarDataHora(timestamp) {
-    if (!timestamp) return "";
-    const data = new Date(timestamp);
-    const dia = String(data.getDate()).padStart(2, '0');
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const hora = String(data.getHours()).padStart(2, '0');
-    const min = String(data.getMinutes()).padStart(2, '0');
-    return `${dia}/${mes} às ${hora}:${min}`;
-}
-
-// ================= GESTÃO DE AUTH E CONVITES =================
-onAuthStateChanged(auth, async (user) => {
-    fecharModalAuth();
-    const btnProfile = document.getElementById('btn-profile');
-    const btnNotif = document.getElementById('btn-notificacoes');
-
-    if (user) {
-        usuarioAtual = user;
-        const userEmail = user.email || 'Usuario';
-        const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${userEmail}&background=21262d&color=c9d1d9&rounded=true`;
-        const displayName = user.displayName || formatarNomeUsuario(userEmail);
-
-        btnProfile.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> <span class="texto-btn" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayName}</span>`;
-        btnProfile.onclick = abrirProfileMenu;
-        
-        document.getElementById('config-btn-apikey').style.display = 'flex';
-        btnNotif.style.display = 'flex';
-
-        iniciarEscutaProjetosNuvem(userEmail);
-        iniciarEscutaConvites(userEmail);
-        iniciarEscutaNotificacoes(userEmail);
-    } else {
-        if (unsubscribeProjetos) unsubscribeProjetos();
-        if (unsubscribeConvites) unsubscribeConvites();
-        if (unsubscribeNotificacoes) unsubscribeNotificacoes();
-        usuarioAtual = null;
-        
-        btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
-        btnProfile.onclick = () => abrirModalAuth();
-        
-        document.getElementById('config-btn-apikey').style.display = 'none';
-        btnNotif.style.display = 'none';
-
-        carregarProjetosLocais();
-        resetarVisualizacaoChat();
-    }
-});
 
 // ================= SINCRONIZAÇÃO EM TEMPO REAL =================
 function iniciarEscutaProjetosNuvem(email) {
@@ -199,7 +200,7 @@ function iniciarEscutaProjetosNuvem(email) {
     });
 }
 
-// ================= SISTEMA UNIFICADO DE NOTIFICAÇÕES (UI OTIMISTA) =================
+// ================= SISTEMA UNIFICADO DE NOTIFICAÇÕES =================
 let cacheConvites = [];
 let cacheNotifs = [];
 
@@ -220,7 +221,6 @@ function atualizarPainelNotificacoesUnificado() {
         return;
     }
 
-    // Ordena as listas pelos timestamps (mais novo pro mais antigo)
     cacheConvites.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach((convite) => {
         listaNotif.innerHTML += `
             <div id="convite-${convite.id}" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; border: 1px solid rgba(245, 130, 32, 0.2);">
@@ -275,11 +275,12 @@ window.abrirMenuNotificacoes = function(event) {
         document.getElementById('config-menu').style.display = 'none';
         document.getElementById('profile-menu').style.display = 'none';
         menu.style.display = 'block';
+        menu.style.right = '20px';
+        menu.style.top = (btn.bottom + 10) + 'px';
     }
 }
 
 window.responderConvite = async function(conviteId, projetoId, remetente, projetoNome, aceitar) {
-    // UI OTIMISTA: Apaga o bloco da tela instantaneamente para o usuário não sentir lag
     const box = document.getElementById(`convite-${conviteId}`);
     if(box) box.style.display = 'none';
 
@@ -292,10 +293,8 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
             mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
         }
 
-        // Deleta o convite definitivamente do banco
         await deleteDoc(doc(db, "convites", conviteId));
 
-        // Envia notificação feedback
         const meuNome = formatarNomeUsuario(usuarioAtual.email);
         const statusMsg = aceitar ? "aceitou" : "recusou";
         await addDoc(collection(db, "notificacoes"), {
@@ -306,13 +305,12 @@ window.responderConvite = async function(conviteId, projetoId, remetente, projet
 
     } catch(e) {
         console.error(e);
-        if(box) box.style.display = 'block'; // Volta o bloco se deu erro de rede
+        if(box) box.style.display = 'block'; 
         mostrarToast("Erro ao responder convite.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
     }
 }
 
 window.apagarNotificacao = async function(notifId) {
-    // UI OTIMISTA: Remove da tela primeiro
     const box = document.getElementById(`notif-${notifId}`);
     if(box) box.style.display = 'none';
     
@@ -320,7 +318,7 @@ window.apagarNotificacao = async function(notifId) {
         await deleteDoc(doc(db, "notificacoes", notifId));
     } catch(e) {
         console.error(e);
-        if(box) box.style.display = 'block'; // Volta se deu erro
+        if(box) box.style.display = 'block'; 
     }
 }
 
@@ -351,7 +349,7 @@ function carregarProjetosLocais() {
     renderizarSidebar();
 }
 
-// ================= MODAIS & FLUXOS DE UI =================
+// ================= MODAIS E AUTH =================
 window.abrirProfileMenu = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('profile-menu');
@@ -375,16 +373,16 @@ window.confirmarLogout = function() {
 
 function tratarErroAuth(erroCode) {
     switch(erroCode) {
-        case 'auth/email-already-in-use': return 'Este e-mail já está cadastrado.';
+        case 'auth/email-already-in-use': return 'E-mail já cadastrado.';
         case 'auth/invalid-email': return 'Digite um e-mail válido.';
-        case 'auth/weak-password': return 'Use pelo menos 6 caracteres.';
+        case 'auth/weak-password': return 'Pelo menos 6 caracteres.';
         case 'auth/invalid-credential': return 'Credenciais incorretas.';
         default: return 'Erro ao autenticar. Tente novamente.';
     }
 }
 
 window.abrirModalAuth = () => { document.getElementById('auth-error-msg').innerText = ''; document.getElementById('modal-auth').style.display = 'flex'; }
-window.fecharModalAuth = () => document.getElementById('modal-auth').style.display = 'none';
+window.fecharModalAuth = () => { document.getElementById('modal-auth').style.display = 'none'; }
 
 document.getElementById('btn-login-email').onclick = async () => {
     const email = document.getElementById('email-input').value; const senha = document.getElementById('senha-input').value;
@@ -561,7 +559,6 @@ window.novaConversa = function(indexProj, event) {
     selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
 
-// ==== COLABORAÇÃO E GESTÃO DE USUÁRIOS ====
 window.abrirModalCompartilhar = () => {
     document.getElementById('context-menu').style.display = 'none';
     document.getElementById('input-email-convite').value = '';
@@ -716,7 +713,6 @@ function renderizarChat() {
         if (msg.papel === 'system') {
             chatBox.innerHTML += `<div class="system-msg">${msg.texto}</div>`;
         } else {
-            // Verifica se a mensagem continha imagem
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
             chatBox.innerHTML += `<div class="balao ${msg.papel}">${imgHtml}${msg.papel === 'aluno' ? msg.texto.replace(/\n/g, '<br>') : marked.parse(msg.texto)}</div>`;
         }
@@ -737,7 +733,6 @@ window.validarInput = function() {
     const estaProcessando = conv?.processando === true;
     
     if (!estaProcessando) {
-        // Habilita se houver texto, imagem ou código anexado
         btn.disabled = input.value.trim().length === 0 && !anexoImagemBase64 && !anexoTextoConteudo;
     } else {
         btn.disabled = true;
@@ -786,22 +781,19 @@ async function enviarMensagem() {
     const input = document.getElementById('mensagem'); 
     let textoDigitado = input.value.trim(); 
     
-    // MÁGICA DO ARQUIVO .CS: Junta o texto digitado com o código do arquivo
     let textoFinal = textoDigitado;
     if (anexoTextoConteudo) {
         const ext = anexoTextoNome.split('.').pop().toLowerCase();
-        const linguagemMarkdown = (ext === 'cs') ? 'csharp' : ext; // Avisa a IA que é C#
+        const linguagemMarkdown = (ext === 'cs') ? 'csharp' : ext; 
         const quebraLinha = textoDigitado ? '\n\n' : '';
         textoFinal += `${quebraLinha}📄 **Arquivo Anexado (${anexoTextoNome}):**\n\`\`\`${linguagemMarkdown}\n${anexoTextoConteudo}\n\`\`\``;
     }
     
-    // Preparo de Imagem
     const imgBase64 = anexoImagemBase64;
     const imgMime = anexoImagemMimeType;
     
     if(!textoFinal && !imgBase64) return;
 
-    // Registra a mensagem na interface
     const novaMsg = { papel: 'aluno', texto: textoFinal };
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
 
@@ -813,7 +805,7 @@ async function enviarMensagem() {
         else conversaAtual.nome = "Análise de Imagem";
     }
     
-    window.removerAnexo(); // Limpa anexos e esconde o preview
+    window.removerAnexo(); 
     conversaAtual.processando = true;
     salvarDadosAtuais(pIdx); 
     
@@ -861,68 +853,13 @@ async function enviarMensagem() {
         }
     }
 }
-// Fechar popups e menus ao clicar fora
+
 document.addEventListener('click', (e) => { 
     if (!e.target.closest('#config-menu') && !e.target.closest('#btn-config')) document.getElementById('config-menu').style.display = 'none'; 
     if (!e.target.closest('#profile-menu') && !e.target.closest('#btn-profile')) document.getElementById('profile-menu').style.display = 'none'; 
     if (!e.target.closest('#notifications-menu') && !e.target.closest('#btn-notificacoes')) document.getElementById('notifications-menu').style.display = 'none'; 
     if (!e.target.closest('#context-menu') && !e.target.closest('.projeto-header') && !e.target.closest('.conversa-item')) document.getElementById('context-menu').style.display = 'none'; 
 });
-
-// ================= GESTÃO DE IMAGENS (COMPRESSÃO NO NAVEGADOR) =================
-function redimensionarEComprimirImagem(file, maxSize, callback) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            let width = img.width;
-            let height = img.height;
-            if (width > maxSize || height > maxSize) {
-                if (width > height) { height = Math.round((height * maxSize) / width); width = maxSize; } 
-                else { width = Math.round((width * maxSize) / height); height = maxSize; }
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Comprime como JPEG com 80% de qualidade para transitar levíssimo no backend
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            callback(dataUrl, 'image/jpeg');
-        }
-        img.src = e.target.result;
-    }
-    reader.readAsDataURL(file);
-}
-
-window.lidarComImagem = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    // Mostra o spinner ou algo rápido
-    document.getElementById('btn-anexo').style.opacity = '0.5';
-    
-    // Comprime a imagem mantendo máximo de 1024px
-    redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
-        imagemAtualBase64 = base64Data;
-        imagemAtualMimeType = mimeType;
-        
-        document.getElementById('image-preview').src = imagemAtualBase64;
-        document.getElementById('image-preview-container').style.display = 'block';
-        document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
-        document.getElementById('btn-anexo').style.opacity = '1';
-        window.validarInput();
-    });
-}
-
-window.removerImagem = function() {
-    imagemAtualBase64 = null;
-    imagemAtualMimeType = null;
-    document.getElementById('input-imagem').value = '';
-    document.getElementById('image-preview-container').style.display = 'none';
-    document.getElementById('main-input-wrapper').style.borderRadius = '16px';
-    window.validarInput();
-}
 
 window.ajustarAltura = (e) => { e.style.height = 'auto'; e.style.height = (e.scrollHeight) + 'px'; }
 window.lidarComTecla = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const btn = document.getElementById('btn-acao'); if (btn.classList.contains('enviar') && !btn.disabled) window.lidarComAcao(); } }
