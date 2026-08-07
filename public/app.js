@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, arrayRemove, deleteField, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Importa ferramentas do utilitário
 import { 
     SVG_CHECK, SVG_SETTINGS, SVG_DOWNLOAD, SVG_FOLDER, SVG_SAVE, SVG_EDIT, SVG_ARCHIVE, SVG_FILE, SVG_TRASH, SVG_WARN, SVG_CLOCK, SVG_SPINNER, SVG_COPY, SVG_SHARE,
     getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo
@@ -57,19 +56,24 @@ let userApiKey = '';
 function removerPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
-        // O uso do FieldPath evita que os pontos do e-mail (.com) corrompam o Banco de Dados
-        updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField()).catch(e=>console.log(e));
+        const proj = window.projetos[idProjetoAtivo];
+        if(proj.presenca) {
+            delete proj.presenca[usuarioAtual.email];
+            updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), deleteField()).catch(e=>console.log(e));
+        }
     }
 }
 
 function adicionarPresencaLocal() {
     if (usuarioAtual && idProjetoAtivo !== null && idConversaAtiva !== null && window.projetos[idProjetoAtivo] && window.projetos[idProjetoAtivo].id) {
         const ref = doc(db, "projetos", window.projetos[idProjetoAtivo].id);
+        const proj = window.projetos[idProjetoAtivo];
+        proj.presenca = proj.presenca || {};
+        proj.presenca[usuarioAtual.email] = idConversaAtiva;
         updateDoc(ref, new FieldPath('presenca', usuarioAtual.email), idConversaAtiva).catch(e=>console.log(e));
     }
 }
 
-// Sensores de Fechamento de Guia ou Invisibilidade
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') removerPresencaLocal();
     else adicionarPresencaLocal();
@@ -174,7 +178,7 @@ document.getElementById('btn-login-google').onclick = async () => {
 
 window.confirmarLogout = function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
-        removerPresencaLocal(); // Apaga a presença fantasma antes de sair
+        removerPresencaLocal(); 
         signOut(auth);
         document.getElementById('profile-menu').style.display = 'none';
     }
@@ -243,7 +247,7 @@ window.salvarPerfil = async function() {
 }
 
 // ==========================================================
-// 4. LÓGICA DE ANEXOS
+// 4. LÓGICA DE ANEXOS (JS)
 // ==========================================================
 window.lidarComAnexo = function(event) {
     const file = event.target.files[0];
@@ -272,7 +276,6 @@ window.lidarComAnexo = function(event) {
         reader.readAsText(file);
     }
 }
-
 function mostrarPreviewContainer() {
     document.getElementById('anexo-preview-container').style.display = 'flex';
     document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
@@ -286,7 +289,7 @@ window.removerAnexo = function() {
 }
 
 // ==========================================================
-// 5. FIREBASE REALTIME E NOTIFICAÇÕES
+// 5. FIREBASE REALTIME & NOTIFICAÇÕES
 // ==========================================================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
@@ -296,7 +299,6 @@ function iniciarEscutaProjetosNuvem(email) {
         window.projetos = [];
         snapshot.forEach((doc) => { window.projetos.push({ id: doc.id, ...doc.data() }); });
         
-        // Bloqueio Imediato: Se o projeto sumir ou a conversa for excluída, expulsa o usuário
         if (idProjAntigo) {
             const novoIndex = window.projetos.findIndex(p => p.id === idProjAntigo);
             if (novoIndex !== -1) {
@@ -424,29 +426,21 @@ window.abrirMenuContexto = function(event, tipo, indexProj, indexConv = null) {
     
     if (tipo === 'projeto') {
         const isDonoProjeto = usuarioAtual && window.projetos[indexProj].membros && window.projetos[indexProj].membros[0] === usuarioAtual.email;
+        if (usuarioAtual && window.projetos[indexProj].id) menuHTML += `<div class="context-item" style="color:#F58220" onclick="window.abrirModalCompartilhar()">${SVG_SHARE} Gerenciar Colab</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
         
-        if (usuarioAtual && window.projetos[indexProj].id) {
-            menuHTML += `<div class="context-item" style="color:#F58220" onclick="window.abrirModalCompartilhar()">${SVG_SHARE} Gerenciar Colab</div><hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">`;
-        }
-        
-        // Bloqueio de Renomear e Apagar apenas para o Dono
         if (isDonoProjeto || !window.projetos[indexProj].id) {
             menuHTML += `<div class="context-item" onclick="window.abrirModalRenomear()">${SVG_EDIT} Renomear Projeto</div>`;
         }
-
         menuHTML += `<div class="context-item" onclick="window.exportarProjetoZip()">${SVG_ARCHIVE} Baixar (.zip)</div>`;
-
+        
         if (isDonoProjeto || !window.projetos[indexProj].id) {
             menuHTML += `<div class="context-item danger" onclick="window.deletarProjeto()">${SVG_TRASH} Apagar Projeto</div>`;
         }
     } else {
         const conv = window.projetos[indexProj].conversas[indexConv];
         const isDonoConversa = !usuarioAtual || !conv.criador || conv.criador === usuarioAtual.email;
-        
         menuHTML = `<div class="context-item" onclick="window.abrirModalRenomear()">${SVG_EDIT} Renomear Conversa</div><div class="context-item" onclick="window.exportarConversaMD()">${SVG_FILE} Baixar (.md)</div>`;
-        if (isDonoConversa) {
-            menuHTML += `<div class="context-item danger" onclick="window.deletarConversa()">${SVG_TRASH} Apagar Conversa</div>`;
-        }
+        if (isDonoConversa) menuHTML += `<div class="context-item danger" onclick="window.deletarConversa()">${SVG_TRASH} Apagar Conversa</div>`;
     }
     menu.innerHTML = menuHTML; menu.style.display = 'block'; menu.style.left = event.pageX + 'px'; menu.style.top = event.pageY + 'px';
 }
@@ -485,13 +479,8 @@ function renderizarSidebar() {
             let emailsNaConversa = [];
             if (proj.presenca) {
                 Object.entries(proj.presenca).forEach(([emailUser, cIdx]) => {
-                    // Ignora chaves corrompidas do bug anterior do Firebase
                     if (typeof cIdx === 'object') return; 
-                    
-                    // Bloqueio de Segurança: A presença só renderiza se for de um membro oficial atual
                     if (proj.membros && !proj.membros.includes(emailUser)) return;
-
-                    // O usuário atual agora visualiza a PRÓPRIA PRESENÇA para confirmar que está conectado!
                     if (cIdx === indexConv) emailsNaConversa.push(emailUser);
                 });
             }
@@ -540,8 +529,7 @@ window.abrirProfileMenu = function(event) {
     const btn = document.getElementById('btn-profile').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
     else {
-        document.getElementById('config-menu').style.display = 'none';
-        document.getElementById('notifications-menu').style.display = 'none';
+        document.getElementById('config-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
         menu.style.display = 'block'; menu.style.left = (btn.left + 10) + 'px'; menu.style.top = (btn.top - menu.offsetHeight - 10) + 'px';
     }
 }
@@ -573,8 +561,7 @@ window.fecharModalRenomear = () => document.getElementById('modal-renomear').sty
 
 window.confirmarProjeto = async function() {
     const nome = document.getElementById('input-nome-projeto').value.trim(); const genero = document.getElementById('input-genero-projeto').value.trim(); const descricao = document.getElementById('input-desc-projeto').value.trim();
-    if (!nome) return;
-    window.fecharModal(); 
+    if (!nome) return; window.fecharModal(); 
     if (usuarioAtual) {
         await addDoc(collection(db, "projetos"), { nome: nome, genero: genero, descricao: descricao, aberto: true, conversas: [], membros: [usuarioAtual.email], presenca: {} });
         mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_FOLDER); 
@@ -584,8 +571,7 @@ window.confirmarProjeto = async function() {
 window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     window.projetos[indexProj].conversas.push({ 
-        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false,
-        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
+        nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: usuarioAtual ? usuarioAtual.email : 'visitante', processando: false, mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
     });
     window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
@@ -604,12 +590,8 @@ window.removerColaborador = async (email) => {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
             if (proj && proj.id) { 
-                // Remove o colaborador E extermina completamente a presença fantasma dele
-                await updateDoc(doc(db, "projetos", proj.id), 
-                    "membros", arrayRemove(email),
-                    new FieldPath("presenca", email), deleteField()
-                );
-                window.abrirModalCompartilhar(); 
+                await updateDoc(doc(db, "projetos", proj.id), "membros", arrayRemove(email), new FieldPath("presenca", email), deleteField());
+                proj.membros = proj.membros.filter(m => m !== email); if(proj.presenca) delete proj.presenca[email]; window.abrirModalCompartilhar(); 
             }
         }
     }
@@ -671,8 +653,7 @@ window.salvarPersonalizacao = function() {
 
 window.abrirModalApiKey = () => { document.getElementById('config-menu').style.display = 'none'; document.getElementById('modal-apikey').style.display = 'flex'; }
 window.salvarApiKey = async () => { 
-    userApiKey = document.getElementById('input-api-key').value.trim(); 
-    localStorage.setItem('unity_google_api_key', userApiKey); 
+    userApiKey = document.getElementById('input-api-key').value.trim(); localStorage.setItem('unity_google_api_key', userApiKey); 
     if (usuarioAtual) { try { await setDoc(doc(db, "usuarios", usuarioAtual.uid), { googleApiKey: userApiKey }, { merge: true }); } catch(e) {} }
     document.getElementById('modal-apikey').style.display = 'none'; atualizarIndicadorApiKey(userApiKey); mostrarToast('Chave salva!', 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
 }
@@ -687,12 +668,19 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
 window.resetarVisualizacaoChat = function() { 
+    removerPresencaLocal(); // LIMPA PRESENÇA ANTES DE ANULAR VARIÁVEIS
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     document.getElementById('chat').innerHTML = '<div id="sem-conversa-msg">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>'; 
+    renderizarSidebar();
 }
 
 window.selecionarConversa = function(indexProj, indexConv) {
+    // PROTEÇÃO MÚLTIPLOS PROJETOS: Limpa a presença do projeto anterior na nuvem antes de entrar no novo
+    if (idProjetoAtivo !== null && idProjetoAtivo !== indexProj) {
+        removerPresencaLocal(); 
+    }
+
     idProjetoAtivo = indexProj; idConversaAtiva = indexConv;
     if (usuarioAtual && window.projetos[indexProj].id) {
         const proj = window.projetos[indexProj]; proj.presenca = proj.presenca || {}; proj.presenca[usuarioAtual.email] = indexConv;
