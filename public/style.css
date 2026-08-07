@@ -138,6 +138,7 @@ body {
 .sidebar-credits a { color: #F58220; text-decoration: none; font-weight: 600; transition: color 0.2s; }
 .sidebar-credits a:hover { color: #ff9b44; }
 #sidebar.recolhido .sidebar-credits { display: none; }
+#sidebar.recolhido .btn-apoio { display: none !important; }
 
 /* ================= MENUS DE CONTEXTO E CONFIGURAÇÕES ================= */
 #context-menu, #config-menu, #profile-menu, #notifications-menu {
@@ -201,30 +202,14 @@ header {
 
 /* BOTÃO HISTÓRICO EM FORMATO PÍLULA NO CABEÇALHO */
 #btn-historico {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #8b949e;
-    cursor: pointer;
-    padding: 6px 14px;
-    border-radius: 20px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    font-family: 'Space Grotesk', sans-serif;
-    transition: all 0.2s;
-    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
+    cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
+    justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: 500; font-family: 'Space Grotesk', sans-serif;
+    transition: all 0.2s; flex-shrink: 0;
 }
-#btn-historico:hover {
-    color: #ffffff;
-    border-color: #F58220;
-    background: rgba(245, 130, 32, 0.1);
-}
+#btn-historico:hover { color: #ffffff; border-color: #F58220; background: rgba(245, 130, 32, 0.1); }
 
 #chat { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth; }
-#sem-conversa-msg { margin: auto; color: #8b949e; text-align: center; font-size: 1.1rem; opacity: 0.7; padding: 20px;}
 
 .balao { max-width: 80%; padding: 16px 22px; line-height: 1.6; font-size: var(--chat-fs); box-shadow: 0 4px 15px rgba(0,0,0,0.15); word-wrap: break-word; transition: box-shadow 0.3s; word-break: break-word;}
 .aluno { 
@@ -404,10 +389,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     text-align: center;
 }
 
-.tour-highlight-parent {
-    position: relative !important; 
-    z-index: 3001 !important; 
-}
+.tour-highlight-parent { position: relative !important; z-index: 3001 !important; }
 
 @keyframes pulse-tour {
     0% { box-shadow: 0 0 0 0 rgba(245, 130, 32, 0.8); border-color: rgba(245, 130, 32, 1); }
@@ -415,13 +397,8 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     100% { box-shadow: 0 0 0 0 rgba(245, 130, 32, 0); border-color: rgba(245, 130, 32, 1); }
 }
 .tour-highlight {
-    position: relative !important; 
-    z-index: 3002 !important;
-    background-color: rgba(22, 27, 34, 1) !important;
-    border: 2px solid #F58220 !important;
-    border-radius: 8px !important;
-    animation: pulse-tour 2s infinite !important;
-    pointer-events: none;
+    position: relative !important; z-index: 3002 !important; background-color: rgba(22, 27, 34, 1) !important;
+    border: 2px solid #F58220 !important; border-radius: 8px !important; animation: pulse-tour 2s infinite !important; pointer-events: none;
 }
 
 /* ================= RESPONSIVIDADE MOBILE ================= */
@@ -440,3 +417,8 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     
     #historico-menu { width: 90vw; max-width: 320px; }
 }
+
+/* --- ESTILOS PARA IMAGENS NO CHAT E UPLOADS --- */
+#input-container { padding-bottom: 20px; }
+.balao-imagem { max-width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+.aluno .balao-imagem { border-color: rgba(255,255,255,0.3); }

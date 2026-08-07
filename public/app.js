@@ -754,7 +754,7 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT E ÍNDICE DE PERGUNTAS
+// 7. SISTEMA DE CHAT E TELA DE BOAS VINDAS
 // ==========================================================
 function getChaveConversa(pIdx, cIdx) { return `${pIdx}_${cIdx}`; }
 
@@ -763,15 +763,18 @@ window.resetarVisualizacaoChat = function() {
     idProjetoAtivo = null; idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
     document.getElementById('header-title').innerText = 'ComboBoy Researcher'; document.getElementById('header-subtitle').innerText = ''; 
     
-    // TELA DE BOAS VINDAS DO COMBOBOY ATUALIZADA
+    // TELA DE BOAS VINDAS DO COMBOBOY COM LOGO E TEXTO AJUSTADOS
     document.getElementById('chat').innerHTML = `
-        <div id="sem-conversa-msg" style="margin: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.9;">
-            <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 150px; height: 150px; margin-bottom: 20px;">
-            <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 2.2rem; margin: 0 0 10px 0; font-weight: 700; display:flex; align-items:center; gap:8px;">
+        <div id="sem-conversa-msg" style="margin: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.9; text-align: center; max-width: 500px; padding: 20px;">
+            <img src="assets/icons/comboboy.svg" alt="ComboBoy" style="width: 200px; height: 200px; margin-bottom: 10px; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5));">
+            <h2 style="font-family: 'Alumni Sans SC', sans-serif; font-size: 2.8rem; margin: 0 0 15px 0; font-weight: 700; display:flex; align-items:center; gap:8px;">
                 <span style="color: #F58220; font-style: italic;">COMBO</span><span style="color: #FFFFFF;">BOY</span> 
-                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; color: #8b949e; font-style: normal; font-weight: 500;">Online!</span>
+                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; color: #8b949e; font-style: normal; font-weight: 500; margin-top: 12px;">Online!</span>
             </h2>
-            <div style="color: #8b949e; text-align: center; font-size: 1.05rem;">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>
+            <p style="color: #c9d1d9; font-size: 1rem; line-height: 1.5; margin: 0 0 15px 0;">
+                Sou um pesquisador de game engines. Por enquanto, meu conhecimento é focado inteiramente no <b>Unity</b>.
+            </p>
+            <div style="color: #8b949e; font-size: 0.9rem;">Selecione uma conversa ao lado ou crie um novo projeto para começar.</div>
         </div>`; 
         
     const btnIndice = document.getElementById('btn-historico'); if (btnIndice) btnIndice.style.display = 'none';
@@ -805,7 +808,6 @@ window.selecionarConversa = function(indexProj, indexConv) {
     window.renderizarChat(); window.atualizarEstadoBotaoEnvio(); window.validarInput();
 }
 
-// CÁLCULO ATUALIZADO PARA CENTRALIZAR EXATAMENTE NO ÍCONE DO CABEÇALHO
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
