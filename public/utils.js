@@ -55,7 +55,6 @@ export const memesAviso = [
     "Hackerman detectado!", "B-baka! Faça direito!", "O sentido aranha está apitando... ação inválida.", 
     "Você ativou minha carta armadilha! (Bloqueado)", "Apenas usuários com Stand podem fazer isso."
 ];
-
 export function getMeme(tipo) {
     let lista = [];
     if(tipo === 'loading') lista = memesLoading;
