@@ -108,13 +108,13 @@
                 </div>
             </div>
 
-            <div style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; align-items: center; z-index: 10;">
+            <div style="display: flex; align-items: center; gap: 10px; position: relative; flex-shrink: 0; justify-content: flex-end;">
+                <!-- O botão fica junto aos outros para a organização Mobile funcionar -->
                 <button id="btn-historico" onclick="window.abrirMenuHistorico(event)" title="Histórico de Perguntas">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span class="txt-historico">Histórico</span>
                 </button>
-            </div>
 
-            <div style="display: flex; align-items: center; gap: 10px; position: relative; flex-shrink: 0; flex: 1; justify-content: flex-end;">
                 <button id="btn-colab" onclick="window.toggleSidebarColab()" title="Chat Lateral e Chamada P2P" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; border-radius: 6px; display: none; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#8b949e'">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </button>
@@ -144,26 +144,21 @@
 
             <div class="input-wrapper" id="main-input-wrapper">
                 <input type="file" id="input-anexo" accept="image/png, image/jpeg, image/webp, .cs, .txt, .js, .json" style="display: none;" onchange="window.lidarComAnexo(event)">
-                
                 <button id="btn-anexo" class="btn-acao-moderno" onclick="document.getElementById('input-anexo').click()" style="background: transparent; color: #8b949e;" title="Anexar Imagem ou Arquivo de Código">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                 </button>
-
                 <textarea id="mensagem" rows="1" placeholder="Pergunte, anexe ou arraste um script/print..." onkeydown="window.lidarComTecla(event)" oninput="window.ajustarAltura(this); window.validarInput();"></textarea>
-                
                 <button id="btn-acao" class="btn-acao-moderno enviar" onclick="window.lidarComAcao()" disabled>
                     <svg id="icon-send" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     <svg id="icon-stop" style="display: none;" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>
                 </button>
             </div>
-            
             <div style="text-align: center; font-size: 0.75rem; color: #8b949e; margin-top: 8px; font-weight: 500; letter-spacing: 0.3px;">
                 O ComboBoy ainda é um menino, tenha paciência.
             </div>
         </div>
     </main>
     
-    <!-- ================== BARRA LATERAL DIREITA (COLAB) ================== -->
     <aside id="sidebar-right">
         <div class="colab-inner">
             <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
@@ -176,7 +171,6 @@
                 </button>
             </div>
             
-            <!-- Controles da Chamada WebRTC -->
             <div class="call-controls">
                 <button id="btn-call-join" class="call-btn" onclick="window.toggleChamada()" title="Entrar na Chamada">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
@@ -187,22 +181,16 @@
                 <button id="btn-call-screen" class="call-btn" onclick="window.compartilharTela()" title="Compartilhar Tela" disabled>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                 </button>
-                <!-- NOVO BOTÃO DE HARDWARE -->
                 <button id="btn-call-settings" class="call-btn" onclick="window.abrirModalDevices()" title="Dispositivos">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </button>
             </div>
 
-            <!-- Avatares de quem está online apenas por voz -->
-            <div id="active-call-users" style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: none; gap: 10px; flex-wrap: wrap; justify-content: center;">
-            </div>
-
-            <!-- Chat Lateral Rápido -->
+            <div id="active-call-users" style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: none; gap: 10px; flex-wrap: wrap; justify-content: center;"></div>
             <div id="chat-lateral-msgs"></div>
 
             <div id="input-lateral-container">
                 <input type="text" id="input-lateral" placeholder="Fale com a equipe..." onkeydown="if(event.key==='Enter') window.enviarMensagemLateral()">
-                <!-- BOTÃO TOGGLE LOCAL/GLOBAL -->
                 <button id="btn-chat-scope" class="btn-chat-scope" onclick="window.toggleChatScope()" title="Enviando para: Sala Atual">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </button>
@@ -214,31 +202,18 @@
     </aside>
             
     <div id="context-menu"></div>
-    
     <div id="profile-menu">
-        <div class="context-item" onclick="window.abrirModalPerfil()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            Meu Perfil
-        </div>
+        <div class="context-item" onclick="window.abrirModalPerfil()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Meu Perfil</div>
         <hr style="margin:5px 0; border-color:rgba(255,255,255,0.05);">
-        <div class="context-item danger" onclick="window.confirmarLogout()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            Sair da Conta
-        </div>
+        <div class="context-item danger" onclick="window.confirmarLogout()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sair da Conta</div>
     </div>
-
     <div id="historico-menu">
         <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; color: #F58220; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Histórico de Perguntas</div>
-        <div id="lista-historico-popup" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
-            <div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma pergunta nesta conversa.</div>
-        </div>
+        <div id="lista-historico-popup" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;"><div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma pergunta nesta conversa.</div></div>
     </div>
-
     <div id="notifications-menu">
         <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; color: #F58220; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Notificações</div>
-        <div id="lista-notificacoes-popup" style="max-height: 250px; overflow-y: auto;">
-            <div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma notificação.</div>
-        </div>
+        <div id="lista-notificacoes-popup" style="max-height: 250px; overflow-y: auto;"><div style="color: #8b949e; font-size: 0.85rem; text-align: center; padding: 10px;">Nenhuma notificação.</div></div>
     </div>
 
     <!-- MENU DE CONFIGURAÇÕES -->
@@ -247,12 +222,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             Ajuda
         </div>
-
         <div class="context-item" onclick="window.togglePersonalizar()" style="justify-content: center; background: rgba(255,255,255,0.05); color: #c9d1d9; font-weight: 500;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
             Personalizar Experiência <span id="icon-chevron-personalizar" style="margin-left: auto; transition: 0.2s;">▼</span>
         </div>
-        
         <div id="accordion-personalizar" style="display: none; flex-direction: column; gap: 15px; padding: 15px 10px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-top: 5px;">
             <div style="font-weight: 600; font-size: 0.75rem; color: #F58220; text-transform: uppercase; letter-spacing: 0.5px;">Visual</div>
             <div>
@@ -273,10 +246,7 @@
             </div>
             <hr style="border-color: rgba(255,255,255,0.05); margin: 0;">
             <div style="font-weight: 600; font-size: 0.75rem; color: #F58220; text-transform: uppercase; letter-spacing: 0.5px;">Inteligência Artificial</div>
-            <div class="config-item">
-                <span>Código 100% Comentado</span>
-                <label class="switch"><input type="checkbox" id="check-pref-comentado" onchange="window.salvarPersonalizacao()"><span class="slider"></span></label>
-            </div>
+            <div class="config-item"><span>Código 100% Comentado</span><label class="switch"><input type="checkbox" id="check-pref-comentado" onchange="window.salvarPersonalizacao()"><span class="slider"></span></label></div>
             <div>
                 <div style="color: #c9d1d9; font-size: 0.85rem; margin-bottom: 8px;">Tamanho das Respostas</div>
                 <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 6px;">
@@ -287,64 +257,19 @@
             </div>
             <hr style="border-color: rgba(255,255,255,0.05); margin: 0;">
             <div style="font-weight: 600; font-size: 0.75rem; color: #F58220; text-transform: uppercase; letter-spacing: 0.5px;">Exportação</div>
-            <div class="config-item" style="margin-bottom: 5px;">
-                <span>Perguntar onde salvar arquivos</span>
-                <label class="switch"><input type="checkbox" id="toggle-ask-save" onchange="window.salvarPreferenciasConfig()"><span class="slider"></span></label>
-            </div>
+            <div class="config-item" style="margin-bottom: 5px;"><span>Perguntar onde salvar arquivos</span><label class="switch"><input type="checkbox" id="toggle-ask-save" onchange="window.salvarPreferenciasConfig()"><span class="slider"></span></label></div>
         </div>
 
         <div id="config-btn-apikey" class="context-item" style="margin-top: 10px; display: none; padding: 10px; justify-content: center; background: rgba(255,255,255,0.05); color: #F58220; font-weight: 500;" onclick="window.abrirModalApiKey()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-            Inserir Própria API Key
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>Inserir Própria API Key
         </div>
     </div>
 
-    <!-- MODAL MEU PERFIL -->
-    <div class="modal-overlay" id="modal-perfil">
-        <div class="modal-content" style="width: 450px;">
-            <button onclick="window.fecharModalPerfil()" class="btn-fechar-modal">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-            <h3 style="display:flex; align-items:center; gap:10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                Meu Perfil
-            </h3>
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome de Exibição:</div>
-            <input type="text" id="input-perfil-nome" placeholder="Seu Nome" style="margin-bottom: 15px;">
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Profissão / Cargo atual:</div>
-            <input type="text" id="input-perfil-profissao" placeholder="Ex: Desenvolvedor Indie" style="margin-bottom: 15px;">
-            <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Especialidades (Tags):</div>
-            <div id="container-tags" style="display: flex; flex-wrap: wrap; margin-bottom: 25px; gap: 2px;"></div>
-            <div class="modal-acoes">
-                <button class="btn-cancelar" onclick="window.fecharModalPerfil()">Cancelar</button>
-                <button class="btn-confirmar" onclick="window.salvarPerfil()">Salvar Perfil</button>
-            </div>
-        </div>
-    </div>
+    <!-- MODAIS RESTANTES -->
+    <div class="modal-overlay" id="modal-perfil"><div class="modal-content" style="width: 450px;"><button onclick="window.fecharModalPerfil()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Meu Perfil</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome de Exibição:</div><input type="text" id="input-perfil-nome" placeholder="Seu Nome" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Profissão / Cargo atual:</div><input type="text" id="input-perfil-profissao" placeholder="Ex: Desenvolvedor Indie" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Especialidades (Tags):</div><div id="container-tags" style="display: flex; flex-wrap: wrap; margin-bottom: 25px; gap: 2px;"></div><div class="modal-acoes"><button class="btn-cancelar" onclick="window.fecharModalPerfil()">Cancelar</button><button class="btn-confirmar" onclick="window.salvarPerfil()">Salvar Perfil</button></div></div></div>
     
-    <!-- MODAL DE DISPOSITIVOS DE ÁUDIO E TELA -->
-    <div class="modal-overlay" id="modal-devices">
-        <div class="modal-content" style="width: 400px;">
-            <button onclick="document.getElementById('modal-devices').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <h3 style="display:flex; align-items:center; gap:10px; margin-bottom: 15px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                Dispositivos
-            </h3>
-            
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Microfone (Entrada):</div>
-            <select id="select-mic" class="device-select"></select>
+    <div class="modal-overlay" id="modal-devices"><div class="modal-content" style="width: 400px;"><button onclick="document.getElementById('modal-devices').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px; margin-bottom: 15px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>Dispositivos</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Microfone (Entrada):</div><select id="select-mic" class="device-select"></select><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Alto-falante (Saída):</div><select id="select-speaker" class="device-select"></select><div class="modal-acoes"><button class="btn-cancelar" onclick="document.getElementById('modal-devices').style.display='none'">Cancelar</button><button class="btn-confirmar" onclick="window.salvarDevices()">Salvar</button></div></div></div>
 
-            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Alto-falante (Saída):</div>
-            <select id="select-speaker" class="device-select"></select>
-
-            <div class="modal-acoes">
-                <button class="btn-cancelar" onclick="document.getElementById('modal-devices').style.display='none'">Cancelar</button>
-                <button class="btn-confirmar" onclick="window.salvarDevices()">Salvar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- OUTROS MODAIS -->
     <div class="modal-overlay" id="modal-projeto"><div class="modal-content" style="width: 400px;"><button onclick="window.fecharModal()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3>Novo Projeto</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome do Projeto:</div><input type="text" id="input-nome-projeto" placeholder="Ex: Jogo RPG 2D" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Motor Gráfico (Engine):</div><div class="engine-tabs-container"><button class="engine-pill active">Unity</button><button class="engine-pill disabled" title="Em breve">Unreal</button><button class="engine-pill disabled" title="Em breve">Godot</button></div><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Gênero do Jogo:</div><input type="text" id="input-genero-projeto" placeholder="Ex: Plataforma, FPS..." style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Descrição (Opcional):</div><textarea id="input-desc-projeto" placeholder="Breve descrição..." rows="3" style="width: 100%; padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-bottom: 24px; box-sizing: border-box; outline: none; font-family: 'Space Grotesk', sans-serif; resize: none;"></textarea><div class="modal-acoes"><button class="btn-cancelar" onclick="window.fecharModal()">Cancelar</button><button class="btn-confirmar" onclick="window.confirmarProjeto()">Criar Projeto</button></div></div></div>
 
     <div class="modal-overlay" id="modal-compartilhar"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-compartilhar').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;">Gerenciar Colab</h3><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Adicionar novo colaborador:</div><div style="display: flex; gap: 8px; margin-bottom: 20px;"><input type="email" id="input-email-convite" placeholder="amigo@email.com" style="margin-bottom: 0; flex: 1;"><button class="btn-confirmar" onclick="window.confirmarCompartilhamento()" style="white-space: nowrap;">Convidar</button></div><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">Colaboradores Atuais:</div><div id="lista-colaboradores-atual" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div></div></div>
