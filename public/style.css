@@ -182,7 +182,6 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
 /* ================= ÁREA PRINCIPAL E CABEÇALHO FLEX ================= */
 #main-area { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; overflow: hidden; min-width: 0; }
 
-/* Header com 3 colunas Flexbox para impedir sobreposição! */
 header { 
     background: rgba(13, 17, 23, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     padding: 12px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10;
@@ -198,14 +197,12 @@ header {
 #header-title { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.7rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
-/* BOTÕES DE CABEÇALHO GERAIS */
 .header-btn {
     background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; 
     border-radius: 6px; display: none; align-items: center; justify-content: center; transition: all 0.2s; position: relative;
 }
 .header-btn:hover { color: white; }
 
-/* BOTÃO HISTÓRICO ESPECÍFICO */
 #btn-historico {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
     cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
@@ -271,6 +268,9 @@ code { background: rgba(0,0,0,0.3); padding: 3px 6px; border: 1px solid rgba(255
 pre { background: rgba(0,0,0,0.3); padding: 18px; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow-x: auto; margin: 12px 0;}
 pre code { padding: 0; border: none; background: transparent; }
 .hljs { background: transparent !important; padding: 0 !important; }
+
+/* CLASSE MÁGICA PARA ESCONDER COMENTÁRIOS */
+code.hide-comments .hljs-comment { display: none !important; }
 
 .code-wrapper { margin: 12px 0; background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.2);}
 .code-header { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
@@ -367,7 +367,6 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 
 #input-lateral-container .btn-send-lateral { width: 38px; height: 38px; border-radius: 50%; border: none; background: #F58220; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
 
-/* SELECTS DO MODAL DE DISPOSITIVOS */
 select.device-select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; margin-bottom: 20px; outline: none; font-family: 'Space Grotesk', sans-serif; cursor: pointer;}
 select.device-select option { background: #161b22; color: white; }
 
