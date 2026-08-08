@@ -10,6 +10,21 @@ window.chatScope = 'local';
 window.selectedAudioInput = '';
 window.selectedAudioOutput = '';
 
+// Variáveis para a Mesa de Som Virtual (Mixagem de Áudio)
+window.audioMixerContext = null;
+window.audioMixerDest = null;
+window.micNode = null;
+window.sysNode = null;
+
+// ==========================================================
+// CONFIGURAÇÕES AVANÇADAS DE ÁUDIO (CARREGAMENTO)
+// ==========================================================
+window.configAudio = {
+    noiseSupp: localStorage.getItem('unity_noise_supp') !== 'false', // Padrão: Ativo
+    autoGain: localStorage.getItem('unity_auto_gain') !== 'false',   // Padrão: Ativo
+    screenAudio: localStorage.getItem('unity_screen_audio') !== 'false' // Padrão: Ativo
+};
+
 // ==========================================================
 // CHAT LATERAL DE EQUIPE (TEXTO)
 // ==========================================================
@@ -111,7 +126,7 @@ window.renderizarUsuariosNaChamada = function() {
 };
 
 // ==========================================================
-// SELEÇÃO DE DISPOSITIVOS (MICROFONE/FONES)
+// SELEÇÃO DE DISPOSITIVOS E CONFIGURAÇÕES AVANÇADAS
 // ==========================================================
 window.abrirModalDevices = async function() {
     try {
@@ -134,6 +149,12 @@ window.abrirModalDevices = async function() {
                 selOutput.appendChild(opt);
             }
         });
+        
+        // Carrega o estado atual dos toggles do painel de áudio
+        document.getElementById('check-noise-supp').checked = window.configAudio.noiseSupp;
+        document.getElementById('check-auto-gain').checked = window.configAudio.autoGain;
+        document.getElementById('check-screen-audio').checked = window.configAudio.screenAudio;
+        
         document.getElementById('modal-devices').style.display = 'flex';
     } catch(e) {
         mostrarToast("Permita o uso do microfone primeiro.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
@@ -144,6 +165,15 @@ window.salvarDevices = async function() {
     window.selectedAudioInput = document.getElementById('select-mic').value;
     window.selectedAudioOutput = document.getElementById('select-speaker').value;
     
+    // Salva opções avançadas
+    window.configAudio.noiseSupp = document.getElementById('check-noise-supp').checked;
+    window.configAudio.autoGain = document.getElementById('check-auto-gain').checked;
+    window.configAudio.screenAudio = document.getElementById('check-screen-audio').checked;
+    
+    localStorage.setItem('unity_noise_supp', window.configAudio.noiseSupp);
+    localStorage.setItem('unity_auto_gain', window.configAudio.autoGain);
+    localStorage.setItem('unity_screen_audio', window.configAudio.screenAudio);
+    
     const audios = document.querySelectorAll('audio');
     audios.forEach(async a => {
         if(a.setSinkId && window.selectedAudioOutput) {
@@ -151,26 +181,72 @@ window.salvarDevices = async function() {
         }
     });
     
+    // Se o microfone já estiver ativo, reiniciamos ele com as novas configurações de IA
     if(streamLocalAudio) {
+        const wasEnabled = document.getElementById('btn-call-mic').classList.contains('active');
         streamLocalAudio.getTracks().forEach(t => t.stop());
         try {
-            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: window.selectedAudioInput ? { exact: window.selectedAudioInput } : undefined } });
-            const newAudioTrack = streamLocalAudio.getAudioTracks()[0];
-            if(!document.getElementById('btn-call-mic').classList.contains('active')) {
-                newAudioTrack.enabled = false;
-            }
-            Object.values(chamadasAtivas).forEach(call => {
-                const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
-                if(sender) sender.replaceTrack(newAudioTrack);
+            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    deviceId: window.selectedAudioInput ? { exact: window.selectedAudioInput } : undefined,
+                    noiseSuppression: window.configAudio.noiseSupp,
+                    echoCancellation: true,
+                    autoGainControl: window.configAudio.autoGain
+                } 
             });
+            streamLocalAudio.getAudioTracks()[0].enabled = wasEnabled;
+            window.atualizarMixerAudio(); // Atualiza a mesa de som com o microfone limpo
         } catch(e){}
     }
+    
     document.getElementById('modal-devices').style.display = 'none';
-    mostrarToast("Dispositivos atualizados", "rgba(46, 204, 113, 0.9)", SVG_SETTINGS);
+    mostrarToast("Dispositivos e Filtros atualizados", "rgba(46, 204, 113, 0.9)", SVG_SETTINGS);
 }
 
 // ==========================================================
-// MOTOR WEBRTC P2P - VOZ E TELA (RACE CONDITION PROOF)
+// MESA DE SOM VIRTUAL (MIXAGEM: MICROFONE + TELA)
+// ==========================================================
+window.inicializarMixer = function() {
+    if (!window.audioMixerContext) {
+        window.audioMixerContext = new (window.AudioContext || window.webkitAudioContext)();
+        window.audioMixerDest = window.audioMixerContext.createMediaStreamDestination();
+    }
+}
+
+window.atualizarMixerAudio = function() {
+    window.inicializarMixer();
+    
+    if (window.micNode) { window.micNode.disconnect(); window.micNode = null; }
+    if (streamLocalAudio && streamLocalAudio.getAudioTracks().length > 0) {
+        window.micNode = window.audioMixerContext.createMediaStreamSource(streamLocalAudio);
+        window.micNode.connect(window.audioMixerDest);
+    }
+
+    if (window.sysNode) { window.sysNode.disconnect(); window.sysNode = null; }
+    if (streamLocalVideo && streamLocalVideo.getAudioTracks().length > 0) {
+        window.sysNode = window.audioMixerContext.createMediaStreamSource(streamLocalVideo);
+        window.sysNode.connect(window.audioMixerDest);
+    }
+}
+
+window.obterTransmissaoFinal = function() {
+    window.inicializarMixer();
+    let combined = new MediaStream();
+    
+    // Adiciona o áudio já mixado (Mic + PC)
+    const mixedAudioTracks = window.audioMixerDest.stream.getAudioTracks();
+    if (mixedAudioTracks.length > 0) combined.addTrack(mixedAudioTracks[0]);
+    
+    // Adiciona o vídeo da tela (se houver)
+    if (streamLocalVideo && streamLocalVideo.getVideoTracks().length > 0) {
+        combined.addTrack(streamLocalVideo.getVideoTracks()[0]);
+    }
+    
+    return combined;
+}
+
+// ==========================================================
+// MOTOR WEBRTC P2P - CHAMADA E TELA
 // ==========================================================
 window.atualizarBotoesChamada = function() {
     if (window.idProjetoAtivo === null || window.idConversaAtiva === null || !window.projetos[window.idProjetoAtivo]) return;
@@ -211,11 +287,7 @@ window.inicializarPeer = function() {
     });
 
     meuPeer.on('call', (call) => {
-        let mediaCombinada = new MediaStream();
-        if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => mediaCombinada.addTrack(t));
-        if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => mediaCombinada.addTrack(t));
-        
-        call.answer(mediaCombinada); 
+        call.answer(window.obterTransmissaoFinal()); 
         chamadasAtivas[call.peer] = call;
         call.on('stream', (streamRemoto) => { window.gerenciarMediaRemota(streamRemoto, call.peer); });
         call.on('close', () => window.limparMediaRemota(call.peer));
@@ -228,7 +300,15 @@ window.toggleChamada = async function() {
         window.sairDaChamada(false);
     } else {
         try {
-            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ audio: window.selectedAudioInput ? { deviceId: { exact: window.selectedAudioInput } } : true });
+            streamLocalAudio = await navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    deviceId: window.selectedAudioInput ? { exact: window.selectedAudioInput } : undefined,
+                    noiseSuppression: window.configAudio.noiseSupp,
+                    echoCancellation: true,
+                    autoGainControl: window.configAudio.autoGain
+                } 
+            });
+            window.atualizarMixerAudio();
             document.getElementById('btn-call-mic').classList.add('active');
             window.inicializarPeer();
         } catch(e) { mostrarToast("Permissão de microfone negada.", 'rgba(218, 54, 51, 0.9)', SVG_WARN); }
@@ -236,6 +316,9 @@ window.toggleChamada = async function() {
 }
 
 window.sairDaChamada = function(force = false) {
+    if (window.micNode) { window.micNode.disconnect(); window.micNode = null; }
+    if (window.sysNode) { window.sysNode.disconnect(); window.sysNode = null; }
+    
     if (streamLocalAudio) { streamLocalAudio.getTracks().forEach(t => t.stop()); streamLocalAudio = null; }
     if (streamLocalVideo) { streamLocalVideo.getTracks().forEach(t => t.stop()); streamLocalVideo = null; }
     
@@ -294,13 +377,19 @@ window.compartilharTela = async function() {
                 mostrarToast("Outro usuário já está compartilhando.", "rgba(218, 54, 51, 0.9)", SVG_WARN); return;
             }
             
-            streamLocalVideo = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            // Pede o vídeo da tela E o Áudio (Se o usuário ativou nas configurações)
+            streamLocalVideo = await navigator.mediaDevices.getDisplayMedia({ 
+                video: true,
+                audio: window.configAudio.screenAudio
+            });
+            
             document.getElementById('btn-call-screen').classList.add('active');
             
             proj.conversas[window.idConversaAtiva].tela = window.usuarioAtual.email;
             window.salvarDadosAtuais(window.idProjetoAtivo);
 
             streamLocalVideo.getVideoTracks()[0].onended = () => window.compartilharTela();
+            window.atualizarMixerAudio();
             window.atualizarStreamsP2P();
         } else {
             streamLocalVideo.getTracks().forEach(t => t.stop());
@@ -311,35 +400,32 @@ window.compartilharTela = async function() {
             window.salvarDadosAtuais(window.idProjetoAtivo);
 
             window.limparMediaRemota(meuPeer.id, true);
+            window.atualizarMixerAudio();
             window.atualizarStreamsP2P();
         }
     } catch(e) {}
 }
 
 window.atualizarStreamsP2P = function() {
-    let combinedStream = new MediaStream();
-    if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => combinedStream.addTrack(t));
-    if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => combinedStream.addTrack(t));
-    
     const oldLocal = document.getElementById(`video-${meuPeer.id}`);
     if(oldLocal) oldLocal.remove();
     
-    if(streamLocalVideo) window.gerenciarMediaRemota(combinedStream, meuPeer.id, true);
+    if(streamLocalVideo) window.gerenciarMediaRemota(window.obterTransmissaoFinal(), meuPeer.id, true);
 
     if (window.idProjetoAtivo === null || !window.projetos[window.idProjetoAtivo]) return;
     const proj = window.projetos[window.idProjetoAtivo];
     const chamadaAtiva = proj.conversas[window.idConversaAtiva].chamada || {};
     
-    // DEBOUNCE OTIMIZADO
+    // Atualiza os parceiros conectados
     Object.values(chamadasAtivas).forEach(c => c.close());
     chamadasAtivas = {};
     document.getElementById('stage-container').innerHTML = ''; 
-    if(streamLocalVideo) window.gerenciarMediaRemota(combinedStream, meuPeer.id, true); 
+    if(streamLocalVideo) window.gerenciarMediaRemota(window.obterTransmissaoFinal(), meuPeer.id, true); 
 
     setTimeout(() => {
         Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
             if (email !== window.usuarioAtual.email) {
-                const call = meuPeer.call(peerIdRemoto, combinedStream);
+                const call = meuPeer.call(peerIdRemoto, window.obterTransmissaoFinal());
                 if (call) {
                     chamadasAtivas[peerIdRemoto] = call;
                     call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));
@@ -355,13 +441,9 @@ window.verificarNovosPeers = function() {
     const proj = window.projetos[window.idProjetoAtivo];
     const chamadaAtiva = proj.conversas[window.idConversaAtiva].chamada || {};
     
-    let combinedStream = new MediaStream();
-    if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => combinedStream.addTrack(t));
-    if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => combinedStream.addTrack(t));
-
     Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
         if (email !== window.usuarioAtual.email && !chamadasAtivas[peerIdRemoto]) {
-            const call = meuPeer.call(peerIdRemoto, combinedStream);
+            const call = meuPeer.call(peerIdRemoto, window.obterTransmissaoFinal());
             if (call) {
                 chamadasAtivas[peerIdRemoto] = call;
                 call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));

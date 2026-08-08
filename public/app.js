@@ -240,7 +240,7 @@ window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     window.projetos[indexProj].conversas.push({ 
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: window.usuarioAtual ? window.usuarioAtual.email : 'visitante', processando: false,
-        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!`, timestamp: Date.now() }] 
+        mensagens: [{ papel: 'bot', texto: `Olá, sou o ComboBoy, o que iremos aprender e criar hoje?`, timestamp: Date.now() }] 
     });
     window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); window.renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
