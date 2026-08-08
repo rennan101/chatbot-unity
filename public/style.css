@@ -193,13 +193,12 @@ header {
 #header-title { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.7rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
-/* BOTÃO HISTÓRICO NO CABEÇALHO (Desktop: Centralizado / Mobile: Alinhado a direita) */
+/* BOTÃO HISTÓRICO NO CABEÇALHO (Desktop: Centralizado via Position Absolute) */
 #btn-historico {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
     cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
     justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: 500; font-family: 'Space Grotesk', sans-serif;
     transition: all 0.2s; flex-shrink: 0;
-    
     position: absolute; left: 50%; transform: translateX(-50%); z-index: 10;
 }
 #btn-historico:hover { color: #ffffff; border-color: #F58220; background: rgba(245, 130, 32, 0.1); }
@@ -309,13 +308,17 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } 70% { box-shadow: 0 0 0 6px rgba(46, 160, 67, 0); } }
 .pulse-verde { animation: pulse-green 2s infinite; }
 
-/* Animação dos 3 Pontinhos de Digitação */
+/* Animação dos 3 Pontinhos de Digitação Corrigida */
 @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-    40% { transform: scale(1); opacity: 1; }
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-4px); opacity: 1; }
+}
+.typing-indicator span { 
+    display: inline-block; width: 6px; height: 6px; background-color: #8b949e; border-radius: 50%; 
+    animation: bounce 1.4s infinite ease-in-out both; 
 }
 
-/* ================= ABA LATERAL DIREITA (CHAT COLLAB) ================= */
+/* ================= ABA LATERAL DIREITA (CHAT COLLAB) QUE EMPURRA O CONTEUDO ================= */
 #sidebar-right {
     width: 0; opacity: 0; overflow: hidden; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     display: flex; flex-direction: column; flex-shrink: 0; border-left: none;
@@ -376,7 +379,6 @@ select.device-select option { background: #161b22; color: white; }
 .typing-container { display: flex; align-items: center; gap: 10px; font-style: italic; color: #8b949e; font-size: var(--chat-fs); height: 24px; }
 .typing-container span.meme-text { transition: opacity 0.3s ease-in-out; }
 .typing-indicator { display: flex; gap: 6px; align-items: center; }
-.typing-indicator span { width: 6px; height: 6px; background-color: #8b949e; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
 .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
 .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
@@ -394,32 +396,41 @@ select.device-select option { background: #161b22; color: white; }
 @keyframes pulse-tour { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 130, 32, 0); border-color: rgba(245, 130, 32, 1); } 70% { box-shadow: 0 0 0 12px rgba(245, 130, 32, 0); border-color: rgba(245, 130, 32, 0.5); } }
 .tour-highlight { position: relative !important; z-index: 3002 !important; background-color: rgba(22, 27, 34, 1) !important; border: 2px solid #F58220 !important; border-radius: 8px !important; animation: pulse-tour 2s infinite !important; pointer-events: none; }
 
-/* ================= RESPONSIVIDADE MOBILE ================= */
+/* ================= RESPONSIVIDADE MOBILE SUPERIOR ================= */
 @media (max-width: 768px) {
-    /* Barra Esquerda ocupa toda a tela */
-    #sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 100vw !important; max-width: none; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 2000; }
+    /* Barra Esquerda ocupa toda a tela (100vw/100vh) */
+    #sidebar { 
+        position: fixed; top: 0; left: 0; height: 100vh !important; height: 100dvh !important; width: 100vw !important; 
+        max-width: none; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 2000; 
+        background: #161b22 !important; /* Cor sólida para não vazar a tela de trás */
+    }
     #sidebar.open { transform: translateX(0); }
-    #sidebar.recolhido { transform: translateX(-100%); width: 280px; }
+    #sidebar.recolhido { transform: translateX(-100%); width: 100vw !important; }
+    
     #btn-toggle-sidebar { display: none !important; }
     .sidebar-backdrop.active { display: block; }
     .mobile-menu-btn { display: flex !important; }
     
+    /* Barra Direita (Colab) ocupa toda a tela (100vw/100vh) */
+    #sidebar-right { 
+        position: fixed; top: 0; right: 0; height: 100vh !important; height: 100dvh !important; width: 100vw !important; 
+        max-width: none; z-index: 2000; transform: translateX(100%); 
+        background: #161b22 !important; /* Cor sólida */
+    }
+    #sidebar-right.open { width: 100vw !important; transform: translateX(0); }
+    .colab-inner { width: 100vw !important; height: 100% !important; background: #161b22 !important; }
+    
+    /* Botão de Histórico retorna ao fluxo padrão para ficar do lado dos ícones de Colab/Notificação */
+    #btn-historico {
+        position: relative !important; left: auto !important; transform: none !important; 
+        padding: 6px; border-radius: 6px; background: transparent !important; border: none !important;
+    }
+    #btn-historico .txt-historico { display: none; } /* Oculta a palavra para economizar espaço */
+
     #chat-header { padding: 10px 12px; }
     #chat { padding: 12px; gap: 16px; overflow-x: hidden; }
     #input-container { padding: 12px; }
     .balao { max-width: 95%; padding: 12px 16px; }
-    
-    /* Barra Direita (Collab) ocupa toda a tela */
-    #sidebar-right { position: fixed; top: 0; right: 0; height: 100%; width: 100vw !important; max-width: none; z-index: 2000; transform: translateX(100%); }
-    #sidebar-right.open { transform: translateX(0); }
-    .colab-inner { width: 100vw !important; height: 100% !important; }
-    
-    /* Reposiciona Botão de Histórico para a direita, junto aos outros botões, sem texto */
-    #btn-historico {
-        position: relative !important; left: auto !important; transform: none !important; 
-        padding: 6px; border-radius: 6px; background: transparent; border: none;
-    }
-    #btn-historico .txt-historico { display: none; }
     
     #historico-menu { width: 90vw; max-width: 320px; right: 15px !important; left: auto !important; transform: none !important; }
     .engine-tabs-container { padding: 8px 12px; gap: 8px; }
