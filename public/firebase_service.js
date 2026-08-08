@@ -17,7 +17,8 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-window.perfilGlobalData = { profissao: "", tags: [] };
+// Estado global do perfil expandido com o Nível de Conhecimento
+window.perfilGlobalData = { profissao: "", tags: [], nivel: "six_seven" };
 window.tagsSelecionadas = [];
 
 // ==========================================================
@@ -75,7 +76,7 @@ window.iniciarEscutaUsuarios = function() {
 }
 
 // ==========================================================
-// 2. AUTH E GESTÃO DE PERFIL
+// 2. AUTH E GESTÃO DE PERFIL COM NÍVEIS
 // ==========================================================
 window.atualizarBotaoPerfilGlobal = function() {
     if(!window.usuarioAtual) return;
@@ -103,6 +104,7 @@ onAuthStateChanged(auth, async (user) => {
                 const data = docSnap.data();
                 window.perfilGlobalData.profissao = data.profissao || "";
                 window.perfilGlobalData.tags = data.tags || [];
+                window.perfilGlobalData.nivel = data.nivel || "six_seven"; // Puxa o nível do banco
                 window.tagsSelecionadas = data.tags || [];
 
                 if (data.googleApiKey) {
@@ -129,7 +131,7 @@ onAuthStateChanged(auth, async (user) => {
         if (window.unsubscribeUsuarios) window.unsubscribeUsuarios();
         
         window.usuarioAtual = null; window.mapUsuarios = {};
-        window.perfilGlobalData = { profissao: "", tags: [] };
+        window.perfilGlobalData = { profissao: "", tags: [], nivel: "six_seven" };
         
         btnProfile.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="texto-btn">Minha Conta</span>`;
         btnProfile.onclick = window.abrirModalAuth;
@@ -184,9 +186,17 @@ window.confirmarLogout = async function() {
         if (window.unsubscribeUsuarios) window.unsubscribeUsuarios();
         
         await window.limparMinhaPresencaGlobal(); 
-        await signOut(auth); // Restauração do comando de logout
+        await signOut(auth);
         window.location.reload(); 
     }
+}
+
+// Seleção de Nível na Interface de Perfil
+window.selecionarNivel = function(nivelID) {
+    window.perfilGlobalData.nivel = nivelID;
+    document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+    const btnSelecionado = document.getElementById(`btn-nivel-${nivelID}`);
+    if (btnSelecionado) btnSelecionado.classList.add('active');
 }
 
 window.renderizarTags = function() {
@@ -212,6 +222,10 @@ window.abrirModalPerfil = async function() {
     document.getElementById('input-perfil-profissao').value = window.perfilGlobalData.profissao;
     window.tagsSelecionadas = [...window.perfilGlobalData.tags];
     window.renderizarTags();
+    
+    // Marca o botão correto do nível de conhecimento
+    window.selecionarNivel(window.perfilGlobalData.nivel || 'six_seven');
+    
     document.getElementById('modal-perfil').style.display = 'flex';
 }
 window.fecharModalPerfil = function() { document.getElementById('modal-perfil').style.display = 'none'; }
@@ -222,9 +236,20 @@ window.salvarPerfil = async function() {
     const profissao = document.getElementById('input-perfil-profissao').value.trim();
     try {
         if(nome && nome !== window.usuarioAtual.displayName) await updateProfile(window.usuarioAtual, { displayName: nome });
-        await setDoc(doc(db, "usuarios", window.usuarioAtual.uid), { nome: nome, profissao: profissao, tags: window.tagsSelecionadas, email: window.usuarioAtual.email }, { merge: true });
-        window.perfilGlobalData.profissao = profissao; window.perfilGlobalData.tags = [...window.tagsSelecionadas];
-        window.fecharModalPerfil(); mostrarToast(getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+        
+        // Salva as tags, profissão e o nível no Firestore
+        await setDoc(doc(db, "usuarios", window.usuarioAtual.uid), { 
+            nome: nome, 
+            profissao: profissao, 
+            tags: window.tagsSelecionadas, 
+            nivel: window.perfilGlobalData.nivel,
+            email: window.usuarioAtual.email 
+        }, { merge: true });
+        
+        window.perfilGlobalData.profissao = profissao; 
+        window.perfilGlobalData.tags = [...window.tagsSelecionadas];
+        window.fecharModalPerfil(); 
+        mostrarToast(getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
     } catch(e) { mostrarToast(getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN); }
 }
 

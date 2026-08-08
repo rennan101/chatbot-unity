@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ComboBoy Researcher</title>
+    <!-- IMPORTANDO AS FONTES -->
     <link href="https://fonts.googleapis.com/css2?family=Alumni+Sans+SC:ital,wght@0,700;1,700&family=Fira+Code:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="icon" type="image/svg+xml" href="/assets/icons/combogo_icon.svg">    
@@ -267,7 +268,40 @@
     </div>
 
     <!-- MODAIS RESTANTES -->
-    <div class="modal-overlay" id="modal-perfil"><div class="modal-content" style="width: 450px;"><button onclick="window.fecharModalPerfil()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Meu Perfil</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome de Exibição:</div><input type="text" id="input-perfil-nome" placeholder="Seu Nome" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Profissão / Cargo atual:</div><input type="text" id="input-perfil-profissao" placeholder="Ex: Desenvolvedor Indie" style="margin-bottom: 15px;"><div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Especialidades (Tags):</div><div id="container-tags" style="display: flex; flex-wrap: wrap; margin-bottom: 25px; gap: 2px;"></div><div class="modal-acoes"><button class="btn-cancelar" onclick="window.fecharModalPerfil()">Cancelar</button><button class="btn-confirmar" onclick="window.salvarPerfil()">Salvar Perfil</button></div></div></div>
+    <div class="modal-overlay" id="modal-perfil">
+        <div class="modal-content" style="width: 450px;">
+            <button onclick="window.fecharModalPerfil()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <h3 style="display:flex; align-items:center; gap:10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Meu Perfil</h3>
+            
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nome de Exibição:</div>
+            <input type="text" id="input-perfil-nome" placeholder="Seu Nome" style="margin-bottom: 15px;">
+            
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Profissão / Cargo atual:</div>
+            <input type="text" id="input-perfil-profissao" placeholder="Ex: Desenvolvedor Indie" style="margin-bottom: 15px;">
+            
+            <!-- NOVA SESSÃO: Nível de Conhecimento -->
+            <div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Nível de Conhecimento em Unity:</div>
+            <div class="level-container">
+                <div class="level-btn" onclick="window.selecionarNivel('chupetinha')" id="btn-nivel-chupetinha">
+                    <span class="level-title">🍼 Chupetinha</span>
+                    <span class="level-desc">Não sei nada. Me explique tudo bem simples.</span>
+                </div>
+                <div class="level-btn" onclick="window.selecionarNivel('six_seven')" id="btn-nivel-six_seven">
+                    <span class="level-title">🤓 Six/Seven</span>
+                    <span class="level-desc">Sei + ou -. Conheço o básico e já fiz projetinhos.</span>
+                </div>
+                <div class="level-btn" onclick="window.selecionarNivel('nextagebb')" id="btn-nivel-nextagebb">
+                    <span class="level-title">😎 NextageBB</span>
+                    <span class="level-desc">Pro Player. Linguagem técnica, foco em projetos AAA.</span>
+                </div>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #c9d1d9;">Especialidades (Tags):</div>
+            <div id="container-tags" style="display: flex; flex-wrap: wrap; margin-bottom: 25px; gap: 2px;"></div>
+            
+            <div class="modal-acoes"><button class="btn-cancelar" onclick="window.fecharModalPerfil()">Cancelar</button><button class="btn-confirmar" onclick="window.salvarPerfil()">Salvar Perfil</button></div>
+        </div>
+    </div>
     
     <div class="modal-overlay" id="modal-devices"><div class="modal-content" style="width: 400px;"><button onclick="document.getElementById('modal-devices').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px; margin-bottom: 15px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>Dispositivos</h3><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Microfone (Entrada):</div><select id="select-mic" class="device-select"></select><div style="text-align: left; margin-bottom: 5px; font-size: 0.85rem; color: #c9d1d9;">Alto-falante (Saída):</div><select id="select-speaker" class="device-select"></select><div class="modal-acoes"><button class="btn-cancelar" onclick="document.getElementById('modal-devices').style.display='none'">Cancelar</button><button class="btn-confirmar" onclick="window.salvarDevices()">Salvar</button></div></div></div>
 

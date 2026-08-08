@@ -291,6 +291,7 @@ window.deletarProjeto = async function() {
     }
 }
 
+// ACORDEÃO E CONFIGURAÇÕES
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -351,9 +352,8 @@ window.salvarApiKey = async () => {
 let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false'; document.getElementById('toggle-ask-save').checked = configAskToSave;
 window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
-
 // ==========================================================
-// 3. SISTEMA DE ANEXOS E DRAG AND DROP RECUPERADOS
+// 3. SISTEMA DE ANEXOS E DRAG AND DROP
 // ==========================================================
 window.lidarComAnexo = function(eventOrFile) {
     const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
@@ -418,7 +418,6 @@ if (dropZone) {
         }
     });
 }
-
 
 // ==========================================================
 // 4. SISTEMA DE CHAT E TELA INICIAL
@@ -607,7 +606,7 @@ window.lidarComAcao = function() {
     } else { window.enviarMensagem(); }
 }
 
-// CORREÇÃO: Função de envio de mensagens recuperada no escopo global
+// INJEÇÃO DA PERSONA E ENVIO PARA O BACKEND
 window.enviarMensagem = async function() {
     if (window.idProjetoAtivo === null || window.idConversaAtiva === null) return;
     const pIdx = window.idProjetoAtivo; const cIdx = window.idConversaAtiva;
@@ -627,6 +626,8 @@ window.enviarMensagem = async function() {
 
     const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
     const autorEmail = window.usuarioAtual ? window.usuarioAtual.email : null;
+    
+    // O texto mostrado na tela para o usuário (Limpo)
     const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome, autorEmail: autorEmail }; 
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
     
@@ -644,12 +645,25 @@ window.enviarMensagem = async function() {
 
     const controller = new AbortController(); window.statusConversas[chave] = { ativa: true, controller: controller };
 
+    // --- INJEÇÃO DA PERSONA SECRETA ---
+    let instrucaoNivel = "";
+    if (window.perfilGlobalData.nivel === 'chupetinha') {
+        instrucaoNivel = "Aja como se eu fosse uma criança de 10 anos que não sabe absolutamente nada de programação ou Unity. Explique tudo de forma extremamente simples e muito didática.";
+    } else if (window.perfilGlobalData.nivel === 'nextagebb') {
+        instrucaoNivel = "Aja como se eu fosse um Pro Player sênior na indústria de jogos. Use termos técnicos avançados e foque em arquitetura limpa, performance de alto nível e projetos AAA.";
+    } else {
+        instrucaoNivel = "Aja como se eu fosse um desenvolvedor que já fez pequenos projetos e conhece um pouco de programação.";
+    }
+
+    let instrucaoChaves = window.prefComentado ? " REGRA: Como solicitarei código muito bem comentado, VOCÊ É PROIBIDO de inserir comentários em linhas que contêm apenas chaves isoladas (ex: não comente '}')." : "";
+    let promptInjetado = `[INSTRUÇÃO DE PERSONA: ${instrucaoNivel}${instrucaoChaves}]\n\n${textoFinal}`;
+
     try {
         const headers = { 'Content-Type': 'application/json' };
         if (window.usuarioAtual) { headers['Authorization'] = `Bearer ${await window.usuarioAtual.getIdToken(true)}`; if (window.userApiKey) headers['x-google-api-key'] = window.userApiKey; }
 
         const payload = { 
-            texto: textoFinal, detalhado: window.prefDetalhado, codigo_comentado: window.prefComentado, profissao: window.perfilGlobalData.profissao, tags: window.perfilGlobalData.tags,
+            texto: promptInjetado, detalhado: window.prefDetalhado, codigo_comentado: window.prefComentado, profissao: window.perfilGlobalData.profissao, tags: window.perfilGlobalData.tags,
             projeto_nome: proj.nome || "", projeto_genero: proj.genero || "", projeto_descricao: proj.descricao || ""
         };
         if (imgBase64) { payload.imagem_base64 = imgBase64; payload.mime_type = imgMime; }
