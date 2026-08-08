@@ -1,6 +1,8 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, arrayRemove, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db, auth } from './firebase_service.js';
 import './webrtc_service.js';
+
+// Importação Limpa e Direta! Sem uso de prefixo Window.
 import { SVG_CHECK, SVG_SETTINGS, SVG_DOWNLOAD, SVG_FOLDER, SVG_SAVE, SVG_EDIT, SVG_ARCHIVE, SVG_FILE, SVG_TRASH, SVG_WARN, SVG_CLOCK, SVG_SPINNER, SVG_COPY, SVG_SHARE, getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo } from './utils.js';
 
 const SVG_REPLY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>`;
@@ -23,7 +25,9 @@ window.prefDetalhado = localStorage.getItem('unity_pref_detalhado') !== 'false';
 window.prefComentado = localStorage.getItem('unity_pref_comentado') === 'true';
 window.prefChatFs = parseFloat(localStorage.getItem('unity_pref_chat_fs')) || 0.95;
 window.prefCodeFs = parseFloat(localStorage.getItem('unity_pref_code_fs')) || 1.05;
-window.aplicarTamanhosFonte(window.prefChatFs, window.prefCodeFs);
+
+// Executa função de forma nativa e direta
+aplicarTamanhosFonte(window.prefChatFs, window.prefCodeFs);
 
 window.anexoImagemBase64 = null;
 window.anexoImagemMimeType = null;
@@ -108,7 +112,7 @@ window.renderizarSidebar = function() {
                 const maxAvatars = 2;
                 avataresPresencaHTML += `<div style="display:flex; align-items:center;">`;
                 emailsNaConversa.slice(0, maxAvatars).forEach((email, idx) => {
-                    const nome = window.formatarNomeUsuario(email);
+                    const nome = formatarNomeUsuario(email);
                     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=21262d&color=c9d1d9&rounded=true`;
                     const margin = idx > 0 ? '-8px' : '0';
                     const zIndex = 10 - idx;
@@ -117,7 +121,7 @@ window.renderizarSidebar = function() {
 
                 if (emailsNaConversa.length > maxAvatars) {
                     const extrasCount = emailsNaConversa.length - maxAvatars;
-                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => window.formatarNomeUsuario(e)).join(', ');
+                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => formatarNomeUsuario(e)).join(', ');
                     avataresPresencaHTML += `<div onclick="event.stopPropagation(); window.mostrarToast('Também na sala: ${nomesOcultos}', 'rgba(245, 130, 32, 0.9)')" style="width: 20px; height: 20px; border-radius: 50%; background: #F58220; color: white; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #161b22; margin-left: -8px; position: relative; z-index: 0; cursor: pointer;" title="Mais colaboradores">+${extrasCount}</div>`;
                 }
                 avataresPresencaHTML += `</div>`;
@@ -209,7 +213,7 @@ window.abrirModalCompartilhar = () => {
         membros.forEach(email => {
             const row = document.createElement('div'); row.className = 'colaborador-row';
             const badgeDono = (email === membros[0]) ? ' <span style="font-size:0.75rem; background:rgba(245,130,32,0.2); color:#F58220; padding:1px 6px; border-radius:4px; margin-left:6px;">Dono</span>' : '';
-            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${window.formatarNomeUsuario(email)}${badgeDono}</span>`;
+            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${formatarNomeUsuario(email)}${badgeDono}</span>`;
             if (email !== membros[0]) {
                 const btnRemover = document.createElement('button'); btnRemover.className = 'btn-remover-collab'; btnRemover.innerText = 'Remover';
                 btnRemover.onclick = () => window.removerColaborador(email); row.appendChild(btnRemover);
@@ -251,7 +255,7 @@ window.confirmarCompartilhamento = async () => {
 }
 
 window.removerColaborador = async (email) => {
-    if (confirm(`Deseja remover ${window.formatarNomeUsuario(email)}?`)) {
+    if (confirm(`Deseja remover ${formatarNomeUsuario(email)}?`)) {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
             if (proj && proj.id) { 
@@ -328,7 +332,7 @@ window.ajustarFonte = function(tipo, valor) {
     if (tipo === 'chat') { window.prefChatFs = Math.max(0.7, Math.min(1.5, window.prefChatFs + valor)); document.getElementById('label-chat-fs').innerText = window.prefChatFs.toFixed(2); } 
     else { window.prefCodeFs = Math.max(0.7, Math.min(1.5, window.prefCodeFs + valor)); document.getElementById('label-code-fs').innerText = window.prefCodeFs.toFixed(2); }
     window.salvarPersonalizacao();
-    window.aplicarTamanhosFonte(window.prefChatFs, window.prefCodeFs);
+    aplicarTamanhosFonte(window.prefChatFs, window.prefCodeFs);
 }
 
 window.mudarTamanhoResposta = function(detalhado, start = false) {
@@ -349,7 +353,7 @@ window.salvarApiKey = async () => {
     window.userApiKey = document.getElementById('input-api-key').value.trim(); 
     localStorage.setItem('unity_google_api_key', window.userApiKey); 
     if (window.usuarioAtual) { try { await setDoc(doc(db, "usuarios", window.usuarioAtual.uid), { googleApiKey: window.userApiKey }, { merge: true }); } catch(e) {} }
-    document.getElementById('modal-apikey').style.display = 'none'; window.atualizarIndicadorApiKey(window.userApiKey); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
+    document.getElementById('modal-apikey').style.display = 'none'; atualizarIndicadorApiKey(window.userApiKey); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); 
 }
 
 let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false'; document.getElementById('toggle-ask-save').checked = configAskToSave;
@@ -400,7 +404,7 @@ window.lidarComAnexo = function(eventOrFile) {
     
     if (file.type.startsWith('image/')) {
         window.anexoTextoConteudo = null; 
-        window.redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
+        redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
             window.anexoImagemBase64 = base64Data; window.anexoImagemMimeType = mimeType;
             document.getElementById('file-preview').style.display = 'none';
             document.getElementById('image-preview').src = window.anexoImagemBase64;
@@ -453,7 +457,7 @@ if (dropZone) {
             const validExtensions = ['.cs', '.txt', '.js', '.json'];
             const isValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
             if (file.type.startsWith('image/') || isValidExt) window.lidarComAnexo(file);
-            else mostrarToast(window.getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
+            else mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
         }
     });
 }
@@ -499,7 +503,7 @@ window.selecionarConversa = async function(indexProj, indexConv) {
     const proj = window.projetos[indexProj]; const conv = proj.conversas[indexConv];
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     const autorEmail = conv.criador ? conv.criador : (window.usuarioAtual ? window.usuarioAtual.email : 'Visitante');
-    document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
+    document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
     document.getElementById('btn-colab').style.display = 'flex';
@@ -561,10 +565,10 @@ window.renderizarChat = function() {
             chatBox.innerHTML += `<div id="msg-wrapper-${idx}" class="system-msg">${msg.texto}</div>`; 
         } else {
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
-            let timeStr = msg.timestamp ? `<span style="font-size: 0.65rem; color: #8b949e; margin-left: 8px; font-weight: normal;">${window.formatarDataHora(msg.timestamp)}</span>` : '';
+            let timeStr = msg.timestamp ? `<span style="font-size: 0.65rem; color: #8b949e; margin-left: 8px; font-weight: normal;">${formatarDataHora(msg.timestamp)}</span>` : '';
             
             if (msg.papel === 'aluno') {
-                const nomeAutor = msg.autorEmail ? window.formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
+                const nomeAutor = msg.autorEmail ? formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
                 chatBox.innerHTML += `
                 <div id="msg-wrapper-${idx}" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; max-width: 100%;">
                     <span style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-right: 12px; font-weight: 500; display: flex; align-items: center;">${nomeAutor}${timeStr}</span>
@@ -596,7 +600,7 @@ window.renderizarChat = function() {
         <div style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
             <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px;">ComboBoy</span>
             <div class="balao bot typing-container" style="margin: 0;">
-                <span id="loading-meme-text" class="meme-text">${window.getMeme('loading')}</span>
+                <span id="loading-meme-text" class="meme-text">${getMeme('loading')}</span>
                 <div class="typing-indicator" style="height: auto; padding: 0;"><span></span><span></span><span></span></div>
             </div>
         </div>`;
@@ -605,7 +609,7 @@ window.renderizarChat = function() {
         window.loadingMemeInterval = setInterval(() => {
             const el = document.getElementById('loading-meme-text');
             if(el) {
-                el.style.opacity = 0; setTimeout(() => { el.innerText = window.getMeme('loading'); el.style.opacity = 1; }, 300);
+                el.style.opacity = 0; setTimeout(() => { el.innerText = getMeme('loading'); el.style.opacity = 1; }, 300);
             } else { clearInterval(window.loadingMemeInterval); }
         }, 3500);
 
@@ -613,7 +617,7 @@ window.renderizarChat = function() {
         if(window.loadingMemeInterval) clearInterval(window.loadingMemeInterval);
     }
     
-    window.formatarBlocosDeCodigo(); chatBox.scrollTop = chatBox.scrollHeight;
+    formatarBlocosDeCodigo(); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 window.validarInput = function() {
@@ -646,7 +650,7 @@ window.lidarComAcao = function() {
     if (conv?.processando) {
         if (window.statusConversas[chave] && window.statusConversas[chave].controller) {
             window.statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); window.renderizarChat(); window.atualizarEstadoBotaoEnvio();
-        } else { mostrarToast(window.getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
+        } else { mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
     } else { window.enviarMensagem(); }
 }
 
@@ -670,7 +674,7 @@ window.enviarMensagem = async function() {
     const imgBase64 = window.anexoImagemBase64; const imgMime = window.anexoImagemMimeType;
     if(!textoFinal && !imgBase64) return;
 
-    const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || window.formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
+    const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
     const autorEmail = window.usuarioAtual ? window.usuarioAtual.email : null;
     
     const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome, autorEmail: autorEmail, timestamp: Date.now() }; 
