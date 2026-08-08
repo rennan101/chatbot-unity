@@ -179,27 +179,38 @@ body {
 input:checked + .slider { background-color: rgba(245, 130, 32, 0.3); border-color: #F58220;}
 input:checked + .slider:before { transform: translateX(16px); background-color: #F58220; }
 
-/* ================= ÁREA PRINCIPAL ================= */
+/* ================= ÁREA PRINCIPAL E CABEÇALHO FLEX ================= */
 #main-area { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; overflow: hidden; min-width: 0; }
+
+/* Header com 3 colunas Flexbox para impedir sobreposição! */
 header { 
     background: rgba(13, 17, 23, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    padding: 12px 20px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10; letter-spacing: 0.5px;
+    padding: 12px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10;
     display: flex; justify-content: space-between; align-items: center; min-width: 0; height: 60px;
-    position: relative; /* GARANTE QUE O HISTÓRICO ABSOLUTO USE ELE COMO BASE */
 }
+.header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; justify-content: flex-start; }
+.header-center { display: flex; justify-content: center; flex: 1; }
+.header-right { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; }
+
 .mobile-menu-btn { display: none; background: transparent; border: none; color: #e6edf3; cursor: pointer; padding: 6px; border-radius: 6px; flex-shrink: 0; }
 
-#header-title-container { display: flex; flex-direction: column; gap: 2px; overflow: hidden; flex: 1; min-width: 0; }
+#header-title-container { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
 #header-title { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.7rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
-/* BOTÃO HISTÓRICO NO CABEÇALHO (Desktop: Centralizado via Position Absolute) */
+/* BOTÕES DE CABEÇALHO GERAIS */
+.header-btn {
+    background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; 
+    border-radius: 6px; display: none; align-items: center; justify-content: center; transition: all 0.2s; position: relative;
+}
+.header-btn:hover { color: white; }
+
+/* BOTÃO HISTÓRICO ESPECÍFICO */
 #btn-historico {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
     cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
     justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: 500; font-family: 'Space Grotesk', sans-serif;
-    transition: all 0.2s; flex-shrink: 0;
-    position: absolute; left: 50%; transform: translateX(-50%); z-index: 10;
+    transition: all 0.2s; white-space: nowrap;
 }
 #btn-historico:hover { color: #ffffff; border-color: #F58220; background: rgba(245, 130, 32, 0.1); }
 
@@ -317,8 +328,10 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
     display: inline-block; width: 6px; height: 6px; background-color: #8b949e; border-radius: 50%; 
     animation: bounce 1.4s infinite ease-in-out both; 
 }
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
-/* ================= ABA LATERAL DIREITA (CHAT COLLAB) QUE EMPURRA O CONTEUDO ================= */
+/* ================= ABA LATERAL DIREITA (CHAT COLLAB) ================= */
 #sidebar-right {
     width: 0; opacity: 0; overflow: hidden; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     display: flex; flex-direction: column; flex-shrink: 0; border-left: none;
@@ -376,12 +389,6 @@ select.device-select option { background: #161b22; color: white; }
 #toast.mostrar { top: 24px; }
 #toast-icon { display: flex; align-items: center;}
 
-.typing-container { display: flex; align-items: center; gap: 10px; font-style: italic; color: #8b949e; font-size: var(--chat-fs); height: 24px; }
-.typing-container span.meme-text { transition: opacity 0.3s ease-in-out; }
-.typing-indicator { display: flex; gap: 6px; align-items: center; }
-.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-
 .btn-fechar-modal { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #ff7b72; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
 .btn-fechar-modal:hover { color: #ffffff; background: rgba(218, 54, 51, 0.4); }
 
@@ -398,11 +405,11 @@ select.device-select option { background: #161b22; color: white; }
 
 /* ================= RESPONSIVIDADE MOBILE SUPERIOR ================= */
 @media (max-width: 768px) {
-    /* Barra Esquerda ocupa toda a tela (100vw/100vh) */
+    /* Barra Esquerda e Direita ocupam 100% no mobile */
     #sidebar { 
         position: fixed; top: 0; left: 0; height: 100vh !important; height: 100dvh !important; width: 100vw !important; 
         max-width: none; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 2000; 
-        background: #161b22 !important; /* Cor sólida para não vazar a tela de trás */
+        background: #161b22 !important; 
     }
     #sidebar.open { transform: translateX(0); }
     #sidebar.recolhido { transform: translateX(-100%); width: 100vw !important; }
@@ -411,21 +418,22 @@ select.device-select option { background: #161b22; color: white; }
     .sidebar-backdrop.active { display: block; }
     .mobile-menu-btn { display: flex !important; }
     
-    /* Barra Direita (Colab) ocupa toda a tela (100vw/100vh) */
     #sidebar-right { 
         position: fixed; top: 0; right: 0; height: 100vh !important; height: 100dvh !important; width: 100vw !important; 
         max-width: none; z-index: 2000; transform: translateX(100%); 
-        background: #161b22 !important; /* Cor sólida */
+        background: #161b22 !important; 
     }
     #sidebar-right.open { width: 100vw !important; transform: translateX(0); }
     .colab-inner { width: 100vw !important; height: 100% !important; background: #161b22 !important; }
     
-    /* Botão de Histórico retorna ao fluxo padrão para ficar do lado dos ícones de Colab/Notificação */
+    /* Configuração do Header Centralizada via CSS Flexbox */
+    .header-center { display: flex; justify-content: flex-end; flex: 0; margin-right: 5px; }
+    .header-right { flex: initial !important; }
+    
     #btn-historico {
-        position: relative !important; left: auto !important; transform: none !important; 
         padding: 6px; border-radius: 6px; background: transparent !important; border: none !important;
     }
-    #btn-historico .txt-historico { display: none; } /* Oculta a palavra para economizar espaço */
+    #btn-historico .txt-historico { display: none; } 
 
     #chat-header { padding: 10px 12px; }
     #chat { padding: 12px; gap: 16px; overflow-x: hidden; }
