@@ -7,9 +7,6 @@ import {
     getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo
 } from './utils.js';
 
-// ==========================================================
-// 1. CONFIGURAÇÕES & ESTADO GERAL
-// ==========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyB9PBFyHyFygm8_GLrjIfuRJDcMG9eKMw8",
   authDomain: "comboboy-researcher.firebaseapp.com",
@@ -81,7 +78,6 @@ async function removerPresencaLocal() {
             updates[`presenca.${usuarioAtual.email}`] = deleteField();
         }
 
-        // Tira o bloqueio de tela se eu estiver saindo
         if (proj.conversas && proj.conversas[idConversaAtiva] && proj.conversas[idConversaAtiva].tela === usuarioAtual.email) {
             proj.conversas[idConversaAtiva].tela = null;
             updates[`conversas`] = proj.conversas;
@@ -233,7 +229,14 @@ document.getElementById('btn-login-google').onclick = async () => {
 window.confirmarLogout = async function() {
     if (confirm("Tem certeza que deseja sair da sua conta?")) {
         await removerPresencaLocal(); 
-        await new Promise(r => setTimeout(r, 600)); 
+        
+        if (unsubscribeProjetos) unsubscribeProjetos();
+        if (unsubscribeConvites) unsubscribeConvites();
+        if (unsubscribeNotificacoes) unsubscribeNotificacoes();
+        if (unsubscribeUsuarios) unsubscribeUsuarios();
+
+        await new Promise(r => setTimeout(r, 500)); // Aguarda confirmação no banco de dados para evitar erro de permissão
+        
         window.resetarVisualizacaoChat();
         window.projetos = [];
         window.renderizarSidebar();
@@ -373,7 +376,7 @@ if (dropZone) {
 
 
 // ==========================================================
-// 5. FIREBASE REALTIME, NOTIFICAÇÕES & COLLAB SYNC
+// 5. FIREBASE REALTIME & NOTIFICAÇÕES
 // ==========================================================
 function iniciarEscutaProjetosNuvem(email) {
     const q = query(collection(db, "projetos"), where("membros", "array-contains", email));
@@ -603,7 +606,6 @@ window.renderizarSidebar = function() {
                 <span style="display:flex; align-items:center; flex-shrink:0; pointer-events: none;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
             
-            // Drag and Drop (Conversas)
             convDiv.setAttribute('draggable', 'true');
             convDiv.ondragstart = (e) => {
                 e.dataTransfer.setData('application/json', JSON.stringify({ p: indexProj, c: indexConv }));
@@ -1079,7 +1081,7 @@ async function enviarMensagem() {
 
 
 // ==========================================================
-// 8. INFRAESTRUTURA WEBRTC P2P E COLABORAÇÃO
+// 8. INFRAESTRUTURA WEBRTC P2P E COLABORAÇÃO (ANTI-RACE CONDITION)
 // ==========================================================
 window.toggleSidebarColab = function() {
     const sidebarR = document.getElementById('sidebar-right');
@@ -1152,8 +1154,6 @@ window.enviarMensagemLateral = function() {
     window.salvarDadosAtuais(idProjetoAtivo); input.value = ''; window.renderizarChatLateral();
 }
 
-// ----------------------------------------------------
-// RENDERIZAÇÃO DE AVATARES DE VOZ
 window.renderizarUsuariosNaChamada = function() {
     const container = document.getElementById('active-call-users');
     if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) {
@@ -1177,11 +1177,8 @@ window.renderizarUsuariosNaChamada = function() {
                 </div>`;
         });
     } else { container.style.display = 'none'; }
-}
+};
 
-// ==========================================================
-// SELEÇÃO DE HARDWARE (MICROFONE/ALTO FALANTE)
-// ==========================================================
 window.abrirModalDevices = async function() {
     try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1239,9 +1236,8 @@ window.salvarDevices = async function() {
     mostrarToast("Dispositivos atualizados", "rgba(46, 204, 113, 0.9)", SVG_SETTINGS);
 }
 
-// ==========================================================
-// MOTOR WEBRTC (COM LOCK DE TELA E DEBOUNCE)
-// ==========================================================
+// ----------------------------------------------------
+// MOTOR WEBRTC (COM DEBOUNCE PARA PREVENIR TELA PRETA)
 window.atualizarBotoesChamada = function() {
     if (idProjetoAtivo === null || idConversaAtiva === null || !window.projetos[idProjetoAtivo]) return;
     const proj = window.projetos[idProjetoAtivo];
@@ -1306,9 +1302,8 @@ window.toggleChamada = async function() {
 }
 
 window.sairDaChamada = function(force = false) {
-    if (streamLocalAudio) streamLocalAudio.getTracks().forEach(t => t.stop());
-    if (streamLocalVideo) streamLocalVideo.getTracks().forEach(t => t.stop());
-    streamLocalAudio = null; streamLocalVideo = null;
+    if (streamLocalAudio) { streamLocalAudio.getTracks().forEach(t => t.stop()); streamLocalAudio = null; }
+    if (streamLocalVideo) { streamLocalVideo.getTracks().forEach(t => t.stop()); streamLocalVideo = null; }
     
     Object.values(chamadasAtivas).forEach(call => call.close());
     chamadasAtivas = {};
@@ -1327,12 +1322,7 @@ window.sairDaChamada = function(force = false) {
 
     if (!force && idProjetoAtivo !== null && window.projetos[idProjetoAtivo]) {
         const proj = window.projetos[idProjetoAtivo];
-        
-        // Remove a trava de tela se eu estiver saindo
-        if (proj.conversas[idConversaAtiva].tela === usuarioAtual.email) {
-            proj.conversas[idConversaAtiva].tela = null;
-        }
-
+        if (proj.conversas[idConversaAtiva].tela === usuarioAtual.email) proj.conversas[idConversaAtiva].tela = null;
         if (proj.conversas[idConversaAtiva].chamada && proj.conversas[idConversaAtiva].chamada[usuarioAtual.email]) {
             delete proj.conversas[idConversaAtiva].chamada[usuarioAtual.email];
         }
@@ -1365,10 +1355,9 @@ window.compartilharTela = async function() {
     try {
         if (!streamLocalVideo) {
             if(telaAtual && telaAtual !== usuarioAtual.email) {
-                mostrarToast("Outro usuário já está compartilhando.", "rgba(218, 54, 51, 0.9)", SVG_WARN);
-                return;
+                mostrarToast("Outro usuário já está compartilhando.", "rgba(218, 54, 51, 0.9)", SVG_WARN); return;
             }
-
+            
             streamLocalVideo = await navigator.mediaDevices.getDisplayMedia({ video: true });
             document.getElementById('btn-call-screen').classList.add('active');
             
@@ -1396,27 +1385,33 @@ window.atualizarStreamsP2P = function() {
     if(streamLocalAudio) streamLocalAudio.getTracks().forEach(t => combinedStream.addTrack(t));
     if(streamLocalVideo) streamLocalVideo.getTracks().forEach(t => combinedStream.addTrack(t));
     
-    window.gerenciarMediaRemota(combinedStream, meuPeer.id, true);
+    const oldLocal = document.getElementById(`video-${meuPeer.id}`);
+    if(oldLocal) oldLocal.remove();
+    
+    if(streamLocalVideo) window.gerenciarMediaRemota(combinedStream, meuPeer.id, true);
 
     if (idProjetoAtivo === null || !window.projetos[idProjetoAtivo]) return;
     const proj = window.projetos[idProjetoAtivo];
     const chamadaAtiva = proj.conversas[idConversaAtiva].chamada || {};
     
-    Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
-        if (email !== usuarioAtual.email) {
-            if(chamadasAtivas[peerIdRemoto]) chamadasAtivas[peerIdRemoto].close();
-            
-            // DEBOUNCE: Aguarda 1 segundo para garantir que a rede fechou o túnel antigo antes de abrir outro com vídeo
-            setTimeout(() => {
+    // DEBOUNCE OTIMIZADO: Fecha todas as chamadas e zera o palco antes de reconectar
+    Object.values(chamadasAtivas).forEach(c => c.close());
+    chamadasAtivas = {};
+    document.getElementById('stage-container').innerHTML = ''; 
+    if(streamLocalVideo) window.gerenciarMediaRemota(combinedStream, meuPeer.id, true); 
+
+    setTimeout(() => {
+        Object.entries(chamadaAtiva).forEach(([email, peerIdRemoto]) => {
+            if (email !== usuarioAtual.email) {
                 const call = meuPeer.call(peerIdRemoto, combinedStream);
                 if (call) {
                     chamadasAtivas[peerIdRemoto] = call;
                     call.on('stream', (streamRemoto) => window.gerenciarMediaRemota(streamRemoto, peerIdRemoto));
                     call.on('close', () => window.limparMediaRemota(peerIdRemoto));
                 }
-            }, 1000); 
-        }
-    });
+            }
+        });
+    }, 1000); // 1s de respiro para WebRTC evitar telas duplicadas
 }
 
 window.verificarNovosPeers = function() {
@@ -1443,6 +1438,7 @@ window.verificarNovosPeers = function() {
 window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
     const hasVideo = stream.getVideoTracks().length > 0;
     
+    // 1. O ÁUDIO É INVISÍVEL
     let audioEl = document.getElementById(`audio-${peerId}`);
     if (!audioEl) {
         audioEl = document.createElement('audio');
@@ -1452,12 +1448,14 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
         if(window.selectedAudioOutput && audioEl.setSinkId) audioEl.setSinkId(window.selectedAudioOutput).catch(e=>{});
         document.body.appendChild(audioEl);
     }
-    audioEl.srcObject = stream;
+    if(audioEl.srcObject !== stream) audioEl.srcObject = stream;
 
+    // 2. O VÍDEO SÓ APARECE SE ALGUÉM TIVER COMPARTILHANDO TELA
     const stage = document.getElementById('stage-container');
+    let videoWrapper = document.getElementById(`video-${peerId}`);
+
     if (hasVideo) {
         stage.style.display = 'flex';
-        let videoWrapper = document.getElementById(`video-${peerId}`);
         
         if (!videoWrapper) {
             videoWrapper = document.createElement('div');
@@ -1469,10 +1467,20 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
             videoEl.playsInline = true; 
             videoEl.muted = true; 
             
-            videoEl.onloadedmetadata = () => { videoEl.play().catch(e=>console.log(e)); };
+            // Força a leitura do stream pra resolver o PiP Preto
+            videoEl.addEventListener('loadedmetadata', () => { videoEl.play().catch(e=>console.warn(e)); });
+            
+            let userEmailStr = 'Colaborador';
+            if (isLocal) { userEmailStr = 'Você (Transmitindo)'; } 
+            else {
+                const proj = window.projetos[idProjetoAtivo];
+                const chamada = proj.conversas[idConversaAtiva].chamada || {};
+                const email = Object.keys(chamada).find(key => chamada[key] === peerId);
+                if (email) userEmailStr = window.formatarNomeUsuario(email);
+            }
             
             const tag = document.createElement('div');
-            tag.className = 'video-tag'; tag.innerText = isLocal ? 'Você (Transmitindo)' : 'Colaborador';
+            tag.className = 'video-tag'; tag.innerText = userEmailStr;
             
             const controls = document.createElement('div');
             controls.className = 'video-controls';
@@ -1506,15 +1514,14 @@ window.gerenciarMediaRemota = function(stream, peerId, isLocal = false) {
             videoWrapper.appendChild(videoEl); videoWrapper.appendChild(tag); videoWrapper.appendChild(controls);
             stage.appendChild(videoWrapper);
         }
+        
         const vEl = videoWrapper.querySelector('video');
         if (vEl.srcObject !== stream) vEl.srcObject = stream;
         
     } else {
-        window.limparMediaRemota(peerId, true);
+        if (videoWrapper) videoWrapper.remove();
+        if (stage.children.length === 0) stage.style.display = 'none';
     }
-
-    stream.onaddtrack = () => window.gerenciarMediaRemota(stream, peerId, isLocal);
-    stream.onremovetrack = () => window.gerenciarMediaRemota(stream, peerId, isLocal);
 }
 
 window.limparMediaRemota = function(peerId, keepAudio = false) {
@@ -1572,9 +1579,7 @@ window.iniciarTour = function() {
     currentTourStep = 0;
     document.getElementById('config-menu').style.display = 'none';
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
-    
     document.getElementById('btn-colab').style.display = 'flex'; 
-
     document.getElementById('tour-overlay').style.display = 'block';
     window.renderizarStepTour();
 }
