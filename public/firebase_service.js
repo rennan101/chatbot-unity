@@ -30,12 +30,10 @@ window.limparMinhaPresencaGlobal = async function() {
     window.projetos.forEach((proj) => {
         let updateArgs = [];
         
-        // 1. Deleta a Presença Física da Sala driblando o "." do e-mail
         if (proj.presenca && proj.presenca[window.usuarioAtual.email] !== undefined) {
             updateArgs.push(new FieldPath('presenca', window.usuarioAtual.email), deleteField());
         }
         
-        // 2. Limpa o Motor WebRTC de todas as conversas
         if (proj.conversas) {
             let convUpdated = false;
             proj.conversas.forEach((c) => {
@@ -45,7 +43,6 @@ window.limparMinhaPresencaGlobal = async function() {
             if (convUpdated) { updateArgs.push('conversas', proj.conversas); }
         }
         
-        // 3. Atualiza ambos em um único pacote
         if (updateArgs.length > 0) {
             const ref = doc(db, "projetos", proj.id);
             promessas.push(updateDoc(ref, ...updateArgs));
@@ -187,13 +184,10 @@ window.confirmarLogout = async function() {
         if (window.unsubscribeUsuarios) window.unsubscribeUsuarios();
         
         await window.limparMinhaPresencaGlobal(); 
-        window.location.reload(); // Evita fantasmas na memoria do navegador
+        await signOut(auth); // Restauração do comando de logout
+        window.location.reload(); 
     }
 }
-
-// RESTAURAÇÃO DOS MODAIS DE APOIO E TAGS
-window.abrirModalApoio = function() { document.getElementById('modal-apoio').style.display = 'flex'; }
-window.fecharModalApoio = function() { document.getElementById('modal-apoio').style.display = 'none'; }
 
 window.renderizarTags = function() {
     const TAGS_DISPONIVEIS = ["Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", "VR/AR", "Game Design", "Sound Design", "Monetização", "Shader Graph", "Cinematics"];
@@ -233,6 +227,9 @@ window.salvarPerfil = async function() {
         window.fecharModalPerfil(); mostrarToast(getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
     } catch(e) { mostrarToast(getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN); }
 }
+
+window.abrirModalApoio = function() { document.getElementById('modal-apoio').style.display = 'flex'; }
+window.fecharModalApoio = function() { document.getElementById('modal-apoio').style.display = 'none'; }
 
 // ==========================================================
 // 3. LISTENERS FIREBASE GERAIS

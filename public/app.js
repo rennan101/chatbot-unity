@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, arrayRemove, deleteField, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, addDoc, updateDoc, deleteDoc, doc, arrayRemove, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db, auth } from './firebase_service.js';
 import './webrtc_service.js';
 import { SVG_CHECK, SVG_SETTINGS, SVG_DOWNLOAD, SVG_FOLDER, SVG_SAVE, SVG_EDIT, SVG_ARCHIVE, SVG_FILE, SVG_TRASH, SVG_WARN, SVG_CLOCK, SVG_SPINNER, SVG_COPY, SVG_SHARE, getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo } from './utils.js';
@@ -291,7 +291,6 @@ window.deletarProjeto = async function() {
     }
 }
 
-// ACORDEÃO E CONFIGURAÇÕES
 window.abrirConfigMenu = function(e) { 
     e.stopPropagation(); const menu = document.getElementById('config-menu'); const btn = document.getElementById('btn-config').getBoundingClientRect(); 
     if (menu.style.display === 'block') { menu.style.display = 'none'; } 
@@ -354,16 +353,76 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 
 
 // ==========================================================
-// 7. SISTEMA DE CHAT E TELA INICIAL
+// 3. SISTEMA DE ANEXOS E DRAG AND DROP RECUPERADOS
 // ==========================================================
+window.lidarComAnexo = function(eventOrFile) {
+    const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
+    if (!file) return;
+    document.getElementById('btn-anexo').style.opacity = '0.5';
+    
+    if (file.type.startsWith('image/')) {
+        window.anexoTextoConteudo = null; 
+        redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
+            window.anexoImagemBase64 = base64Data; window.anexoImagemMimeType = mimeType;
+            document.getElementById('file-preview').style.display = 'none';
+            document.getElementById('image-preview').src = window.anexoImagemBase64;
+            document.getElementById('image-preview').style.display = 'block';
+            window.mostrarPreviewContainer();
+        });
+    } else {
+        window.anexoImagemBase64 = null; 
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            window.anexoTextoConteudo = e.target.result; window.anexoTextoNome = file.name;
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('file-name').innerText = window.anexoTextoNome;
+            document.getElementById('file-preview').style.display = 'flex';
+            window.mostrarPreviewContainer();
+        };
+        reader.readAsText(file);
+    }
+}
 
-// RESTAURANDO A FUNÇÃO PERDIDA DE PREVIEW
 window.mostrarPreviewContainer = function() {
     document.getElementById('anexo-preview-container').style.display = 'flex';
     document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
     document.getElementById('btn-anexo').style.opacity = '1'; window.validarInput();
 }
 
+window.removerAnexo = function() {
+    window.anexoImagemBase64 = null; window.anexoImagemMimeType = null; window.anexoTextoConteudo = null; window.anexoTextoNome = null;
+    document.getElementById('input-anexo').value = '';
+    document.getElementById('anexo-preview-container').style.display = 'none';
+    document.getElementById('main-input-wrapper').style.borderRadius = '16px'; window.validarInput();
+}
+
+const dropZone = document.getElementById('main-input-wrapper');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (window.idProjetoAtivo !== null && window.idConversaAtiva !== null) dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over');
+        if (window.idProjetoAtivo === null || window.idConversaAtiva === null) { mostrarToast("Selecione uma conversa primeiro!", 'rgba(245, 130, 32, 0.9)', SVG_WARN); return; }
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            const validExtensions = ['.cs', '.txt', '.js', '.json'];
+            const isValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+            if (file.type.startsWith('image/') || isValidExt) window.lidarComAnexo(file);
+            else mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
+        }
+    });
+}
+
+
+// ==========================================================
+// 4. SISTEMA DE CHAT E TELA INICIAL
+// ==========================================================
 window.resetarVisualizacaoChat = async function() { 
     await window.limparMinhaPresencaGlobal(); 
     window.idProjetoAtivo = null; window.idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
@@ -419,7 +478,6 @@ window.selecionarConversa = async function(indexProj, indexConv) {
     if(window.atualizarBotoesChamada) window.atualizarBotoesChamada();
 }
 
-// CORREÇÃO: MATEMÁTICA RESTAURADA PARA O BOTÃO HISTÓRICO NO PC
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
@@ -549,6 +607,7 @@ window.lidarComAcao = function() {
     } else { window.enviarMensagem(); }
 }
 
+// CORREÇÃO: Função de envio de mensagens recuperada no escopo global
 window.enviarMensagem = async function() {
     if (window.idProjetoAtivo === null || window.idConversaAtiva === null) return;
     const pIdx = window.idProjetoAtivo; const cIdx = window.idConversaAtiva;
@@ -611,45 +670,125 @@ window.enviarMensagem = async function() {
 }
 
 // ==========================================================
-// 8. LÓGICA DO TOUR E MOBILE SWIPE
+// 5. LÓGICA DO TOUR E MOBILE SWIPE
 // ==========================================================
-let touchStartX = 0; let touchStartY = 0;
-document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, {passive: true});
+
+let touchStartX = 0;
+let touchStartY = 0;
+document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+}, {passive: true});
+
 document.addEventListener('touchend', e => {
     if (window.innerWidth > 768) return;
-    const touchEndX = e.changedTouches[0].screenX; const touchEndY = e.changedTouches[0].screenY;
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    
     if (Math.abs(touchEndY - touchStartY) > Math.abs(touchEndX - touchStartX)) return;
     if (e.target.closest('pre') || e.target.closest('code') || e.target.type === 'range') return;
 
     const swipeDist = touchEndX - touchStartX;
-    const sidebarL = document.getElementById('sidebar'); const sidebarR = document.getElementById('sidebar-right');
+    const sidebarL = document.getElementById('sidebar');
+    const sidebarR = document.getElementById('sidebar-right');
     const backdrop = document.querySelector('.sidebar-backdrop');
     
     if (swipeDist > 70) { 
-        if (sidebarR.classList.contains('open')) { if(window.fecharSidebarColab) window.fecharSidebarColab();
-        } else { sidebarL.classList.add('open'); backdrop.classList.add('active'); }
+        if (sidebarR.classList.contains('open')) {
+            if(window.fecharSidebarColab) window.fecharSidebarColab();
+        } else {
+            sidebarL.classList.add('open');
+            backdrop.classList.add('active');
+        }
     } else if (swipeDist < -70) { 
-        if (sidebarL.classList.contains('open')) { window.alternarSidebar();
-        } else if (window.idProjetoAtivo !== null && window.toggleSidebarColab) { sidebarR.classList.add('open'); if(window.renderizarChatLateral) window.renderizarChatLateral(); }
+        if (sidebarL.classList.contains('open')) {
+            if(window.alternarSidebar) window.alternarSidebar();
+        } else if (window.idProjetoAtivo !== null && window.toggleSidebarColab) {
+            sidebarR.classList.add('open');
+            if(window.renderizarChatLateral) window.renderizarChatLateral();
+        }
     }
 }, {passive: true});
+
+const tourSteps = [
+    { 
+        target: null, 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+        title: "Bem-vindo ao ComboBoy!", 
+        text: "Seu assistente IA especialista em Unity. Sincronize projetos, tire dúvidas com códigos otimizados e colabore em tempo real com sua equipe!" 
+    },
+    { 
+        target: "sidebar", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+        title: "Seus Projetos", 
+        text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem. Você também pode arrastar e soltar conversas!" 
+    },
+    { 
+        target: "input-container", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+        title: "Área de Pesquisa", 
+        text: "Faça perguntas ou arraste imagens e scripts (.cs) diretamente para cá!" 
+    },
+    { 
+        target: "btn-config", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+        title: "Configurações", 
+        text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." 
+    },
+    { 
+        target: "btn-colab", 
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+        title: "Área de Colaboração", 
+        text: "Compartilhe tela, faça chat de voz e de texto diretamente com seus colaboradores, sem latência!" 
+    }
+];
 
 window.iniciarTour = function() {
     window.currentTourStep = 0;
     document.getElementById('config-menu').style.display = 'none';
-    if(window.innerWidth <= 768) document.getElementById('sidebar').classList.add('open'); 
+    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
+    
     document.getElementById('btn-colab').style.display = 'flex'; 
+
     document.getElementById('tour-overlay').style.display = 'block';
     window.renderizarStepTour();
 }
 
 window.renderizarStepTour = function() {
-    const tourSteps = [{icon: SVG_SETTINGS, title:"Bem-vindo", target:null, text:"Assitente IA Unity P2P"}]; 
-    window.fecharTour();
+    const step = tourSteps[window.currentTourStep];
+    
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+    
+    const card = document.getElementById('tour-card');
+    card.style.display = 'block';
+    
+    document.getElementById('tour-title').innerHTML = `<span style="display:flex; align-items:center; justify-content:center; gap:8px; color: #F58220;">${step.icon} ${step.title}</span>`;
+    document.getElementById('tour-text').innerText = step.text;
+    document.getElementById('tour-btn-next').innerText = window.currentTourStep === tourSteps.length - 1 ? "Finalizar" : "Avançar";
+    
+    if (step.target) {
+        const targetEl = document.getElementById(step.target);
+        if(targetEl) {
+            targetEl.classList.add('tour-highlight');
+            if(targetEl.closest('aside')) targetEl.closest('aside').classList.add('tour-highlight-parent');
+            if(targetEl.closest('header')) targetEl.closest('header').classList.add('tour-highlight-parent');
+            if(targetEl.id === 'input-container') targetEl.classList.add('tour-highlight-parent');
+        }
+    }
+}
+
+window.avancarTour = function() {
+    if (window.currentTourStep < tourSteps.length - 1) {
+        window.currentTourStep++; window.renderizarStepTour();
+    } else { window.fecharTour(); }
 }
 
 window.fecharTour = function() {
-    document.getElementById('tour-overlay').style.display = 'none'; document.getElementById('tour-card').style.display = 'none';
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
+    document.getElementById('tour-overlay').style.display = 'none';
+    document.getElementById('tour-card').style.display = 'none';
     localStorage.setItem('comboboy_tour', 'true');
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('active');}
     if(window.idProjetoAtivo === null) document.getElementById('btn-colab').style.display = 'none';
