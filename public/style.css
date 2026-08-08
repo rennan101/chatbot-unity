@@ -185,6 +185,7 @@ header {
     background: rgba(13, 17, 23, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     padding: 12px 20px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10; letter-spacing: 0.5px;
     display: flex; justify-content: space-between; align-items: center; min-width: 0; height: 60px;
+    position: relative; /* GARANTE QUE O HISTÓRICO ABSOLUTO USE ELE COMO BASE */
 }
 .mobile-menu-btn { display: none; background: transparent; border: none; color: #e6edf3; cursor: pointer; padding: 6px; border-radius: 6px; flex-shrink: 0; }
 
@@ -192,7 +193,7 @@ header {
 #header-title { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.7rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
-/* BOTÃO HISTÓRICO NO CABEÇALHO (Desktop) */
+/* BOTÃO HISTÓRICO NO CABEÇALHO (Desktop: Centralizado / Mobile: Alinhado a direita) */
 #btn-historico {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
     cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
@@ -308,7 +309,13 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } 70% { box-shadow: 0 0 0 6px rgba(46, 160, 67, 0); } }
 .pulse-verde { animation: pulse-green 2s infinite; }
 
-/* ================= ABA LATERAL DIREITA (CHAT COLLAB) QUE EMPURRA O CONTEUDO ================= */
+/* Animação dos 3 Pontinhos de Digitação */
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+/* ================= ABA LATERAL DIREITA (CHAT COLLAB) ================= */
 #sidebar-right {
     width: 0; opacity: 0; overflow: hidden; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     display: flex; flex-direction: column; flex-shrink: 0; border-left: none;
@@ -392,28 +399,27 @@ select.device-select option { background: #161b22; color: white; }
     /* Barra Esquerda ocupa toda a tela */
     #sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 100vw !important; max-width: none; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 2000; }
     #sidebar.open { transform: translateX(0); }
-    #sidebar.recolhido { transform: translateX(-100%); }
-    
+    #sidebar.recolhido { transform: translateX(-100%); width: 280px; }
     #btn-toggle-sidebar { display: none !important; }
     .sidebar-backdrop.active { display: block; }
     .mobile-menu-btn { display: flex !important; }
     
-    /* Barra Direita (Collab) ocupa toda a tela */
-    #sidebar-right { position: fixed; width: 100vw !important; max-width: none; z-index: 2000; transform: translateX(100%); }
-    #sidebar-right.open { transform: translateX(0); }
-    .colab-inner { width: 100vw !important; }
-    
-    /* Reposiciona Botão de Histórico para não quebrar no mobile (Fica junto aos outros ícones) */
-    #btn-historico {
-        position: relative !important; left: auto !important; transform: none !important; 
-        padding: 6px; border-radius: 6px; background: transparent; border: none;
-    }
-    #btn-historico .txt-historico { display: none; } /* Oculta a palavra para economizar espaço */
-
     #chat-header { padding: 10px 12px; }
     #chat { padding: 12px; gap: 16px; overflow-x: hidden; }
     #input-container { padding: 12px; }
     .balao { max-width: 95%; padding: 12px 16px; }
+    
+    /* Barra Direita (Collab) ocupa toda a tela */
+    #sidebar-right { position: fixed; top: 0; right: 0; height: 100%; width: 100vw !important; max-width: none; z-index: 2000; transform: translateX(100%); }
+    #sidebar-right.open { transform: translateX(0); }
+    .colab-inner { width: 100vw !important; height: 100% !important; }
+    
+    /* Reposiciona Botão de Histórico para a direita, junto aos outros botões, sem texto */
+    #btn-historico {
+        position: relative !important; left: auto !important; transform: none !important; 
+        padding: 6px; border-radius: 6px; background: transparent; border: none;
+    }
+    #btn-historico .txt-historico { display: none; }
     
     #historico-menu { width: 90vw; max-width: 320px; right: 15px !important; left: auto !important; transform: none !important; }
     .engine-tabs-container { padding: 8px 12px; gap: 8px; }

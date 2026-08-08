@@ -97,6 +97,7 @@
     </aside>
 
     <main id="main-area" style="position: relative;">
+        <!-- HEADER PRINCIPAL -->
         <header id="chat-header">
             <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
                 <button class="mobile-menu-btn" onclick="window.alternarSidebar()">
@@ -108,8 +109,8 @@
                 </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 10px; position: relative; flex-shrink: 0; justify-content: flex-end;">
-                <!-- O botão de histórico fica junto aos outros para a organização Mobile funcionar -->
+            <!-- MENU DA DIREITA (O Histórico fica aqui para não sobrepor, o CSS arruma a posição no PC) -->
+            <div id="header-right-actions" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; justify-content: flex-end;">
                 <button id="btn-historico" onclick="window.abrirMenuHistorico(event)" title="Histórico de Perguntas">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     <span class="txt-historico">Histórico</span>
@@ -166,7 +167,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     Colaboração
                 </h3>
-                <button onclick="window.toggleSidebarColab()" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 4px;">
+                <button onclick="window.fecharSidebarColab()" style="background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 4px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
@@ -279,7 +280,18 @@
     <div class="modal-overlay" id="modal-apikey"><div class="modal-content" style="width: 450px;"><button onclick="document.getElementById('modal-apikey').style.display='none'" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="display:flex; align-items:center; gap:10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Google API Key (Opcional)</h3><p style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; text-align: left;">Por padrão você utiliza o servidor global do <b>ComboBoy</b>, mas caso queira ter <b>respostas mais rápidas</b>, <b>evitar a fila</b> e ter limites exclusivos, conecte sua própria chave (Totalmente gratuito).</p><ol style="color: #8b949e; font-size: 0.85rem; padding-left: 20px; margin-bottom: 25px; line-height: 1.6; text-align: left;"><li>Acesse o <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Google AI Studio</a>.</li><li>Clique no botão azul "Create API key".</li><li>Copie o código gerado e cole no campo abaixo:</li></ol><input type="password" id="input-api-key" placeholder="AIzaSy..." style="width: 100%; font-family: 'Fira Code', monospace; letter-spacing: 2px;"><div class="modal-acoes"><button class="btn-cancelar" onclick="document.getElementById('modal-apikey').style.display='none'">Cancelar</button><button class="btn-confirmar" onclick="window.salvarApiKey()">Salvar Chave</button></div></div></div>
     
     <!-- MODAL APOIE O PROJETO (PIX) -->
-    <div class="modal-overlay" id="modal-apoio"><div class="modal-content" style="width: 400px; text-align: center;"><button onclick="window.fecharModalApoio()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button><h3 style="color: #F58220; margin-bottom: 10px; line-height: 1.4; display: inline-block; padding-right: 15px;">Alimente os devs com um café ☕</h3><img src="assets/icons/pix.png" alt="QR Code PIX" style="width: 200px; height: 200px; border-radius: 12px; margin: 15px auto; display: block; background: white; padding: 10px;"><div style="font-size: 0.85rem; color: #8b949e; line-height: 1.6; margin-top: 20px;">Desenvolvido por <a href="https://www.linkedin.com/in/rennan-raffaele/" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Rennan Raffaele</a><br>Equipe <a href="https://combogounicap.vercel.app/" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Combogó UNICAP</a></div></div></div>
+    <div class="modal-overlay" id="modal-apoio">
+        <div class="modal-content" style="width: 400px; text-align: center;">
+            <button onclick="window.fecharModalApoio()" class="btn-fechar-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <h3 style="color: #F58220; margin-bottom: 10px; line-height: 1.4; display: inline-block; padding-right: 15px;">Alimente os devs com um café ☕</h3>
+            <img src="assets/icons/pix.png" alt="QR Code PIX" style="width: 200px; height: 200px; border-radius: 12px; margin: 15px auto; display: block; background: white; padding: 10px;">
+            <p style="font-size: 0.75rem; color: #8b949e; margin-top: 10px;">Este é um QRCode de Pix, utilize seu app de banco para escanear.</p>
+            <div style="font-size: 0.85rem; color: #8b949e; line-height: 1.6; margin-top: 20px;">
+                Desenvolvido por <a href="https://www.linkedin.com/in/rennan-raffaele/" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Rennan Raffaele</a><br>
+                Equipe <a href="https://combogounicap.vercel.app/" target="_blank" style="color: #F58220; text-decoration: none; font-weight: 600;">Combogó UNICAP</a>
+            </div>
+        </div>
+    </div>
 
     <div id="toast"><span id="toast-icon"></span><span id="toast-msg"></span></div>
 </div>
