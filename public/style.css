@@ -182,6 +182,7 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
 /* ================= ÁREA PRINCIPAL E CABEÇALHO FLEX ================= */
 #main-area { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; overflow: hidden; min-width: 0; }
 
+/* Header com 3 colunas Flexbox para impedir sobreposição! */
 header { 
     background: rgba(13, 17, 23, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     padding: 12px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); z-index: 10;
@@ -197,12 +198,14 @@ header {
 #header-title { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.7rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
+/* BOTÕES DE CABEÇALHO GERAIS */
 .header-btn {
     background: transparent; border: none; color: #8b949e; cursor: pointer; padding: 6px; 
     border-radius: 6px; display: none; align-items: center; justify-content: center; transition: all 0.2s; position: relative;
 }
 .header-btn:hover { color: white; }
 
+/* BOTÃO HISTÓRICO ESPECÍFICO */
 #btn-historico {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
     cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
@@ -237,6 +240,7 @@ header {
 
 .video-tag { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; backdrop-filter: blur(5px);}
 
+/* Controles de Vídeo Flutuantes (Hover) */
 .video-controls {
     position: absolute; bottom: 15px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s;
     background: rgba(0,0,0,0.75); padding: 8px 12px; border-radius: 10px; backdrop-filter: blur(8px);
@@ -337,6 +341,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 }
 #sidebar-right.open { width: 320px; opacity: 1; border-left: 1px solid rgba(255, 255, 255, 0.05); }
 
+/* Container fixo interno para os itens não se espremerem durante a animação */
 .colab-inner { width: 320px; display: flex; flex-direction: column; height: 100%; }
 
 .call-controls { display: flex; justify-content: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -362,6 +367,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 
 #input-lateral-container .btn-send-lateral { width: 38px; height: 38px; border-radius: 50%; border: none; background: #F58220; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
 
+/* SELECTS DO MODAL DE DISPOSITIVOS */
 select.device-select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; margin-bottom: 20px; outline: none; font-family: 'Space Grotesk', sans-serif; cursor: pointer;}
 select.device-select option { background: #161b22; color: white; }
 
@@ -392,16 +398,18 @@ select.device-select option { background: #161b22; color: white; }
 .tag-badge:hover { background: rgba(255,255,255,0.1); }
 .tag-badge.selected { background: rgba(245, 130, 32, 0.2); border-color: #F58220; color: #F58220; font-weight: 500; }
 
-/* ================= NÍVEL DE CONHECIMENTO (PERFIL) ================= */
-.level-container { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+/* ================= NÍVEL DE CONHECIMENTO (PERFIL) LADO A LADO ================= */
+.level-container { 
+    display: flex; flex-direction: row; gap: 10px; margin-bottom: 20px; align-items: stretch; width: 100%;
+}
 .level-btn {
-    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); 
-    border-radius: 10px; padding: 12px; cursor: pointer; text-align: left; transition: all 0.2s;
-    display: flex; flex-direction: column; gap: 4px;
+    flex: 1; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 10px; padding: 12px; cursor: pointer; text-align: center; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
 }
 .level-btn:hover { background: rgba(255,255,255,0.05); }
 .level-btn.active { background: rgba(245, 130, 32, 0.15); border-color: #F58220; }
-.level-title { color: #e6edf3; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+.level-title { color: #e6edf3; font-weight: 600; font-size: 0.95rem; }
 .level-btn.active .level-title { color: #F58220; }
 .level-desc { color: #8b949e; font-size: 0.75rem; line-height: 1.3; }
 
