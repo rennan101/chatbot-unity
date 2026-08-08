@@ -192,14 +192,13 @@ header {
 #header-title { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #header-subtitle { font-size: 0.7rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 
-/* BOTÃO HISTÓRICO NO CABEÇALHO */
+/* BOTÃO HISTÓRICO NO CABEÇALHO (Desktop) */
 #btn-historico {
     background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); color: #8b949e;
     cursor: pointer; padding: 6px 14px; border-radius: 20px; display: none; align-items: center;
     justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: 500; font-family: 'Space Grotesk', sans-serif;
     transition: all 0.2s; flex-shrink: 0;
     
-    /* Na web ele fica fixo no centro */
     position: absolute; left: 50%; transform: translateX(-50%); z-index: 10;
 }
 #btn-historico:hover { color: #ffffff; border-color: #F58220; background: rgba(245, 130, 32, 0.1); }
@@ -309,7 +308,7 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } 70% { box-shadow: 0 0 0 6px rgba(46, 160, 67, 0); } }
 .pulse-verde { animation: pulse-green 2s infinite; }
 
-/* ================= ABA LATERAL DIREITA (CHAT COLLAB) ================= */
+/* ================= ABA LATERAL DIREITA (CHAT COLLAB) QUE EMPURRA O CONTEUDO ================= */
 #sidebar-right {
     width: 0; opacity: 0; overflow: hidden; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     display: flex; flex-direction: column; flex-shrink: 0; border-left: none;
@@ -404,12 +403,12 @@ select.device-select option { background: #161b22; color: white; }
     #sidebar-right.open { transform: translateX(0); }
     .colab-inner { width: 100vw !important; }
     
-    /* Reposiciona Botão de Histórico para não quebrar no mobile */
+    /* Reposiciona Botão de Histórico para não quebrar no mobile (Fica junto aos outros ícones) */
     #btn-historico {
         position: relative !important; left: auto !important; transform: none !important; 
         padding: 6px; border-radius: 6px; background: transparent; border: none;
     }
-    #btn-historico span { display: none; } /* Oculta a palavra para economizar espaço */
+    #btn-historico .txt-historico { display: none; } /* Oculta a palavra para economizar espaço */
 
     #chat-header { padding: 10px 12px; }
     #chat { padding: 12px; gap: 16px; overflow-x: hidden; }
