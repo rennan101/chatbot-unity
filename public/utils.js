@@ -26,8 +26,8 @@ export const memesLoading = [
     "Procurando o ponto e vírgula perdido...", "Compilando os shaders...", "Perguntando pro StackOverflow...", 
     "Mineirando redstone para ligar o servidor...", "Carregando a barra de mana...", "Treinando a rede neural com café...", 
     "Girando a manivela do backend...", "Invocando os deuses do C#...", "Dando um git pull na sabedoria...", 
-    "Baixando mais RAM...", "Refatorando o universo...", "Carregando novo isekai...", "Alimentando o tinhoso...", 
-    "Fugindo de gremlins...", "Arregaçando goblins...", "Procurando uma elfa curandeira...", 
+    "Baixando mais RAM...", "Refatorando o universo...", "Carregando novo isekai...", "Alimentando o tinhoso...", "Rebolando pros cria...",
+    "Fugindo de gremlins...", "Arregaçando goblins...", "Procurando uma elfa curandeira...", "Xingando o Shinji...", "Revivendo o Kuririn...",
     "Entrando no Eva...", "Sincronizando com a Matrix...", "Ajustando o brilho dos óculos..."
 ];
 export const memesSucesso = [
@@ -45,7 +45,7 @@ export const memesErro = [
     "Faltou poção de mana pra essa ação.", "Alguém tropeçou no cabo do servidor.", "NullReferenceException na vida real.", 
     "O estagiário apagou o banco de dados.", "Uma van branca (Truck-kun) bateu em você, tente novamente mais tarde.", 
     "Góticas no caminho de casa, a requisição falhou.", "Shinji não entrou no robô...", 
-    "Omedetou... falhou miseravelmente.", "O poder de luta foi menor que 8000.", "Você foi pego num Genjutsu de erro.", 
+    "Omedetou... falhou miseravelmente.", "O poder de luta foi menor que 8000.", "Você foi pego num Genjutsu de erro.", "Você caiu no conto do vigário.", 
     "Seu código foi de Isekai."
 ];
 export const memesAviso = [

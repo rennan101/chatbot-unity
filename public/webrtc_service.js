@@ -51,11 +51,12 @@ window.renderizarChatLateral = function() {
     conv.chatLateral.forEach(msg => {
         const souEu = window.usuarioAtual && msg.email === window.usuarioAtual.email;
         const badgeGlobal = msg.isGlobal ? `<span style="font-size:0.55rem; background:#F58220; color:white; padding:2px 4px; border-radius:4px; margin-left:4px;">GLOBAL</span>` : '';
+        const timeStr = msg.timestamp ? `<span style="font-size:0.6rem; color:#6e7681; margin-left:6px; font-weight: normal;">${window.formatarDataHora(msg.timestamp)}</span>` : '';
         
         container.innerHTML += `
             <div style="display:flex; flex-direction:column; gap:2px; ${souEu ? 'align-items:flex-end;' : 'align-items:flex-start;'}">
                 <span style="font-size:0.65rem; color:#8b949e; padding: 0 4px; display:flex; align-items:center;">
-                    ${window.formatarNomeUsuario(msg.email)} ${badgeGlobal}
+                    ${window.formatarNomeUsuario(msg.email)} ${badgeGlobal} ${timeStr}
                 </span>
                 <div class="balao-lateral ${souEu ? 'eu' : 'outro'}">${msg.texto}</div>
             </div>`;

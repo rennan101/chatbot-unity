@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ComboBoy Researcher</title>
+    <!-- IMPORTANDO AS FONTES -->
     <link href="https://fonts.googleapis.com/css2?family=Alumni+Sans+SC:ital,wght@0,700;1,700&family=Fira+Code:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="icon" type="image/svg+xml" href="/assets/icons/combogo_icon.svg">    
@@ -132,7 +133,18 @@
         <div id="chat"><div id="sem-conversa-msg"></div></div>
         
         <div id="input-container" style="flex-direction: column; align-items: stretch; gap: 0;">
-            <div id="anexo-preview-container" style="display: none; padding: 12px 24px; background: rgba(13, 17, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-bottom: none; border-radius: 16px 16px 0 0; position: relative; align-items: center;">
+            
+            <!-- CAIXA DE PREVIEW DO SISTEMA DE REPLY (RESPONDER) -->
+            <div id="reply-preview-container" style="display: none; padding: 12px 24px; background: rgba(245, 130, 32, 0.08); border: 1px solid rgba(245, 130, 32, 0.3); border-bottom: none; border-radius: 16px 16px 0 0; position: relative; align-items: center; border-left: 3px solid #F58220; margin-bottom: -1px; z-index: 1;">
+                <div style="flex: 1; font-size: 0.85rem; color: #c9d1d9; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: flex; align-items: center; gap: 8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+                    <span style="color: #F58220; font-weight: 600;">Respondendo ComboBoy:</span> 
+                    <span id="reply-preview-text" style="opacity: 0.8;"></span>
+                </div>
+                <button onclick="window.cancelarResposta()" style="position: absolute; top: 10px; right: 10px; background: transparent; color: #8b949e; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#8b949e'">✕</button>
+            </div>
+
+            <div id="anexo-preview-container" style="display: none; padding: 12px 24px; background: rgba(13, 17, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-bottom: none; border-radius: 16px 16px 0 0; position: relative; align-items: center; z-index: 2;">
                 <div style="position: relative; display: inline-block;">
                     <img id="image-preview" src="" style="max-height: 80px; border-radius: 8px; border: 2px solid #F58220; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none;">
                     <div id="file-preview" style="display: none; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 8px; border: 1px solid #F58220; color: #e6edf3; font-size: 0.85rem; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">

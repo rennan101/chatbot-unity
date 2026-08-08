@@ -3,6 +3,8 @@ import { db, auth } from './firebase_service.js';
 import './webrtc_service.js';
 import { SVG_CHECK, SVG_SETTINGS, SVG_DOWNLOAD, SVG_FOLDER, SVG_SAVE, SVG_EDIT, SVG_ARCHIVE, SVG_FILE, SVG_TRASH, SVG_WARN, SVG_CLOCK, SVG_SPINNER, SVG_COPY, SVG_SHARE, getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo } from './utils.js';
 
+const SVG_REPLY = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>`;
+
 // ==========================================================
 // 1. INICIALIZAÇÃO DE ESTADOS GLOBAIS E UI SETUP
 // ==========================================================
@@ -29,6 +31,7 @@ window.anexoTextoConteudo = null;
 window.anexoTextoNome = null;
 window.userApiKey = '';
 window.usuarioAtual = null;
+window.mensagemRespondidaTexto = null;
 
 // ==========================================================
 // 2. MODAIS E DRAG & DROP
@@ -105,7 +108,7 @@ window.renderizarSidebar = function() {
                 const maxAvatars = 2;
                 avataresPresencaHTML += `<div style="display:flex; align-items:center;">`;
                 emailsNaConversa.slice(0, maxAvatars).forEach((email, idx) => {
-                    const nome = formatarNomeUsuario(email);
+                    const nome = window.formatarNomeUsuario(email);
                     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=21262d&color=c9d1d9&rounded=true`;
                     const margin = idx > 0 ? '-8px' : '0';
                     const zIndex = 10 - idx;
@@ -114,7 +117,7 @@ window.renderizarSidebar = function() {
 
                 if (emailsNaConversa.length > maxAvatars) {
                     const extrasCount = emailsNaConversa.length - maxAvatars;
-                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => formatarNomeUsuario(e)).join(', ');
+                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => window.formatarNomeUsuario(e)).join(', ');
                     avataresPresencaHTML += `<div onclick="event.stopPropagation(); window.mostrarToast('Também na sala: ${nomesOcultos}', 'rgba(245, 130, 32, 0.9)')" style="width: 20px; height: 20px; border-radius: 50%; background: #F58220; color: white; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #161b22; margin-left: -8px; position: relative; z-index: 0; cursor: pointer;" title="Mais colaboradores">+${extrasCount}</div>`;
                 }
                 avataresPresencaHTML += `</div>`;
@@ -206,7 +209,7 @@ window.abrirModalCompartilhar = () => {
         membros.forEach(email => {
             const row = document.createElement('div'); row.className = 'colaborador-row';
             const badgeDono = (email === membros[0]) ? ' <span style="font-size:0.75rem; background:rgba(245,130,32,0.2); color:#F58220; padding:1px 6px; border-radius:4px; margin-left:6px;">Dono</span>' : '';
-            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${formatarNomeUsuario(email)}${badgeDono}</span>`;
+            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${window.formatarNomeUsuario(email)}${badgeDono}</span>`;
             if (email !== membros[0]) {
                 const btnRemover = document.createElement('button'); btnRemover.className = 'btn-remover-collab'; btnRemover.innerText = 'Remover';
                 btnRemover.onclick = () => window.removerColaborador(email); row.appendChild(btnRemover);
@@ -233,7 +236,7 @@ window.novaConversa = function(indexProj, event) {
     event.stopPropagation();
     window.projetos[indexProj].conversas.push({ 
         nome: `Nova Conversa ${window.projetos[indexProj].conversas.length + 1}`, criador: window.usuarioAtual ? window.usuarioAtual.email : 'visitante', processando: false,
-        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!` }] 
+        mensagens: [{ papel: 'bot', texto: `Pode mandar o seu código, arquivo ou erro!`, timestamp: Date.now() }] 
     });
     window.projetos[indexProj].aberto = true; window.salvarDadosAtuais(indexProj); window.renderizarSidebar(); window.selecionarConversa(indexProj, window.projetos[indexProj].conversas.length - 1);
 }
@@ -248,7 +251,7 @@ window.confirmarCompartilhamento = async () => {
 }
 
 window.removerColaborador = async (email) => {
-    if (confirm(`Deseja remover ${formatarNomeUsuario(email)}?`)) {
+    if (confirm(`Deseja remover ${window.formatarNomeUsuario(email)}?`)) {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
             if (proj && proj.id) { 
@@ -353,8 +356,43 @@ let configAskToSave = localStorage.getItem('unity_config_ask_save') !== 'false';
 window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementById('toggle-ask-save').checked; localStorage.setItem('unity_config_ask_save', configAskToSave); mostrarToast(getMeme('sucesso'), 'rgba(245, 130, 32, 0.9)', SVG_SETTINGS); }
 
 // ==========================================================
-// 3. SISTEMA DE ANEXOS E DRAG AND DROP
+// 3. SISTEMA DE ANEXOS E REPLY (RESPONDER)
 // ==========================================================
+window.atualizarBordasInput = function() {
+    const replyCont = document.getElementById('reply-preview-container');
+    const anexoCont = document.getElementById('anexo-preview-container');
+    const replyAtivo = replyCont && replyCont.style.display === 'flex';
+    const anexoAtivo = anexoCont && anexoCont.style.display === 'flex';
+    
+    if(replyAtivo || anexoAtivo) {
+        document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
+    } else {
+        document.getElementById('main-input-wrapper').style.borderRadius = '16px';
+    }
+}
+
+window.prepararResposta = function(idx) {
+    if (window.idProjetoAtivo === null || window.idConversaAtiva === null) return;
+    const msg = window.projetos[window.idProjetoAtivo].conversas[window.idConversaAtiva].mensagens[idx];
+    window.mensagemRespondidaTexto = msg.texto;
+    
+    const previewContainer = document.getElementById('reply-preview-container');
+    const previewText = document.getElementById('reply-preview-text');
+    if (previewContainer && previewText) {
+        previewText.innerText = msg.texto.substring(0, 80) + (msg.texto.length > 80 ? '...' : '');
+        previewContainer.style.display = 'flex';
+        window.atualizarBordasInput();
+    }
+    document.getElementById('mensagem').focus();
+}
+
+window.cancelarResposta = function() {
+    window.mensagemRespondidaTexto = null;
+    const previewContainer = document.getElementById('reply-preview-container');
+    if (previewContainer) previewContainer.style.display = 'none';
+    window.atualizarBordasInput();
+}
+
 window.lidarComAnexo = function(eventOrFile) {
     const file = eventOrFile.target ? eventOrFile.target.files[0] : eventOrFile;
     if (!file) return;
@@ -362,7 +400,7 @@ window.lidarComAnexo = function(eventOrFile) {
     
     if (file.type.startsWith('image/')) {
         window.anexoTextoConteudo = null; 
-        redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
+        window.redimensionarEComprimirImagem(file, 1024, function(base64Data, mimeType) {
             window.anexoImagemBase64 = base64Data; window.anexoImagemMimeType = mimeType;
             document.getElementById('file-preview').style.display = 'none';
             document.getElementById('image-preview').src = window.anexoImagemBase64;
@@ -385,7 +423,7 @@ window.lidarComAnexo = function(eventOrFile) {
 
 window.mostrarPreviewContainer = function() {
     document.getElementById('anexo-preview-container').style.display = 'flex';
-    document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
+    window.atualizarBordasInput();
     document.getElementById('btn-anexo').style.opacity = '1'; window.validarInput();
 }
 
@@ -393,7 +431,8 @@ window.removerAnexo = function() {
     window.anexoImagemBase64 = null; window.anexoImagemMimeType = null; window.anexoTextoConteudo = null; window.anexoTextoNome = null;
     document.getElementById('input-anexo').value = '';
     document.getElementById('anexo-preview-container').style.display = 'none';
-    document.getElementById('main-input-wrapper').style.borderRadius = '16px'; window.validarInput();
+    window.atualizarBordasInput();
+    window.validarInput();
 }
 
 const dropZone = document.getElementById('main-input-wrapper');
@@ -414,7 +453,7 @@ if (dropZone) {
             const validExtensions = ['.cs', '.txt', '.js', '.json'];
             const isValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
             if (file.type.startsWith('image/') || isValidExt) window.lidarComAnexo(file);
-            else mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
+            else mostrarToast(window.getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN);
         }
     });
 }
@@ -452,6 +491,7 @@ window.selecionarConversa = async function(indexProj, indexConv) {
     
     window.idProjetoAtivo = indexProj; window.idConversaAtiva = indexConv;
     await window.adicionarPresencaLocal();
+    window.cancelarResposta(); // Limpa o reply ao trocar de sala
     
     document.querySelectorAll('.conversa-item').forEach(el => el.classList.remove('ativa'));
     const itemAtivo = document.getElementById(`conv-${indexProj}-${indexConv}`); if (itemAtivo) itemAtivo.classList.add('ativa');
@@ -459,7 +499,7 @@ window.selecionarConversa = async function(indexProj, indexConv) {
     const proj = window.projetos[indexProj]; const conv = proj.conversas[indexConv];
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     const autorEmail = conv.criador ? conv.criador : (window.usuarioAtual ? window.usuarioAtual.email : 'Visitante');
-    document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
+    document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
     document.getElementById('btn-colab').style.display = 'flex';
@@ -521,19 +561,23 @@ window.renderizarChat = function() {
             chatBox.innerHTML += `<div id="msg-wrapper-${idx}" class="system-msg">${msg.texto}</div>`; 
         } else {
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
+            let timeStr = msg.timestamp ? `<span style="font-size: 0.65rem; color: #8b949e; margin-left: 8px; font-weight: normal;">${window.formatarDataHora(msg.timestamp)}</span>` : '';
             
             if (msg.papel === 'aluno') {
-                const nomeAutor = msg.autorEmail ? formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
+                const nomeAutor = msg.autorEmail ? window.formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
                 chatBox.innerHTML += `
                 <div id="msg-wrapper-${idx}" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; max-width: 100%;">
-                    <span style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-right: 12px; font-weight: 500;">${nomeAutor}</span>
+                    <span style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-right: 12px; font-weight: 500; display: flex; align-items: center;">${nomeAutor}${timeStr}</span>
                     <div class="balao aluno" style="align-self: flex-end; margin: 0;">${imgHtml}${msg.texto.replace(/\n/g, '<br>')}</div>
                 </div>`;
             } else {
                 chatBox.innerHTML += `
                 <div id="msg-wrapper-${idx}" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
-                    <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px;">ComboBoy</span>
-                    <div class="balao bot" style="margin: 0;">${imgHtml}${marked.parse(msg.texto)}</div>
+                    <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                        ComboBoy ${timeStr}
+                        <button onclick="window.prepararResposta(${idx})" style="background:transparent; border:none; color:#8b949e; cursor:pointer; padding:0; display:flex; align-items:center; transition: color 0.2s;" onmouseover="this.style.color='#F58220'" onmouseout="this.style.color='#8b949e'" title="Responder a esta mensagem">${SVG_REPLY}</button>
+                    </span>
+                    <div class="balao bot" style="margin: 0;">${imgHtml}${window.marked.parse(msg.texto)}</div>
                 </div>`;
             }
         }
@@ -552,7 +596,7 @@ window.renderizarChat = function() {
         <div style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
             <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px;">ComboBoy</span>
             <div class="balao bot typing-container" style="margin: 0;">
-                <span id="loading-meme-text" class="meme-text">${getMeme('loading')}</span>
+                <span id="loading-meme-text" class="meme-text">${window.getMeme('loading')}</span>
                 <div class="typing-indicator" style="height: auto; padding: 0;"><span></span><span></span><span></span></div>
             </div>
         </div>`;
@@ -561,7 +605,7 @@ window.renderizarChat = function() {
         window.loadingMemeInterval = setInterval(() => {
             const el = document.getElementById('loading-meme-text');
             if(el) {
-                el.style.opacity = 0; setTimeout(() => { el.innerText = getMeme('loading'); el.style.opacity = 1; }, 300);
+                el.style.opacity = 0; setTimeout(() => { el.innerText = window.getMeme('loading'); el.style.opacity = 1; }, 300);
             } else { clearInterval(window.loadingMemeInterval); }
         }, 3500);
 
@@ -602,11 +646,13 @@ window.lidarComAcao = function() {
     if (conv?.processando) {
         if (window.statusConversas[chave] && window.statusConversas[chave].controller) {
             window.statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); window.renderizarChat(); window.atualizarEstadoBotaoEnvio();
-        } else { mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
+        } else { mostrarToast(window.getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
     } else { window.enviarMensagem(); }
 }
 
-// INJEÇÃO DA PERSONA E ENVIO PARA O BACKEND
+// ==========================================================
+// INJEÇÃO DA PERSONA, MEMÓRIA E ENVIO PARA O BACKEND
+// ==========================================================
 window.enviarMensagem = async function() {
     if (window.idProjetoAtivo === null || window.idConversaAtiva === null) return;
     const pIdx = window.idProjetoAtivo; const cIdx = window.idConversaAtiva;
@@ -624,11 +670,10 @@ window.enviarMensagem = async function() {
     const imgBase64 = window.anexoImagemBase64; const imgMime = window.anexoImagemMimeType;
     if(!textoFinal && !imgBase64) return;
 
-    const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
+    const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || window.formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
     const autorEmail = window.usuarioAtual ? window.usuarioAtual.email : null;
     
-    // O texto mostrado na tela para o usuário (Limpo)
-    const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome, autorEmail: autorEmail }; 
+    const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome, autorEmail: autorEmail, timestamp: Date.now() }; 
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
     
     proj.conversas[cIdx].mensagens.push(novaMsg);
@@ -645,7 +690,22 @@ window.enviarMensagem = async function() {
 
     const controller = new AbortController(); window.statusConversas[chave] = { ativa: true, controller: controller };
 
-    // --- INJEÇÃO DA PERSONA SECRETA ---
+    // --- CONTEXT INJECTION (MEMÓRIA DAS ÚLTIMAS 6 MENSAGENS) ---
+    const mensagensAnteriores = proj.conversas[cIdx].mensagens.slice(0, -1).filter(m => m.papel !== 'system').slice(-6);
+    let contextoHistorico = "";
+    if (mensagensAnteriores.length > 0) {
+        contextoHistorico = "\n\n[CONTEXTO DE MEMÓRIA DAS ÚLTIMAS MENSAGENS]:\n" + 
+            mensagensAnteriores.map(m => `${m.papel === 'aluno' ? 'Usuário' : 'ComboBoy'}: ${m.texto}`).join('\n\n');
+    }
+
+    // --- REPLY INJECTION ---
+    let trechoResposta = "";
+    if (window.mensagemRespondidaTexto) {
+        trechoResposta = `\n\n[ATENÇÃO: O USUÁRIO ESTÁ RESPONDENDO DIRETAMENTE A ESTE TRECHO ESPECÍFICO GERADO POR VOCÊ ANTERIORMENTE]:\n"${window.mensagemRespondidaTexto}"\n\nBaseie-se fortemente nesse trecho para atender ao pedido do usuário abaixo.\n\n`;
+        window.cancelarResposta();
+    }
+
+    // --- INJEÇÃO DA PERSONA ---
     let instrucaoNivel = "";
     if (window.perfilGlobalData.nivel === 'chupetinha') {
         instrucaoNivel = "Aja como se eu fosse uma criança de 10 anos que não sabe absolutamente nada de programação ou Unity. Explique tudo de forma extremamente simples e muito didática.";
@@ -654,9 +714,9 @@ window.enviarMensagem = async function() {
     } else {
         instrucaoNivel = "Aja como se eu fosse um desenvolvedor que já fez pequenos projetos e conhece um pouco de programação.";
     }
-
-    let instrucaoChaves = window.prefComentado ? " REGRA: Como solicitarei código muito bem comentado, VOCÊ É PROIBIDO de inserir comentários em linhas que contêm apenas chaves isoladas (ex: não comente '}')." : "";
-    let promptInjetado = `[INSTRUÇÃO DE PERSONA: ${instrucaoNivel}${instrucaoChaves}]\n\n${textoFinal}`;
+    let instrucaoChaves = window.prefComentado ? " REGRA ESTrita: VOCÊ É PROIBIDO de inserir comentários em linhas que contêm apenas chaves isoladas (ex: nunca comente apenas '}')." : "";
+    
+    let promptInjetado = `[INSTRUÇÃO DE PERSONA: ${instrucaoNivel}${instrucaoChaves}]${contextoHistorico}${trechoResposta}\n\n[PERGUNTA ATUAL DO USUÁRIO]:\n${textoFinal}`;
 
     try {
         const headers = { 'Content-Type': 'application/json' };
@@ -673,7 +733,7 @@ window.enviarMensagem = async function() {
 
         if (res.status === 429) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_CLOCK} Fomos nerfados! Limite atingido.` }); } 
         else if (!res.ok) { let detalheErro = "Falha no Servidor"; try { const body = await res.json(); detalheErro = body.detail || detalheErro; } catch(e){} throw new Error(detalheErro); } 
-        else { const dados = await res.json(); window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta }); }
+        else { const dados = await res.json(); window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'bot', texto: dados.resposta, timestamp: Date.now() }); }
     } catch (e) {
         if (window.projetos[pIdx] && window.projetos[pIdx].conversas[cIdx]) { window.projetos[pIdx].conversas[cIdx].mensagens.push({ papel: 'system', texto: `${SVG_WARN} ${e.name === 'AbortError' ? 'Miss click? Ação cancelada.' : 'Erro: ' + e.message}` }); }
     } finally {
@@ -686,7 +746,6 @@ window.enviarMensagem = async function() {
 // ==========================================================
 // 5. LÓGICA DO TOUR E MOBILE SWIPE
 // ==========================================================
-
 let touchStartX = 0;
 let touchStartY = 0;
 document.addEventListener('touchstart', e => {
