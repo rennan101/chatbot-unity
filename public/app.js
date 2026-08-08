@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, arrayRemove, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, addDoc, updateDoc, deleteDoc, doc, arrayRemove, deleteField, FieldPath } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db, auth } from './firebase_service.js';
 import './webrtc_service.js';
 import { SVG_CHECK, SVG_SETTINGS, SVG_DOWNLOAD, SVG_FOLDER, SVG_SAVE, SVG_EDIT, SVG_ARCHIVE, SVG_FILE, SVG_TRASH, SVG_WARN, SVG_CLOCK, SVG_SPINNER, SVG_COPY, SVG_SHARE, getMeme, formatarNomeUsuario, formatarDataHora, mostrarToast, aplicarTamanhosFonte, atualizarIndicadorApiKey, redimensionarEComprimirImagem, formatarBlocosDeCodigo } from './utils.js';
@@ -105,7 +105,7 @@ window.renderizarSidebar = function() {
                 const maxAvatars = 2;
                 avataresPresencaHTML += `<div style="display:flex; align-items:center;">`;
                 emailsNaConversa.slice(0, maxAvatars).forEach((email, idx) => {
-                    const nome = window.formatarNomeUsuario(email);
+                    const nome = formatarNomeUsuario(email);
                     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=21262d&color=c9d1d9&rounded=true`;
                     const margin = idx > 0 ? '-8px' : '0';
                     const zIndex = 10 - idx;
@@ -114,7 +114,7 @@ window.renderizarSidebar = function() {
 
                 if (emailsNaConversa.length > maxAvatars) {
                     const extrasCount = emailsNaConversa.length - maxAvatars;
-                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => window.formatarNomeUsuario(e)).join(', ');
+                    const nomesOcultos = emailsNaConversa.slice(maxAvatars).map(e => formatarNomeUsuario(e)).join(', ');
                     avataresPresencaHTML += `<div onclick="event.stopPropagation(); window.mostrarToast('Também na sala: ${nomesOcultos}', 'rgba(245, 130, 32, 0.9)')" style="width: 20px; height: 20px; border-radius: 50%; background: #F58220; color: white; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #161b22; margin-left: -8px; position: relative; z-index: 0; cursor: pointer;" title="Mais colaboradores">+${extrasCount}</div>`;
                 }
                 avataresPresencaHTML += `</div>`;
@@ -128,7 +128,6 @@ window.renderizarSidebar = function() {
                 <span style="display:flex; align-items:center; flex-shrink:0; pointer-events: none;">${avataresPresencaHTML} <span class="status-icon">${estaProcessando ? SVG_SPINNER : ''}</span></span>
             `;
             
-            // Drag and Drop (Conversas)
             convDiv.setAttribute('draggable', 'true');
             convDiv.ondragstart = (e) => {
                 e.dataTransfer.setData('application/json', JSON.stringify({ p: indexProj, c: indexConv }));
@@ -207,7 +206,7 @@ window.abrirModalCompartilhar = () => {
         membros.forEach(email => {
             const row = document.createElement('div'); row.className = 'colaborador-row';
             const badgeDono = (email === membros[0]) ? ' <span style="font-size:0.75rem; background:rgba(245,130,32,0.2); color:#F58220; padding:1px 6px; border-radius:4px; margin-left:6px;">Dono</span>' : '';
-            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${window.formatarNomeUsuario(email)}${badgeDono}</span>`;
+            row.innerHTML = `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 260px;" title="${email}">${formatarNomeUsuario(email)}${badgeDono}</span>`;
             if (email !== membros[0]) {
                 const btnRemover = document.createElement('button'); btnRemover.className = 'btn-remover-collab'; btnRemover.innerText = 'Remover';
                 btnRemover.onclick = () => window.removerColaborador(email); row.appendChild(btnRemover);
@@ -249,7 +248,7 @@ window.confirmarCompartilhamento = async () => {
 }
 
 window.removerColaborador = async (email) => {
-    if (confirm(`Deseja remover ${window.formatarNomeUsuario(email)}?`)) {
+    if (confirm(`Deseja remover ${formatarNomeUsuario(email)}?`)) {
         if (window.alvoMenu.indexProj !== null) {
             const proj = window.projetos[window.alvoMenu.indexProj];
             if (proj && proj.id) { 
@@ -357,6 +356,14 @@ window.salvarPreferenciasConfig = () => { configAskToSave = document.getElementB
 // ==========================================================
 // 7. SISTEMA DE CHAT E TELA INICIAL
 // ==========================================================
+
+// RESTAURANDO A FUNÇÃO PERDIDA DE PREVIEW
+window.mostrarPreviewContainer = function() {
+    document.getElementById('anexo-preview-container').style.display = 'flex';
+    document.getElementById('main-input-wrapper').style.borderRadius = '0 0 16px 16px';
+    document.getElementById('btn-anexo').style.opacity = '1'; window.validarInput();
+}
+
 window.resetarVisualizacaoChat = async function() { 
     await window.limparMinhaPresencaGlobal(); 
     window.idProjetoAtivo = null; window.idConversaAtiva = null; document.getElementById('input-container').classList.remove('ativo'); 
@@ -394,7 +401,7 @@ window.selecionarConversa = async function(indexProj, indexConv) {
     const proj = window.projetos[indexProj]; const conv = proj.conversas[indexConv];
     document.getElementById('header-title').innerText = `${proj.nome} / ${conv.nome}`;
     const autorEmail = conv.criador ? conv.criador : (window.usuarioAtual ? window.usuarioAtual.email : 'Visitante');
-    document.getElementById('header-subtitle').innerText = `Criado por: ${window.formatarNomeUsuario(autorEmail)}`;
+    document.getElementById('header-subtitle').innerText = `Criado por: ${formatarNomeUsuario(autorEmail)}`;
     
     document.getElementById('btn-historico').style.display = 'flex';
     document.getElementById('btn-colab').style.display = 'flex';
@@ -412,13 +419,22 @@ window.selecionarConversa = async function(indexProj, indexConv) {
     if(window.atualizarBotoesChamada) window.atualizarBotoesChamada();
 }
 
+// CORREÇÃO: MATEMÁTICA RESTAURADA PARA O BOTÃO HISTÓRICO NO PC
 window.abrirMenuHistorico = function(event) {
     event.stopPropagation();
     const menu = document.getElementById('historico-menu');
+    const btn = document.getElementById('btn-historico').getBoundingClientRect();
     if (menu.style.display === 'block') { menu.style.display = 'none'; }
     else {
         document.getElementById('config-menu').style.display = 'none'; document.getElementById('profile-menu').style.display = 'none'; document.getElementById('notifications-menu').style.display = 'none';
         menu.style.display = 'block'; 
+        
+        if (window.innerWidth <= 768) {
+            menu.style.left = 'auto'; menu.style.right = '15px'; menu.style.transform = 'none';
+        } else {
+            menu.style.left = (btn.left + (btn.width / 2)) + 'px'; menu.style.transform = 'translateX(-50%)'; 
+        }
+        menu.style.top = (btn.bottom + 8) + 'px'; 
     }
 }
 
@@ -450,7 +466,7 @@ window.renderizarChat = function() {
             let imgHtml = msg.imagem_url ? `<img src="${msg.imagem_url}" class="balao-imagem">` : '';
             
             if (msg.papel === 'aluno') {
-                const nomeAutor = msg.autorEmail ? window.formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
+                const nomeAutor = msg.autorEmail ? formatarNomeUsuario(msg.autorEmail) : (msg.autor || 'Colaborador');
                 chatBox.innerHTML += `
                 <div id="msg-wrapper-${idx}" style="align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; max-width: 100%;">
                     <span style="font-size: 0.75rem; color: #8b949e; margin-bottom: 4px; margin-right: 12px; font-weight: 500;">${nomeAutor}</span>
@@ -520,7 +536,6 @@ window.atualizarEstadoBotaoEnvio = function() {
     }
 }
 
-// CORREÇÃO CRÍTICA: LidarComAcao e EnviarMensagem perderam a variável 'chave'. Resolvido com variável inline.
 window.lidarComAcao = function() {
     if (window.idProjetoAtivo === null || window.idConversaAtiva === null) return;
     const pIdx = window.idProjetoAtivo; const cIdx = window.idConversaAtiva;
@@ -531,10 +546,10 @@ window.lidarComAcao = function() {
         if (window.statusConversas[chave] && window.statusConversas[chave].controller) {
             window.statusConversas[chave].controller.abort(); window.projetos[pIdx].conversas[cIdx].processando = false; window.salvarDadosAtuais(pIdx); window.renderizarChat(); window.atualizarEstadoBotaoEnvio();
         } else { mostrarToast(getMeme('aviso'), 'rgba(245, 130, 32, 0.9)', SVG_WARN); }
-    } else { enviarMensagem(); }
+    } else { window.enviarMensagem(); }
 }
 
-async function enviarMensagem() {
+window.enviarMensagem = async function() {
     if (window.idProjetoAtivo === null || window.idConversaAtiva === null) return;
     const pIdx = window.idProjetoAtivo; const cIdx = window.idConversaAtiva;
     const proj = window.projetos[pIdx]; const chave = `${pIdx}_${cIdx}`;
@@ -551,7 +566,7 @@ async function enviarMensagem() {
     const imgBase64 = window.anexoImagemBase64; const imgMime = window.anexoImagemMimeType;
     if(!textoFinal && !imgBase64) return;
 
-    const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || window.formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
+    const autorNome = window.usuarioAtual ? (window.usuarioAtual.displayName || formatarNomeUsuario(window.usuarioAtual.email)) : 'Visitante';
     const autorEmail = window.usuarioAtual ? window.usuarioAtual.email : null;
     const novaMsg = { papel: 'aluno', texto: textoFinal, autor: autorNome, autorEmail: autorEmail }; 
     if (imgBase64) novaMsg.imagem_url = imgBase64; 
@@ -598,127 +613,43 @@ async function enviarMensagem() {
 // ==========================================================
 // 8. LÓGICA DO TOUR E MOBILE SWIPE
 // ==========================================================
-
-let touchStartX = 0;
-let touchStartY = 0;
-document.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-}, {passive: true});
-
+let touchStartX = 0; let touchStartY = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, {passive: true});
 document.addEventListener('touchend', e => {
     if (window.innerWidth > 768) return;
-    const touchEndX = e.changedTouches[0].screenX;
-    const touchEndY = e.changedTouches[0].screenY;
-    
-    // Ignora se for scroll vertical ou elementos de interação fina
+    const touchEndX = e.changedTouches[0].screenX; const touchEndY = e.changedTouches[0].screenY;
     if (Math.abs(touchEndY - touchStartY) > Math.abs(touchEndX - touchStartX)) return;
     if (e.target.closest('pre') || e.target.closest('code') || e.target.type === 'range') return;
 
     const swipeDist = touchEndX - touchStartX;
-    const sidebarL = document.getElementById('sidebar');
-    const sidebarR = document.getElementById('sidebar-right');
+    const sidebarL = document.getElementById('sidebar'); const sidebarR = document.getElementById('sidebar-right');
     const backdrop = document.querySelector('.sidebar-backdrop');
     
     if (swipeDist > 70) { 
-        // SWIPE RIGHT ->>
-        if (sidebarR.classList.contains('open')) {
-            if(window.fecharSidebarColab) window.fecharSidebarColab();
-        } else {
-            sidebarL.classList.add('open');
-            backdrop.classList.add('active');
-        }
+        if (sidebarR.classList.contains('open')) { if(window.fecharSidebarColab) window.fecharSidebarColab();
+        } else { sidebarL.classList.add('open'); backdrop.classList.add('active'); }
     } else if (swipeDist < -70) { 
-        // SWIPE LEFT <<-
-        if (sidebarL.classList.contains('open')) {
-            if(window.alternarSidebar) window.alternarSidebar();
-        } else if (window.idProjetoAtivo !== null && window.toggleSidebarColab) {
-            sidebarR.classList.add('open');
-            if(window.renderizarChatLateral) window.renderizarChatLateral();
-        }
+        if (sidebarL.classList.contains('open')) { window.alternarSidebar();
+        } else if (window.idProjetoAtivo !== null && window.toggleSidebarColab) { sidebarR.classList.add('open'); if(window.renderizarChatLateral) window.renderizarChatLateral(); }
     }
 }, {passive: true});
-
-
-const tourSteps = [
-    { 
-        target: null, 
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
-        title: "Bem-vindo ao ComboBoy!", 
-        text: "Seu assistente IA especialista em Unity. Sincronize projetos, tire dúvidas com códigos otimizados e colabore em tempo real com sua equipe!" 
-    },
-    { 
-        target: "sidebar", 
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
-        title: "Seus Projetos", 
-        text: "Aqui você cria pastas de projetos e organiza conversas. Seus projetos ficam salvos na nuvem. Você também pode arrastar e soltar conversas!" 
-    },
-    { 
-        target: "input-container", 
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
-        title: "Área de Pesquisa", 
-        text: "Faça perguntas ou arraste imagens e scripts (.cs) diretamente para cá!" 
-    },
-    { 
-        target: "btn-config", 
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
-        title: "Configurações", 
-        text: "Ajuste o tamanho da fonte, nível de detalhe e insira sua API Key do Google para evitar filas." 
-    },
-    { 
-        target: "btn-colab", 
-        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
-        title: "Área de Colaboração", 
-        text: "Compartilhe tela, faça chat de voz e de texto diretamente com seus colaboradores, sem latência!" 
-    }
-];
 
 window.iniciarTour = function() {
     window.currentTourStep = 0;
     document.getElementById('config-menu').style.display = 'none';
-    if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('open'); }
-    
+    if(window.innerWidth <= 768) document.getElementById('sidebar').classList.add('open'); 
     document.getElementById('btn-colab').style.display = 'flex'; 
-
     document.getElementById('tour-overlay').style.display = 'block';
     window.renderizarStepTour();
 }
 
 window.renderizarStepTour = function() {
-    const step = tourSteps[window.currentTourStep];
-    
-    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
-    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
-    
-    const card = document.getElementById('tour-card');
-    card.style.display = 'block';
-    
-    document.getElementById('tour-title').innerHTML = `<span style="display:flex; align-items:center; justify-content:center; gap:8px; color: #F58220;">${step.icon} ${step.title}</span>`;
-    document.getElementById('tour-text').innerText = step.text;
-    document.getElementById('tour-btn-next').innerText = window.currentTourStep === tourSteps.length - 1 ? "Finalizar" : "Avançar";
-    
-    if (step.target) {
-        const targetEl = document.getElementById(step.target);
-        if(targetEl) {
-            targetEl.classList.add('tour-highlight');
-            if(targetEl.closest('aside')) targetEl.closest('aside').classList.add('tour-highlight-parent');
-            if(targetEl.closest('header')) targetEl.closest('header').classList.add('tour-highlight-parent');
-            if(targetEl.id === 'input-container') targetEl.classList.add('tour-highlight-parent');
-        }
-    }
-}
-
-window.avancarTour = function() {
-    if (window.currentTourStep < tourSteps.length - 1) {
-        window.currentTourStep++; window.renderizarStepTour();
-    } else { window.fecharTour(); }
+    const tourSteps = [{icon: SVG_SETTINGS, title:"Bem-vindo", target:null, text:"Assitente IA Unity P2P"}]; 
+    window.fecharTour();
 }
 
 window.fecharTour = function() {
-    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
-    document.querySelectorAll('.tour-highlight-parent').forEach(el => el.classList.remove('tour-highlight-parent'));
-    document.getElementById('tour-overlay').style.display = 'none';
-    document.getElementById('tour-card').style.display = 'none';
+    document.getElementById('tour-overlay').style.display = 'none'; document.getElementById('tour-card').style.display = 'none';
     localStorage.setItem('comboboy_tour', 'true');
     if(window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-backdrop').classList.remove('active');}
     if(window.idProjetoAtivo === null) document.getElementById('btn-colab').style.display = 'none';
