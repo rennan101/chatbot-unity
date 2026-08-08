@@ -97,7 +97,6 @@
     </aside>
 
     <main id="main-area" style="position: relative;">
-        <!-- CABEÇALHO RECONSTRUÍDO EM 3 COLUNAS FLEX PARA EVITAR SOBREPOSIÇÃO -->
         <header id="chat-header">
             <div class="header-left" style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
                 <button class="mobile-menu-btn" onclick="window.alternarSidebar()">
@@ -133,8 +132,6 @@
         <div id="chat"><div id="sem-conversa-msg"></div></div>
         
         <div id="input-container" style="flex-direction: column; align-items: stretch; gap: 0;">
-            
-            <!-- CAIXA DE PREVIEW DO SISTEMA DE REPLY (RESPONDER) -->
             <div id="reply-preview-container" style="display: none; padding: 12px 24px; background: rgba(245, 130, 32, 0.08); border: 1px solid rgba(245, 130, 32, 0.3); border-bottom: none; border-radius: 16px 16px 0 0; position: relative; align-items: center; border-left: 3px solid #F58220; margin-bottom: -1px; z-index: 1;">
                 <div style="flex: 1; font-size: 0.85rem; color: #c9d1d9; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: flex; align-items: center; gap: 8px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F58220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
@@ -334,6 +331,10 @@
             <div class="config-item" style="margin-bottom: 10px;">
                 <span title="Nivela e aumenta automaticamente o volume da sua voz">Voice Boost (AGC)</span>
                 <label class="switch"><input type="checkbox" id="check-auto-gain"><span class="slider"></span></label>
+            </div>
+            <div class="config-item" style="margin-bottom: 10px;">
+                <span title="Evita que o microfone capte o som do seu alto-falante">Cancelamento de Eco</span>
+                <label class="switch"><input type="checkbox" id="check-echo-cancel"><span class="slider"></span></label>
             </div>
             <div class="config-item" style="margin-bottom: 20px;">
                 <span title="Mixar som do computador ao compartilhar a tela">Áudio do Sistema na Tela</span>

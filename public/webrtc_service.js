@@ -20,9 +20,10 @@ window.sysNode = null;
 // CONFIGURAÇÕES AVANÇADAS DE ÁUDIO (CARREGAMENTO)
 // ==========================================================
 window.configAudio = {
-    noiseSupp: localStorage.getItem('unity_noise_supp') !== 'false', // Padrão: Ativo
-    autoGain: localStorage.getItem('unity_auto_gain') !== 'false',   // Padrão: Ativo
-    screenAudio: localStorage.getItem('unity_screen_audio') !== 'false' // Padrão: Ativo
+    noiseSupp: localStorage.getItem('unity_noise_supp') !== 'false', 
+    autoGain: localStorage.getItem('unity_auto_gain') !== 'false',   
+    screenAudio: localStorage.getItem('unity_screen_audio') !== 'false', 
+    echoCancel: localStorage.getItem('unity_echo_cancel') !== 'false' 
 };
 
 // ==========================================================
@@ -154,6 +155,7 @@ window.abrirModalDevices = async function() {
         document.getElementById('check-noise-supp').checked = window.configAudio.noiseSupp;
         document.getElementById('check-auto-gain').checked = window.configAudio.autoGain;
         document.getElementById('check-screen-audio').checked = window.configAudio.screenAudio;
+        document.getElementById('check-echo-cancel').checked = window.configAudio.echoCancel; 
         
         document.getElementById('modal-devices').style.display = 'flex';
     } catch(e) {
@@ -169,10 +171,12 @@ window.salvarDevices = async function() {
     window.configAudio.noiseSupp = document.getElementById('check-noise-supp').checked;
     window.configAudio.autoGain = document.getElementById('check-auto-gain').checked;
     window.configAudio.screenAudio = document.getElementById('check-screen-audio').checked;
+    window.configAudio.echoCancel = document.getElementById('check-echo-cancel').checked; 
     
     localStorage.setItem('unity_noise_supp', window.configAudio.noiseSupp);
     localStorage.setItem('unity_auto_gain', window.configAudio.autoGain);
     localStorage.setItem('unity_screen_audio', window.configAudio.screenAudio);
+    localStorage.setItem('unity_echo_cancel', window.configAudio.echoCancel); 
     
     const audios = document.querySelectorAll('audio');
     audios.forEach(async a => {
@@ -190,7 +194,7 @@ window.salvarDevices = async function() {
                 audio: { 
                     deviceId: window.selectedAudioInput ? { exact: window.selectedAudioInput } : undefined,
                     noiseSuppression: window.configAudio.noiseSupp,
-                    echoCancellation: true,
+                    echoCancellation: window.configAudio.echoCancel,
                     autoGainControl: window.configAudio.autoGain
                 } 
             });
@@ -244,6 +248,7 @@ window.obterTransmissaoFinal = function() {
     
     return combined;
 }
+
 
 // ==========================================================
 // MOTOR WEBRTC P2P - CHAMADA E TELA
@@ -304,7 +309,7 @@ window.toggleChamada = async function() {
                 audio: { 
                     deviceId: window.selectedAudioInput ? { exact: window.selectedAudioInput } : undefined,
                     noiseSuppression: window.configAudio.noiseSupp,
-                    echoCancellation: true,
+                    echoCancellation: window.configAudio.echoCancel,
                     autoGainControl: window.configAudio.autoGain
                 } 
             });
