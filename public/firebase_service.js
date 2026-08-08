@@ -21,33 +21,30 @@ window.perfilGlobalData = { profissao: "", tags: [] };
 window.tagsSelecionadas = [];
 
 // ==========================================================
-// 1. PRESENÇA EM TEMPO REAL BLINDADA
+// 1. PRESENÇA EM TEMPO REAL BLINDADA E LIMPEZA GLOBAL
 // ==========================================================
 window.limparMinhaPresencaGlobal = async function() {
     if (!window.usuarioAtual) return;
     let promessas = [];
     
     window.projetos.forEach((proj) => {
-        let needsUpdate = false;
-        let updates = {};
-        
+        // 1. Deletar Presença Física da Sala (Usando FieldPath para driblar o problema de pontos no e-mail)
         if (proj.presenca && proj.presenca[window.usuarioAtual.email] !== undefined) {
-            updates[`presenca.${window.usuarioAtual.email}`] = deleteField();
-            needsUpdate = true;
+            const ref = doc(db, "projetos", proj.id);
+            promessas.push(updateDoc(ref, new FieldPath('presenca', window.usuarioAtual.email), deleteField()));
         }
         
+        // 2. Limpar Áudio e Tela de Todas as Conversas
         if (proj.conversas) {
             let convUpdated = false;
             proj.conversas.forEach((c) => {
                 if (c.tela === window.usuarioAtual.email) { c.tela = null; convUpdated = true; }
                 if (c.chamada && c.chamada[window.usuarioAtual.email]) { delete c.chamada[window.usuarioAtual.email]; convUpdated = true; }
             });
-            if (convUpdated) { updates['conversas'] = proj.conversas; needsUpdate = true; }
-        }
-        
-        if (needsUpdate) {
-            const ref = doc(db, "projetos", proj.id);
-            promessas.push(updateDoc(ref, updates));
+            if (convUpdated) { 
+                const ref = doc(db, "projetos", proj.id);
+                promessas.push(updateDoc(ref, { conversas: proj.conversas })); 
+            }
         }
     });
     
@@ -57,9 +54,8 @@ window.limparMinhaPresencaGlobal = async function() {
 
 window.adicionarPresencaLocal = async function() {
     if (!window.usuarioAtual || window.idProjetoAtivo === null || window.idConversaAtiva === null || !window.projetos[window.idProjetoAtivo].id) return;
-    await window.limparMinhaPresencaGlobal();
     const ref = doc(db, "projetos", window.projetos[window.idProjetoAtivo].id);
-    updateDoc(ref, new FieldPath('presenca', window.usuarioAtual.email), window.idConversaAtiva).catch(e=>console.log(e));
+    updateDoc(ref, new FieldPath('presenca', window.usuarioAtual.email), window.idConversaAtiva).catch(e=>{});
 }
 
 window.addEventListener('pagehide', window.limparMinhaPresencaGlobal);
@@ -187,52 +183,8 @@ window.confirmarLogout = async function() {
         if (window.unsubscribeUsuarios) window.unsubscribeUsuarios();
         
         await window.limparMinhaPresencaGlobal(); 
-        
-        window.projetos = [];
-        window.renderizarSidebar();
-        await signOut(auth);
-        document.getElementById('profile-menu').style.display = 'none';
-        if(window.resetarVisualizacaoChat) window.resetarVisualizacaoChat();
+        window.location.reload(); // Evita fantasmas na memoria
     }
-}
-
-window.renderizarTags = function() {
-    const TAGS_DISPONIVEIS = ["Programador C#", "Mecânicas", "Bot AI", "Level Design", "Animation 2D", "Animation 3D", "Banco de dados", "Tech Artist", "UI/UX", "VFX", "Multiplayer/Netcode", "Mobile", "VR/AR", "Game Design", "Sound Design", "Monetização", "Shader Graph", "Cinematics"];
-    const container = document.getElementById('container-tags');
-    if(!container) return;
-    container.innerHTML = '';
-    TAGS_DISPONIVEIS.forEach(tag => {
-        const isSelected = window.tagsSelecionadas.includes(tag);
-        const span = document.createElement('span'); span.className = `tag-badge ${isSelected ? 'selected' : ''}`; span.innerText = tag;
-        span.onclick = () => {
-            if(window.tagsSelecionadas.includes(tag)) { window.tagsSelecionadas = window.tagsSelecionadas.filter(t => t !== tag); } else { window.tagsSelecionadas.push(tag); }
-            window.renderizarTags();
-        };
-        container.appendChild(span);
-    });
-}
-
-window.abrirModalPerfil = async function() {
-    document.getElementById('profile-menu').style.display = 'none';
-    if(!window.usuarioAtual) return;
-    document.getElementById('input-perfil-nome').value = window.mapUsuarios[window.usuarioAtual.email] || window.usuarioAtual.displayName || window.formatarNomeUsuario(window.usuarioAtual.email);
-    document.getElementById('input-perfil-profissao').value = window.perfilGlobalData.profissao;
-    window.tagsSelecionadas = [...window.perfilGlobalData.tags];
-    window.renderizarTags();
-    document.getElementById('modal-perfil').style.display = 'flex';
-}
-window.fecharModalPerfil = function() { document.getElementById('modal-perfil').style.display = 'none'; }
-
-window.salvarPerfil = async function() {
-    if(!window.usuarioAtual) return;
-    const nome = document.getElementById('input-perfil-nome').value.trim();
-    const profissao = document.getElementById('input-perfil-profissao').value.trim();
-    try {
-        if(nome && nome !== window.usuarioAtual.displayName) await updateProfile(window.usuarioAtual, { displayName: nome });
-        await setDoc(doc(db, "usuarios", window.usuarioAtual.uid), { nome: nome, profissao: profissao, tags: window.tagsSelecionadas, email: window.usuarioAtual.email }, { merge: true });
-        window.perfilGlobalData.profissao = profissao; window.perfilGlobalData.tags = [...window.tagsSelecionadas];
-        window.fecharModalPerfil(); mostrarToast(getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
-    } catch(e) { mostrarToast(getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN); }
 }
 
 // ==========================================================
@@ -329,12 +281,12 @@ window.abrirMenuNotificacoes = function(event) {
 window.responderConvite = async function(conviteId, projetoId, remetente, projetoNome, aceitar) {
     const box = document.getElementById(`convite-${conviteId}`); if(box) box.style.display = 'none';
     try {
-        if (aceitar && projetoId) { await updateDoc(doc(db, "projetos", projetoId), { membros: arrayUnion(window.usuarioAtual.email) }); mostrarToast(getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
+        if (aceitar && projetoId) { await updateDoc(doc(db, "projetos", projetoId), { membros: arrayUnion(window.usuarioAtual.email) }); mostrarToast(window.getMeme('sucesso'), "rgba(46, 204, 113, 0.9)", SVG_CHECK);
         } else { mostrarToast("Convite recusado.", "rgba(218, 54, 51, 0.9)", SVG_WARN); }
         await deleteDoc(doc(db, "convites", conviteId));
         await addDoc(collection(db, "notificacoes"), { destinatario: remetente, mensagem: `<b>${window.formatarNomeUsuario(window.usuarioAtual.email)}</b> ${aceitar ? "aceitou" : "recusou"} seu convite para <b>${projetoNome}</b>.`, timestamp: Date.now() });
         document.getElementById('notifications-menu').style.display = 'none';
-    } catch(e) { if(box) box.style.display = 'block'; mostrarToast(getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN); }
+    } catch(e) { if(box) box.style.display = 'block'; mostrarToast(window.getMeme('erro'), "rgba(218, 54, 51, 0.9)", SVG_WARN); }
 }
 
 window.apagarNotificacao = async function(event, notifId) {
