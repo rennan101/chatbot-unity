@@ -579,9 +579,13 @@ window.renderizarChat = function() {
                 <div id="msg-wrapper-${idx}" style="align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
                     <span style="font-size: 0.75rem; color: #F58220; font-weight: 600; margin-bottom: 4px; margin-left: 12px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
                         ComboBoy ${timeStr}
-                        <button onclick="window.prepararResposta(${idx})" style="background:transparent; border:none; color:#8b949e; cursor:pointer; padding:0; display:flex; align-items:center; transition: color 0.2s;" onmouseover="this.style.color='#F58220'" onmouseout="this.style.color='#8b949e'" title="Responder a esta mensagem">${SVG_REPLY}</button>
                     </span>
-                    <div class="balao bot" style="margin: 0;">${imgHtml}${window.marked.parse(msg.texto)}</div>
+                    <div class="balao bot" style="margin: 0; padding-bottom: 10px;">
+                        ${imgHtml}${window.marked.parse(msg.texto)}
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                            <button onclick="window.prepararResposta(${idx})" style="background:transparent; border:none; color:#8b949e; cursor:pointer; padding: 4px 8px; border-radius: 6px; display:flex; align-items:center; gap: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='rgba(245, 130, 32, 0.1)'; this.style.color='#F58220';" onmouseout="this.style.background='transparent'; this.style.color='#8b949e';" title="Responder a esta mensagem">${SVG_REPLY} Responder</button>
+                        </div>
+                    </div>
                 </div>`;
             }
         }

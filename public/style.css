@@ -237,7 +237,6 @@ header {
 
 .video-tag { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; backdrop-filter: blur(5px);}
 
-/* Controles de Vídeo Flutuantes (Hover) */
 .video-controls {
     position: absolute; bottom: 15px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s;
     background: rgba(0,0,0,0.75); padding: 8px 12px; border-radius: 10px; backdrop-filter: blur(8px);
@@ -263,10 +262,10 @@ header {
 .bot p:last-child { margin: 0; }
 
 /* ================= CÓDIGO E HIGHLIGHT.JS ================= */
-pre, code { font-family: 'Fira Code', 'Consolas', monospace; font-size: var(--code-fs); line-height: 1.6; }
+pre, code { font-family: 'Fira Code', 'Consolas', monospace; font-size: var(--code-fs); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
 code { background: rgba(0,0,0,0.3); padding: 3px 6px; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #F58220; }
-pre { background: rgba(0,0,0,0.3); padding: 18px; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow-x: auto; margin: 12px 0;}
-pre code { padding: 0; border: none; background: transparent; }
+pre { background: rgba(0,0,0,0.3); padding: 18px; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow-x: hidden; margin: 12px 0;}
+pre code { padding: 0; border: none; background: transparent; white-space: pre-wrap; word-break: break-word; }
 .hljs { background: transparent !important; padding: 0 !important; }
 
 /* CLASSE MÁGICA PARA ESCONDER COMENTÁRIOS */
@@ -341,7 +340,6 @@ button.btn-acao-moderno.stop:hover { background: rgba(218, 54, 51, 0.4); }
 }
 #sidebar-right.open { width: 320px; opacity: 1; border-left: 1px solid rgba(255, 255, 255, 0.05); }
 
-/* Container fixo interno para os itens não se espremerem durante a animação */
 .colab-inner { width: 320px; display: flex; flex-direction: column; height: 100%; }
 
 .call-controls { display: flex; justify-content: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); }
